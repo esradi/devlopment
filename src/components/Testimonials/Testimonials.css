@@ -23,7 +23,8 @@
 /* ============ HEADER (CENTERED) ============ */
 .stories-header {
     text-align: center;
-    margin-bottom: 70px;
+    margin-bottom: 40px;
+    /* Reduced from 70px */
 }
 
 .stories-tag-centered {
@@ -46,10 +47,11 @@
 
 .stories-title-centered {
     font-family: 'Playfair Display', serif;
-    font-size: 52px;
+    font-size: 42px;
+    /* Reduced from 52px */
     font-weight: 700;
     color: white;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 .stories-highlight {
@@ -83,14 +85,14 @@
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-bottom: 4px solid #9e59ff;
-    /* Purple border matching theme */
     border-radius: 20px 20px 0 20px;
-    /* Slight custom radius feel */
-    padding: 30px;
+    padding: 24px;
+    /* Reduced from 30px */
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 320px;
+    min-height: 280px;
+    /* Reduced from 320px */
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -138,11 +140,12 @@
 /* Comment Text */
 .story-comment {
     font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    line-height: 1.8;
+    font-size: 13px;
+    /* Reduced from 14px */
+    line-height: 1.6;
     color: rgba(255, 255, 255, 0.8);
     font-style: italic;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     flex-grow: 1;
 }
 

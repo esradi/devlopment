@@ -54,9 +54,9 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    padding: 30px 40px;
-    margin-bottom: 30px;
+    border-radius: 20px;
+    padding: 20px 30px;
+    margin-bottom: 20px;
     box-shadow:
         0 20px 50px rgba(0, 0, 0, 0.5),
         0 0 40px rgba(139, 92, 246, 0.1);
@@ -94,7 +94,7 @@
 
 .hiw-main-title {
     font-family: 'Inter', sans-serif;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 200;
     color: white;
     line-height: 1.1;
@@ -130,9 +130,10 @@
 /* ============ PROCESS FLOW ============ */
 .hiw-flow-wrapper {
     position: relative;
-    height: 320px;
+    height: 240px;
+    /* Reduced from 320px */
     width: 100%;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 /* Background Wave */
@@ -174,7 +175,8 @@
 }
 
 .hiw-circle-wrap.low {
-    transform: translateY(90px);
+    transform: translateY(60px);
+    /* Reduced from 90px */
 }
 
 .hiw-circle-wrap.high {
@@ -183,8 +185,10 @@
 
 /* The Circle */
 .hiw-circle {
-    width: 120px;
-    height: 120px;
+    width: 100px;
+    /* Reduced from 120px */
+    height: 100px;
+    /* Reduced from 120px */
     background: linear-gradient(135deg, #c0b7e8 0%, #8176af 100%);
     border-radius: 50%;
     display: flex;
@@ -197,7 +201,8 @@
 
 .hiw-number {
     font-family: 'Inter', sans-serif;
-    font-size: 48px;
+    font-size: 36px;
+    /* Reduced from 48px */
     font-weight: 800;
     color: #12111d;
 }
