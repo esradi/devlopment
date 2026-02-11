@@ -1,0 +1,224 @@
+/* Testimonials.css */
+
+.stories-section {
+    min-height: 100vh;
+    background-color: #050505;
+    padding: 20px 0;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stories-container {
+    width: 100%;
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 40px;
+    position: relative;
+    z-index: 10;
+}
+
+/* ============ HEADER (CENTERED) ============ */
+.stories-header {
+    text-align: center;
+    margin-bottom: 70px;
+}
+
+.stories-tag-centered {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #06b6d4;
+    /* Blue tag */
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tag-icon {
+    font-size: 14px;
+}
+
+.stories-title-centered {
+    font-family: 'Playfair Display', serif;
+    font-size: 52px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 24px;
+}
+
+.stories-highlight {
+    background: linear-gradient(90deg, #9e59ff 0%, #ff1b90 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-style: italic;
+}
+
+.stories-subtitle-centered {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.5);
+    max-width: 650px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* ============ GRID LAYOUT ============ */
+.stories-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+/* ============ CARD DESIGN (MATCHING IMAGE) ============ */
+.story-card-v2 {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 4px solid #9e59ff;
+    /* Purple border matching theme */
+    border-radius: 20px 20px 0 20px;
+    /* Slight custom radius feel */
+    padding: 30px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.story-card-v2:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom-color: #9e59ff;
+    /* Changes to theme purple on hover */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Quote Circle (Top Right) */
+.card-quote-circle {
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    width: 50px;
+    height: 50px;
+    background: #06b6d4;
+    /* Changed from yellow to Blue */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+    z-index: 5;
+}
+
+.quote-icon {
+    font-size: 24px;
+    color: white;
+}
+
+/* Stars (Top Left) */
+.card-stars {
+    margin-bottom: 20px;
+}
+
+.star-v2 {
+    color: #9e59ff;
+    /* Changed from yellow to Purple */
+    font-size: 16px;
+    margin-right: 2px;
+}
+
+/* Comment Text */
+.story-comment {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: rgba(255, 255, 255, 0.8);
+    font-style: italic;
+    margin-bottom: 30px;
+    flex-grow: 1;
+}
+
+/* Student Profile (Bottom) */
+.story-profile {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: auto;
+}
+
+.story-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.story-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 2px;
+}
+
+.story-role {
+    font-size: 12px;
+    color: #06b6d4;
+    /* Changed from yellow to Blue */
+    font-weight: 500;
+}
+
+/* Glow orbs */
+.stories-glow-1,
+.stories-glow-2 {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(160px);
+    opacity: 0.3;
+    z-index: 1;
+}
+
+.stories-glow-1 {
+    background: radial-gradient(circle, #aa00ff 0%, rgba(170, 0, 255, 0) 70%);
+    top: -10%;
+    right: -10%;
+}
+
+.stories-glow-2 {
+    background: radial-gradient(circle, #ff1b90 0%, rgba(0, 153, 255, 0) 70%);
+    bottom: -10%;
+    left: 10%;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .stories-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    .stories-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stories-title-centered {
+        font-size: 38px;
+    }
+
+    .story-card-v2 {
+        border-radius: 20px;
+        /* Reset custom radius on mobile */
+    }
+}

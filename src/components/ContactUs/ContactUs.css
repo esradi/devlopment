@@ -1,0 +1,222 @@
+/* ContactUs.css - Redesign matching Reference Image */
+
+.contact-section-v2 {
+    position: relative;
+    min-height: 100vh;
+    background: #050505;
+    padding: 20px 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.contact-container-v2 {
+    width: 100%;
+    max-width: 1300px;
+    /* Slightly tighter max-width */
+    margin: 0 auto;
+    padding: 0 40px;
+    z-index: 10;
+}
+
+.contact-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    /* Reduced gap */
+    align-items: center;
+}
+
+/* ============ LEFT SIDE: IMAGE ============ */
+.contact-image-side {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.contact-abstract-img {
+    max-width: 85%;
+    /* Even smaller for fit */
+    height: auto;
+    filter: drop-shadow(0 0 60px rgba(158, 89, 255, 0.5)) drop-shadow(0 0 40px rgba(6, 182, 212, 0.4));
+    transform: perspective(1000px) rotateY(-10deg);
+    /* Initial tilt */
+}
+
+.contact-glow-orb {
+    position: absolute;
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(158, 89, 255, 0.15) 0%, transparent 70%);
+    z-index: -1;
+}
+
+/* ============ RIGHT SIDE: FORM ============ */
+.contact-form-side {
+    padding-right: 0;
+}
+
+.contact-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 2px;
+    display: block;
+    margin-bottom: 15px;
+    /* Reduced margin */
+    text-transform: uppercase;
+}
+
+.contact-title-v2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 46px;
+    /* Reduced font size from 52px */
+    font-weight: 700;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 35px;
+    /* Reduced margin from 50px */
+}
+
+.highlight-blue {
+    color: #06b6d4;
+    /* Theme blue matching Stories tags */
+}
+
+.contact-form-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* Reduced gap from 20px */
+}
+
+.pill-input,
+.pill-textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50px;
+    /* Highly rounded as in image */
+    padding: 14px 22px;
+    /* Reduced padding from 16px 25px */
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pill-textarea {
+    border-radius: 24px;
+    resize: none;
+}
+
+.pill-input:focus,
+.pill-textarea:focus {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: #06b6d4;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.1);
+}
+
+/* Custom Submit Button (Arrow Circle) */
+.contact-submit-pill {
+    margin-top: 5px;
+    /* Reduced margin */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    padding: 6px 6px 6px 25px;
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-self: flex-end;
+    /* Pushed to bottom right like image */
+    box-shadow:
+        0 4px 25px rgba(6, 182, 212, 0.3),
+        0 0 15px rgba(158, 89, 255, 0.3);
+}
+
+.contact-submit-pill:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(5px);
+}
+
+.submit-arrow-circle {
+    width: 45px;
+    height: 45px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: black;
+    font-size: 16px;
+}
+
+/* Background Decorations */
+.contact-bg-glow-1,
+.contact-bg-glow-2 {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(160px);
+    opacity: 0.2;
+    z-index: 1;
+}
+
+.contact-bg-glow-1 {
+    background: radial-gradient(circle, #9e59ff 0%, transparent 75%);
+    top: -10%;
+    right: -10%;
+}
+
+.contact-bg-glow-2 {
+    background: radial-gradient(circle, #06b6d4 0%, transparent 75%);
+    bottom: -10%;
+    left: -10%;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .contact-split {
+        grid-template-columns: 1fr;
+        gap: 60px;
+        text-align: center;
+    }
+
+    .contact-form-side {
+        padding-right: 0;
+    }
+
+    .contact-title-v2 {
+        font-size: 42px;
+    }
+
+    .contact-submit-pill {
+        align-self: center;
+    }
+
+    .contact-image-side {
+        order: -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .contact-container-v2 {
+        padding: 0 30px;
+    }
+
+    .contact-abstract-img {
+        max-width: 90%;
+    }
+}

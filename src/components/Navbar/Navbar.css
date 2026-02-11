@@ -1,0 +1,229 @@
+/* Navbar.css */
+.navbar {
+  position: fixed;
+  top: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+  background: transparent;
+  /* Ensure outer container is clear */
+  left: 0;
+  /* Ensuring centered positioning relative to viewport */
+}
+
+.nav-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(15, 15, 15, 0.7);
+  /* Dark translucent */
+  backdrop-filter: blur(15px);
+  /* The frosted glass effect */
+  -webkit-backdrop-filter: blur(15px);
+  padding: 5px 12px 5px 30px;
+  border-radius: 100px;
+  /* Pill shape */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 90%;
+  max-width: 1100px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  /* Added shadow for better separation */
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-family: sans-serif;
+  letter-spacing: 1px;
+}
+
+/* The hollow magenta circle in the logo - REMOVED */
+/* .logo::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ff0080;
+  border-radius: 50%;
+  display: block;
+} */
+
+.nav-logo-img {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.3s;
+}
+
+.logo:hover .nav-logo-img {
+  transform: scale(1.1);
+}
+
+.menu-section {
+  display: flex;
+  justify-content: center;
+  flex: 1;
+}
+
+.menu-list {
+  display: flex;
+  gap: 2.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-link {
+  color: #e0e0e0;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  position: relative;
+  padding: 10px 0;
+  transition: color 0.3s;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  color: #fff;
+}
+
+/* The thick magenta underline for active links */
+.nav-link.active {
+  color: #fff;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 15px;
+  /* Small, thick bar */
+  height: 3px;
+  background: #ff0080;
+  border-radius: 2px;
+}
+
+/* Dropdown Styles */
+.dropdown-container {
+  position: relative;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chevron-icon {
+  transition: transform 0.3s;
+}
+
+.dropdown-container:hover .chevron-icon {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 10px;
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 0;
+  min-width: 180px;
+  list-style: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.dropdown-link {
+  display: block;
+  color: #e0e0e0;
+  text-decoration: none;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.dropdown-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.cta-menu-button {
+  background: rgba(255, 255, 255, 0.08);
+  /* Translucent pill inside pill */
+  color: white;
+  padding: 10px 25px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.cta-menu-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Mobile Toggle */
+.mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .menu-section {
+    display: none;
+  }
+
+  .mobile-toggle {
+    display: block;
+  }
+
+  .nav-content {
+    justify-content: space-between;
+  }
+
+  .cta-menu-button {
+    display: none;
+    /* Often hidden on mobile in favor of menu */
+  }
+}
