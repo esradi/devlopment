@@ -16,26 +16,26 @@
 .verified-opportunities-section::after {
     content: '';
     position: absolute;
-    width: 600px;
-    height: 600px;
+    width: 800px;
+    height: 800px;
     border-radius: 50%;
-    filter: blur(140px);
+    filter: blur(150px);
     z-index: 1;
-    opacity: 0.6;
+    opacity: 0.65;
 }
 
-/* Purple/Pink Glow - Top Left */
+/* Purple Glow - Top Left */
 .verified-opportunities-section::before {
-    background: radial-gradient(circle, #ff00cc 0%, #aa00ff 50%, rgba(170, 0, 255, 0) 70%);
-    top: -10%;
-    left: -10%;
+    background: radial-gradient(circle, #9e59ff 0%, #7c3aed 50%, rgba(124, 58, 237, 0) 70%);
+    top: -20%;
+    left: -15%;
 }
 
-/* Pink/Magenta Glow - Bottom Right */
+/* Blue Glow - Bottom Right */
 .verified-opportunities-section::after {
-    background: radial-gradient(circle, #db2777 0%, #9d174d 50%, rgba(157, 23, 77, 0) 70%);
-    bottom: -10%;
-    right: -10%;
+    background: radial-gradient(circle, #0066ff 0%, #0044ff 50%, rgba(0, 68, 255, 0) 70%);
+    bottom: -20%;
+    right: -15%;
 }
 
 .vo-container {
@@ -83,6 +83,7 @@
     background: linear-gradient(90deg, #9e59ff 0%, #ff1b90 100%);
     /* Original Theme Gradient */
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     font-style: italic;
 }
@@ -112,8 +113,8 @@
     font-weight: 600;
     cursor: pointer;
     box-shadow:
-        0 8px 24px rgba(158, 89, 255, 0.3),
-        0 0 15px rgba(0, 102, 255, 0.2);
+        0 8px 24px rgba(0, 102, 255, 0.3),
+        0 0 15px rgba(6, 182, 212, 0.2);
     transition: all 0.3s ease;
     margin-bottom: 40px;
 }
@@ -149,6 +150,7 @@
     font-weight: 700;
     background: linear-gradient(135deg, #9e59ff 0%, #db2777 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
