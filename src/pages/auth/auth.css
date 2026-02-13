@@ -1,0 +1,216 @@
+ @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+ body {
+     margin: 0;
+     padding: 0;
+     background-color: #050505;
+     font-family: 'Poppins', sans-serif;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     height: 100vh;
+     color: white;
+ }
+
+ .page-wrapper {
+     margin-left: 5pc;
+     height: 100vh;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     font-family: 'Poppins', sans-serif;
+ }
+
+ .auth-card {
+     width: 900px;
+     height: 500px;
+     background: #000;
+     border: 2px solid #6a00ff;
+     border-radius: 12px;
+     box-shadow: 0 0 25px rgba(106, 0, 255, 0.5);
+     display: flex;
+     overflow: hidden;
+     position: relative;
+ }
+
+ .form-section {
+     width: 35%;
+     padding: 60px;
+     display: flex;
+     flex-direction: column;
+     justify-content: center;
+     color: white;
+     z-index: 2;
+ }
+
+ .title {
+     font-size: 2rem;
+     margin-bottom: 30px;
+     text-align: center;
+ }
+
+ .input-groupl {
+     margin-bottom: 20px;
+     border-bottom: 1px solid #444;
+ }
+
+ .input-groupl label {
+     color: #8a2be2;
+     font-size: 0.8rem;
+
+ }
+
+ .input-field {
+     display: flex;
+     align-items: center;
+     padding: 10px 0;
+ }
+
+ .input-field input {
+     background: transparent;
+     border: none;
+     outline: none;
+     color: white;
+     width: 100%;
+     font-size: 1rem;
+     font-family: 'Poppins', sans-serif;
+ }
+
+ .icon {
+     color: #ffffff;
+     background-color: #000;
+
+ }
+
+ .submit-btn {
+     width: 100%;
+     background: linear-gradient(90deg, #6a00ff, #8a2be2);
+     border: none;
+     border-radius: 25px;
+     color: white;
+     padding: 12px;
+     margin-top: 10px;
+     cursor: pointer;
+     font-weight: bold;
+     font-size: 1rem;
+     transition: transform 0.2s ease;
+ }
+
+ .submit-btn:hover {
+     transform: scale(1.02);
+     box-shadow: 0 0 15px rgba(138, 43, 226, 0.4);
+ }
+
+ .toggle-text {
+     margin-top: 20px;
+     font-size: 0.8rem;
+     color: #888;
+     text-align: center;
+ }
+
+ .link {
+     color: #8a2be2;
+     cursor: pointer;
+ }
+
+ .link:hover {
+     color: #9e6dcc;
+ }
+
+ /* Diagonal Section */
+ .info-section {
+     width: 40%;
+     position: absolute;
+     right: 0;
+     height: 100%;
+     background: linear-gradient(135deg, #4b0082, #8a2be2);
+     clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%);
+     display: flex;
+     align-items: center;
+     justify-content: flex-end;
+     padding: 40px;
+ }
+
+ .info-content {
+     color: white;
+     text-align: right;
+     max-width: 250px;
+     margin-bottom: 5pc;
+ }
+
+ .info-content h1 {
+     font-size: 2.5rem;
+     line-height: 1.1;
+     margin-bottom: 15px;
+ }
+
+ /***************************************/
+ .forgot-password-cardf {
+     width: 450px;
+     background: #000;
+     border: 2px solid #6a00ff;
+     border-radius: 12px;
+     box-shadow: 0 0 25px rgba(106, 0, 255, 0.5);
+     padding: 50px 40px;
+     text-align: center;
+ }
+
+ .title {
+     color: white;
+     font-size: 1.8rem;
+     margin-bottom: 10px;
+ }
+
+ .description {
+     color: #aaa;
+     font-size: 0.9rem;
+     line-height: 1.6;
+     margin-bottom: 30px;
+ }
+
+ .back-to-login {
+     margin-top: 25px;
+ }
+
+ .back-link {
+     color: #8a2be2;
+     text-decoration: none;
+     font-size: 0.9rem;
+     display: inline-flex;
+     align-items: center;
+     gap: 8px;
+     transition: opacity 0.2s;
+ }
+
+ .back-link:hover {
+     opacity: 0.8;
+ }
+
+ /*********************************/
+ .reset-password-card {
+     width: 450px;
+     background: #000;
+     border: 2px solid #6a00ff;
+     border-radius: 12px;
+     box-shadow: 0 0 25px rgba(106, 0, 255, 0.5);
+     padding: 50px 40px;
+     text-align: center;
+ }
+
+ .input-groupl {
+     margin-bottom: 25px;
+     border-bottom: 1px solid #444;
+     text-align: left;
+ }
+
+ @keyframes fadeIn {
+     from {
+         opacity: 0;
+         transform: translateY(10px);
+     }
+
+     to {
+         opacity: 1;
+         transform: translateY(0);
+     }
+ }
