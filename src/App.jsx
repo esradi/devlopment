@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import Navbar from './components/Navbar/Navbar';
 import Hero from './components/Hero/Hero';
@@ -8,19 +9,35 @@ import HowItWorks from './components/HowItWorks/HowItWorks';
 import Stories from './components/Testimonials/Testimonials';
 import ContactUs from './components/ContactUs/ContactUs';
 import Footer from './components/Footer/Footer';
+import Login from './pages/auth/login';
+import SignUp from './pages/auth/signup';
+import ForgotPassword from './pages/auth/forgotpassword';
+import ResetPassword from './pages/auth/resetpassword';
 import './App.css';
 
-function App() {
-  const [userRole, setUserRole] = useState('public');
+const LandingPage = ({ userRole }) => {
   const { scrollYProgress } = useScroll();
+  const location = useLocation();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
     restDelta: 0.001
   });
 
+  useEffect(() => {
+    if (location.state?.scrollTo) {
+      const element = document.getElementById(location.state.scrollTo);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   return (
-    <div className="app">
+    <>
       <motion.div
         className="progress-bar"
         style={{
@@ -30,38 +47,16 @@ function App() {
           left: 0,
           right: 0,
           height: '4px',
-          background: 'linear-gradient(90deg, #9e59ff 0%, #06b6d4 100%)',
+          background: 'linear-gradient(90deg, #9e59ff 0%, #db2777 100%)',
           transformOrigin: '0%',
           zIndex: 10000,
           boxShadow: '0 0 10px rgba(158, 89, 255, 0.5)'
         }}
       />
-      <Navbar role={userRole} />
-
-      {/* Debug Role Switcher - Kept as per "Delete Later" instruction */}
-      <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 9999 }}>
-        <select
-          value={userRole}
-          onChange={(e) => setUserRole(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '6px',
-            background: '#1f2937',
-            color: '#fff',
-            border: '1px solid #374151',
-            outline: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          <option value="public">View: Public</option>
-          <option value="student">View: Student</option>
-          <option value="company">View: Company</option>
-          <option value="admin">View: Admin</option>
-        </select>
-      </div>
 
       {/* Hero Section */}
       <motion.div
+        id="home"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -72,6 +67,7 @@ function App() {
 
       {/* Why Us Section */}
       <motion.div
+        id="about"
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
@@ -82,6 +78,7 @@ function App() {
 
       {/* Verified Opportunities Section */}
       <motion.div
+        id="opportunities"
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
@@ -92,6 +89,7 @@ function App() {
 
       {/* How It Works Section */}
       <motion.div
+        id="how-it-works"
         initial={{ opacity: 0, scale: 0.95 }}
         whileInView={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8 }}
@@ -102,6 +100,7 @@ function App() {
 
       {/* Stories Section */}
       <motion.div
+        id="stories"
         initial={{ opacity: 0, x: 100 }}
         whileInView={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, type: "spring" }}
@@ -112,6 +111,7 @@ function App() {
 
       {/* Contact Section */}
       <motion.div
+        id="contact"
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
@@ -119,10 +119,37 @@ function App() {
       >
         <ContactUs />
       </motion.div>
+    </>
+  );
+};
 
-      <Footer />
+function App() {
+  const [userRole, setUserRole] = useState('public');
+  const location = useLocation();
+  const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
+  const isAuthPage = authPaths.includes(location.pathname);
+
+  return (
+    <div className="app">
+      {!isAuthPage && <Navbar role={userRole} setUserRole={setUserRole} />}
+
+      <Routes>
+        <Route path="/" element={<LandingPage userRole={userRole} />} />
+        <Route path="/login" element={<Login setUserRole={setUserRole} />} />
+        <Route path="/signup" element={<SignUp setUserRole={setUserRole} />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+      </Routes>
+
+      {!isAuthPage && <Footer />}
     </div>
   );
 }
 
-export default App;
+const WrappedApp = () => (
+  <Router>
+    <App />
+  </Router>
+);
+
+export default WrappedApp;

@@ -1,9 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 
 const PublicNavbar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const scrollToSection = (sectionId) => {
+    if (location.pathname !== '/') {
+      navigate('/', { state: { scrollTo: sectionId } });
+      return;
+    }
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -17,21 +25,27 @@ const PublicNavbar = () => {
   return (
     <>
       <div className="logo-section">
-        <motion.a
-          href="#home"
+        <Link
+          to="/"
           className="logo"
-          onClick={(e) => { e.preventDefault(); scrollToSection('home'); }}
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          whileTap={{ scale: 0.95 }}
+          onClick={(e) => {
+            if (location.pathname === '/') {
+              e.preventDefault();
+              scrollToSection('home');
+            }
+          }}
         >
-          <img src={logo} alt="Logo" className="nav-logo-img" />
-        </motion.a>
+          <motion.div
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <img src={logo} alt="Logo" className="nav-logo-img" />
+          </motion.div>
+        </Link>
       </div>
       <div className="menu-section">
         <ul className="menu-list">
           {['Home', 'About Us', 'Opportunities', 'How it Works', 'Stories', 'Contact Us'].map((item) => {
-            const sectionId = item.toLowerCase().replace(/\s+/g, '-').replace('us', '').replace('it-', '').trim();
-            // Fixing ID mapping manually slightly better
             const ids = {
               'Home': 'home',
               'About Us': 'about',
@@ -44,12 +58,14 @@ const PublicNavbar = () => {
             return (
               <motion.li key={item} variants={linkVariants} whileHover="hover">
                 <a
-                  href={`#${ids[item]}`}
+                  href={`/#${ids[item]}`}
                   className="nav-link"
-                  onClick={(e) => { e.preventDefault(); scrollToSection(ids[item]); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection(ids[item]);
+                  }}
                 >
                   {item}
-                  {/* Animated Underline */}
                   <motion.span
                     className="nav-underline"
                     initial={{ width: 0 }}
@@ -68,15 +84,14 @@ const PublicNavbar = () => {
           })}
         </ul>
       </div>
-      <motion.a
-        href="#contact"
-        className="cta-menu-button"
-        onClick={(e) => { e.preventDefault(); scrollToSection('contact'); }}
+      <motion.div
         whileHover={{ scale: 1.05, boxShadow: "0 0 15px rgba(236, 72, 153, 0.5)" }}
         whileTap={{ scale: 0.95 }}
       >
-        Login
-      </motion.a>
+        <Link to="/login" className="cta-menu-button">
+          Login
+        </Link>
+      </motion.div>
     </>
   );
 };

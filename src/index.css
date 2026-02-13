@@ -14,19 +14,25 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: #050505;
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
-  /* Standardize landing for all sections */
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: flex-start;
-  /* Changed from center to allow normal flow */
-  min-width: 320px;
   min-height: 100vh;
+  display: block;
+  /* Standard flow */
 }
 
 h1 {

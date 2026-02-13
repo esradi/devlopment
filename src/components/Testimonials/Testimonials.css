@@ -17,6 +17,10 @@
     margin: 0 auto;
     padding: 0 40px;
     position: relative;
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.5),
+        0 0 35px rgba(158, 89, 255, 0.15),
+        0 0 20px rgba(0, 102, 255, 0.1);
     z-index: 10;
 }
 
@@ -97,7 +101,12 @@
     background: rgba(255, 255, 255, 0.05);
     border-bottom-color: #9e59ff;
     /* Changes to theme purple on hover */
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 0 25px rgba(158, 89, 255, 0.2),
+        /* Purple Glow */
+        0 0 15px rgba(0, 102, 255, 0.1);
+    /* Blue Glow */
 }
 
 /* Quote Circle (Top Right) */
@@ -113,7 +122,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4), 0 0 20px rgba(0, 102, 255, 0.4);
     z-index: 5;
 }
 
