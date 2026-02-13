@@ -4,7 +4,7 @@
     position: relative;
     min-height: 100vh;
     background: #050505;
-    padding: 20px 0;
+    padding: 8vh 0;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -71,13 +71,11 @@
 
 .contact-title-v2 {
     font-family: 'Playfair Display', serif;
-    font-size: 46px;
-    /* Reduced font size from 52px */
+    font-size: clamp(36px, 6vw, 46px);
     font-weight: 700;
     color: white;
     line-height: 1.1;
     margin-bottom: 35px;
-    /* Reduced margin from 50px */
 }
 
 .highlight-blue {
@@ -99,8 +97,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 50px;
     /* Highly rounded as in image */
-    padding: 14px 22px;
-    /* Reduced padding from 16px 25px */
+    padding: clamp(12px, 2vw, 14px) 22px;
     color: white;
     font-family: 'Inter', sans-serif;
     font-size: 15px;

@@ -12,7 +12,7 @@
 /* 1. Global fix for the 'shade' and screen size */
 .app {
   background-color: #050505;
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
   /* Fixes the 'bigger than screen' issue */
@@ -94,12 +94,10 @@
 
 /* Typography */
 .main-heading {
-  /* THE FONT: This serif style is key to the design's beauty */
   font-family: 'Playfair Display', serif;
-  /* THE SIZE: Reduced to match the professional proportions */
-  font-size: 3.8rem;
+  font-size: clamp(2.5rem, 8vw, 3.8rem);
+  /* Fluid Heading */
   font-weight: 700;
-  /* THE ORGANIZATION: Tight line-height makes it look like a unit */
   line-height: 1.05;
   margin-bottom: 1.5rem;
   color: #ffffff;
@@ -119,7 +117,7 @@
 
 .subheading {
   font-family: 'Inter', sans-serif;
-  font-size: 1.1rem;
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
   font-weight: 400;
   color: #b0b0b0;
   line-height: 1.6;

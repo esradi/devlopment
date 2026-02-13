@@ -4,7 +4,7 @@
     width: 100%;
     min-height: 100vh;
     background-color: #050505;
-    padding: 20px 0;
+    padding: 8vh 0;
     position: relative;
     overflow: hidden;
     color: white;
@@ -94,7 +94,7 @@
 
 .hiw-main-title {
     font-family: 'Inter', sans-serif;
-    font-size: 28px;
+    font-size: clamp(24px, 4vw, 28px);
     font-weight: 200;
     color: white;
     line-height: 1.1;
@@ -130,8 +130,7 @@
 /* ============ PROCESS FLOW ============ */
 .hiw-flow-wrapper {
     position: relative;
-    height: 240px;
-    /* Reduced from 320px */
+    height: clamp(200px, 35vh, 240px);
     width: 100%;
     margin-top: 10px;
 }
@@ -175,8 +174,7 @@
 }
 
 .hiw-circle-wrap.low {
-    transform: translateY(60px);
-    /* Reduced from 90px */
+    transform: translateY(clamp(40px, 8vh, 60px));
 }
 
 .hiw-circle-wrap.high {
@@ -185,10 +183,8 @@
 
 /* The Circle */
 .hiw-circle {
-    width: 100px;
-    /* Reduced from 120px */
-    height: 100px;
-    /* Reduced from 120px */
+    width: clamp(80px, 12vw, 100px);
+    height: clamp(80px, 12vw, 100px);
     background: linear-gradient(135deg, #c0b7e8 0%, #8176af 100%);
     border-radius: 50%;
     display: flex;

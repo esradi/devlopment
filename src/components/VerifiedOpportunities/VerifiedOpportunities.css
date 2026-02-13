@@ -3,7 +3,7 @@
 .verified-opportunities-section {
     min-height: 100vh;
     background-color: #050505;
-    padding: 20px 0;
+    padding: 8vh 0;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -72,11 +72,10 @@
 
 .vo-title {
     font-family: 'Playfair Display', serif;
-    font-size: 44px;
-    /* Reduced from 56px */
+    font-size: clamp(32px, 6vw, 44px);
     font-weight: 700;
     color: white;
-    line-height: 1.15;
+    line-height: 1.1;
     margin-bottom: 24px;
 }
 
@@ -90,8 +89,7 @@
 
 .vo-description {
     font-family: 'Inter', sans-serif;
-    font-size: 15px;
-    /* Reduced from 17px */
+    font-size: clamp(14px, 2vw, 15px);
     font-weight: 400;
     color: rgba(255, 255, 255, 0.75);
     line-height: 1.6;
@@ -171,8 +169,7 @@
 .vo-image-container {
     width: 100%;
     max-width: 600px;
-    height: 400px;
-    /* Reduced from 500px */
+    height: clamp(300px, 45vh, 400px);
     position: relative;
     border-radius: 20px;
     overflow: hidden;
