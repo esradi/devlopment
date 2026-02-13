@@ -27,7 +27,7 @@
 
 .main-heading {
     font-family: 'Playfair Display', serif;
-    font-size: 3.5rem;
+    font-size: clamp(2.5rem, 8vw, 3.5rem);
     font-weight: 700;
     line-height: 1.2;
     color: #fff;
@@ -43,7 +43,7 @@
 
 .subheading {
     font-family: 'Inter', sans-serif;
-    font-size: 1.1rem;
+    font-size: clamp(0.95rem, 2vw, 1.1rem);
     line-height: 1.6;
     color: rgba(255, 255, 255, 0.8);
     margin-bottom: 40px;

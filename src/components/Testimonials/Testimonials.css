@@ -3,7 +3,7 @@
 .stories-section {
     min-height: 100vh;
     background-color: #050505;
-    padding: 20px 0;
+    padding: 8vh 0;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -47,8 +47,7 @@
 
 .stories-title-centered {
     font-family: 'Playfair Display', serif;
-    font-size: 42px;
-    /* Reduced from 52px */
+    font-size: clamp(32px, 6vw, 42px);
     font-weight: 700;
     color: white;
     margin-bottom: 16px;
@@ -86,13 +85,11 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-bottom: 4px solid #9e59ff;
     border-radius: 20px 20px 0 20px;
-    padding: 24px;
-    /* Reduced from 30px */
+    padding: clamp(16px, 3vw, 24px);
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 280px;
-    /* Reduced from 320px */
+    min-height: clamp(250px, 35vh, 280px);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
