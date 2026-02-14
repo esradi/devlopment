@@ -3,7 +3,7 @@
 .hiw-section {
     width: 100%;
     min-height: 100vh;
-    background: linear-gradient(135deg, #4A148C 0%, #1A237E 100%);
+    background-color: #050505;
     padding: 8vh 0;
     position: relative;
     overflow: hidden;
@@ -13,31 +13,32 @@
     justify-content: center;
 }
 
-/* Atmosphere Glows per specs */
+/* Atmospheric Corner Glows */
 .hiw-section::before,
 .hiw-section::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(140px);
     z-index: 1;
+    opacity: 0.6;
     pointer-events: none;
 }
 
-/* Purple Glows (Left) */
+/* Purple Glow - Top Left */
 .hiw-section::before {
-    background:
-        radial-gradient(circle at 10% 85%, rgba(176, 38, 255, 0.4) 0%, transparent 60%),
-        radial-gradient(circle at 15% 15%, rgba(123, 31, 162, 0.3) 0%, transparent 50%);
-    filter: blur(80px);
+    background: radial-gradient(circle, #9e59ff 0%, #7c3aed 50%, rgba(124, 58, 237, 0) 70%);
+    top: -15%;
+    left: -10%;
 }
 
-/* Blue Glow (Right) */
+/* Blue Glow - Bottom Right */
 .hiw-section::after {
-    background: radial-gradient(circle at 90% 40%, rgba(30, 136, 229, 0.35) 0%, transparent 60%);
-    filter: blur(80px);
+    background: radial-gradient(circle, #0066ff 0%, #0044ff 50%, rgba(0, 68, 255, 0) 70%);
+    bottom: -15%;
+    right: -10%;
 }
 
 .hiw-container {
