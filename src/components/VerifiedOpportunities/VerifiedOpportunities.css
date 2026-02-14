@@ -34,14 +34,14 @@
 
 .vo-container {
     width: 100%;
-    max-width: 1600px;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: 0 60px;
+    padding: 0 clamp(20px, 5vw, 60px);
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 80px;
+    gap: clamp(40px, 6vw, 80px);
     position: relative;
     z-index: 10;
 }
@@ -226,7 +226,7 @@
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
     .vo-container {
         flex-direction: column;
         text-align: center;

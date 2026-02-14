@@ -15,9 +15,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    max-width: 1200px;
+    max-width: 1440px;
     width: 100%;
-    padding: 0 20px;
+    padding: 0 clamp(20px, 5vw, 60px);
 }
 
 .text-content {

@@ -34,16 +34,14 @@
 
 .why-us-container {
     width: 100%;
-    max-width: 1600px;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: 0 40px;
-    /* Reduced side padding slightly */
+    padding: 0 clamp(20px, 5vw, 60px);
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    gap: 40px;
-    /* Reduced gap */
+    gap: clamp(40px, 6vw, 100px);
     position: relative;
     z-index: 10;
 }
