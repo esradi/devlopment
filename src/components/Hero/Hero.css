@@ -27,11 +27,12 @@
 
 .main-heading {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(2.5rem, 8vw, 3.5rem);
+    font-size: clamp(2.5rem, 8vw, 3.8rem);
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.15;
     color: #fff;
     margin-bottom: 24px;
+    max-width: 800px;
 }
 
 .highlight {

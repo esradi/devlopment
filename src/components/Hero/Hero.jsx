@@ -52,8 +52,8 @@ const Hero = () => {
                     animate="visible"
                 >
                     <motion.h1 className="main-heading" variants={itemVariants}>
-                        Start matching to <br />
-                        land your <span className="highlight">dream <br /> internship</span>
+                        Start matching to land your <br />
+                        <span className="highlight">dream internship</span>
                     </motion.h1>
 
                     <motion.p className="subheading" variants={itemVariants}>
