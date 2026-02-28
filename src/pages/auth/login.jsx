@@ -1,18 +1,49 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import './auth.css';
 
 const Login = ({ setUserRole }) => {
     const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        // Simulate successful login
-        setUserRole('student');
-        navigate('/');
+        setLoading(true);
+        setError('');
+
+        try {
+            console.log('Attempting login for:', email);
+            const response = await fetch('http://127.0.0.1:8000/api/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            console.log('Response status:', response.status);
+            const data = await response.json();
+
+            if (response.ok) {
+                // Store tokens
+                localStorage.setItem('access_token', data.tokens.access);
+                localStorage.setItem('refresh_token', data.tokens.refresh);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                setUserRole(data.user.role || 'student');
+                navigate('/');
+            } else {
+                setError(data.non_field_errors?.[0] || data.error || data.detail || 'Invalid email or password');
+            }
+        } catch (err) {
+            setError('Failed to connect to the server. Please check if the backend is running.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -36,28 +67,48 @@ const Login = ({ setUserRole }) => {
                         <div className="input-groupl">
                             <label>Email Address</label>
                             <div className="input-field">
-                                <input type="email" placeholder="Enter your email" required />
-                                <User size={18} className="icon" />
+                                <input
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                                <Mail size={18} className="icon" />
                             </div>
                         </div>
                         <div className="input-groupl">
                             <label>Password</label>
                             <div className="input-field">
-                                <input type="password" placeholder="••••••••" required />
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
                                 <Lock size={18} className="icon" />
                             </div>
                         </div>
-                        <Link to="/forgot-password" core-style="forgot-link">
-                            Forgot Password?
-                        </Link>
-                        <button type="submit" className="submit-btn" style={{ marginBottom: '20px' }}>Sign In</button>
+
+                        <div style={{ textAlign: 'right', marginBottom: '15px' }}>
+                            <Link to="/forgot-password" style={{ color: '#ff1b90', textDecoration: 'none', fontSize: '0.85rem', fontWeight: '600' }}>
+                                Forgot Password?
+                            </Link>
+                        </div>
+
+                        {error && <p className="error-msg" style={{ color: '#ff4d4d', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>{error}</p>}
+
+                        <button type="submit" className="submit-btn" disabled={loading}>
+                            {loading ? <Loader2 className="animate-spin" size={20} style={{ margin: '0 auto' }} /> : 'Sign In'}
+                        </button>
                     </form>
                     <p className="toggle-text">
                         Don't have an account? <Link to="/signup" className="link">Register here</Link>
                     </p>
                 </div>
 
-                {/* Right Side: Purple Slant (Hidden on mobile) */}
+                {/* Right Side: Info Section */}
                 <div className="info-section login-info">
                     <div className="info-content">
                         <motion.h1
