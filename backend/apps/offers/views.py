@@ -98,6 +98,27 @@ class OfferDetailView(APIView):
         serializer = OfferSerializer(offer, context={'request': request})
         return Response(serializer.data)
 
+    def put(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        # Check permissions: Only owner (Company) or Admin
+        if request.user.role != 'admin' and offer.company.user != request.user:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            
+        serializer = OfferSerializer(offer, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        # Check permissions: Only owner (Company) or Admin
+        if request.user.role != 'admin' and offer.company.user != request.user:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            
+        offer.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 class ToggleFavoriteView(APIView):
     permission_classes = [IsStudent]
 
