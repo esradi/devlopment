@@ -5,7 +5,6 @@ import pcImage from '../../assets/pc.jpg';
 import './VerifiedOpportunities.css';
 
 const VerifiedOpportunities = () => {
-
     return (
         <section id="opportunities" className="verified-opportunities-section">
             <div className="vo-container">
@@ -28,10 +27,7 @@ const VerifiedOpportunities = () => {
                         Every offer is validated by universities to ensure quality and compliance with academic requirements.
                     </p>
 
-                    <button className="vo-btn" onClick={() => {
-                        const element = document.getElementById('about');
-                        if (element) element.scrollIntoView({ behavior: 'smooth' });
-                    }}>
+                    <button className="vo-btn">
                         <span>Discover More</span>
                         <span className="arrow">→</span>
                     </button>

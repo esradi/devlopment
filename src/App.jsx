@@ -13,7 +13,6 @@ import Login from './pages/auth/login';
 import SignUp from './pages/auth/signup';
 import ForgotPassword from './pages/auth/forgotpassword';
 import ResetPassword from './pages/auth/resetpassword';
-import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 const LandingPage = ({ userRole }) => {
@@ -125,17 +124,7 @@ const LandingPage = ({ userRole }) => {
 };
 
 function App() {
-  const [userRole, setUserRole] = useState(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      try {
-        return JSON.parse(user).role || 'public';
-      } catch (e) {
-        return 'public';
-      }
-    }
-    return 'public';
-  });
+  const [userRole, setUserRole] = useState('public');
   const location = useLocation();
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
   const isAuthPage = authPaths.includes(location.pathname);
@@ -150,7 +139,6 @@ function App() {
         <Route path="/signup" element={<SignUp setUserRole={setUserRole} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        {/* Protected Routes placeholder */}
       </Routes>
 
       {!isAuthPage && <Footer />}

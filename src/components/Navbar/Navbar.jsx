@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Menu, X, MessageSquare, Bell, User } from 'lucide-react';
+import { Menu, X, LayoutDashboard, MessageSquare, Bell, User } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import './Navbar.css';
@@ -37,44 +37,9 @@ const Navbar = ({ role, setUserRole }) => {
         }
     };
 
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error('Failed to parse user from localStorage');
-            }
-        }
-    }, [role, location.pathname]);
-
-    const handleLogout = async () => {
-        try {
-            const refresh = localStorage.getItem('refresh_token');
-            const access = localStorage.getItem('access_token');
-
-            if (refresh && access) {
-                await fetch('http://127.0.0.1:8000/api/logout/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${access}`
-                    },
-                    body: JSON.stringify({ refresh })
-                });
-            }
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('userRole');
-            setUserRole('public');
-            navigate('/');
-        }
+    const handleLogout = () => {
+        setUserRole('public');
+        navigate('/');
     };
 
     const navbarBackground = useTransform(
@@ -92,9 +57,44 @@ const Navbar = ({ role, setUserRole }) => {
         { label: 'Contact Us', id: 'contact' }
     ];
 
+    const dashboardLinks = {
+        student: [
+            { label: 'Dashboard', path: '/student/dashboard' },
+            { label: 'Challenges', path: '/student/challenges' },
+            { label: 'Offers', path: '/browse-offers' },
+            { label: 'Buddies', path: '/student/buddies' }
+        ],
+        company: [
+            { label: 'Dashboard', path: '/company/dashboard' },
+            { label: 'Offers', path: '/company/offers' },
+            { label: 'Candidates', path: '/company/candidates' },
+            { label: 'Interviews', path: '/company/interviews' }
+        ],
+        admin: [
+            { label: 'Dashboard', path: '/admin/dashboard' },
+            { label: 'Validation', path: '/admin/validation' },
+            { label: 'Users', path: '/admin/users' },
+            { label: 'Stats', path: '/admin/stats' }
+        ]
+    };
+
+    const isDashboardView = location.pathname.includes('/dashboard') ||
+        location.pathname.includes('/student/') ||
+        location.pathname.includes('/company/') ||
+        location.pathname.includes('/admin/');
+
+    const getDashboardLink = () => {
+        switch (role) {
+            case 'student': return '/student/dashboard';
+            case 'company': return '/company/dashboard';
+            case 'admin': return '/admin/dashboard';
+            default: return '/';
+        }
+    };
+
     const getProfileColor = () => {
         switch (role) {
-            case 'student': return '#C026D3'; // Matches your theme
+            case 'student': return '#3b82f6';
             case 'company': return '#10b981';
             case 'admin': return '#f59e0b';
             default: return '#9333ea';
@@ -102,22 +102,11 @@ const Navbar = ({ role, setUserRole }) => {
     };
 
     const getProfileName = () => {
-        if (user && (user.first_name || user.fullName)) {
-            // Priority to split first_name/last_name from backend
-            const firstName = user.first_name || user.fullName?.split(' ')[0] || '';
-            const lastName = user.last_name || user.fullName?.split(' ')[1] || '';
-
-            const firstChar = firstName ? firstName.charAt(0).toUpperCase() : '';
-            const lastChar = lastName ? lastName.charAt(0).toUpperCase() : '';
-
-            return firstChar + lastChar || user.email.charAt(0).toUpperCase();
-        }
-
         switch (role) {
-            case 'student': return 'ST';
-            case 'company': return 'CO';
-            case 'admin': return 'AD';
-            default: return 'U';
+            case 'student': return 'JD';
+            case 'company': return 'Tech';
+            case 'admin': return 'Admin';
+            default: return 'User';
         }
     };
 
@@ -149,20 +138,32 @@ const Navbar = ({ role, setUserRole }) => {
                 {/* CENTRAL MENU */}
                 <div className="menu-section">
                     <ul className="menu-list">
-                        {publicLinks.map((link) => (
-                            <li key={link.id}>
-                                <a
-                                    href={`/#${link.id}`}
-                                    className="nav-link"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        scrollToSection(link.id);
-                                    }}
-                                >
-                                    {link.label}
-                                </a>
-                            </li>
-                        ))}
+                        {!isDashboardView ? (
+                            // Public / Landing Page Links
+                            publicLinks.map((link) => (
+                                <li key={link.id}>
+                                    <a
+                                        href={`/#${link.id}`}
+                                        className="nav-link"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            scrollToSection(link.id);
+                                        }}
+                                    >
+                                        {link.label}
+                                    </a>
+                                </li>
+                            ))
+                        ) : (
+                            // Role-Specific Dashboard Links
+                            dashboardLinks[role]?.map((link) => (
+                                <li key={link.path}>
+                                    <Link to={link.path} className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}>
+                                        {link.label}
+                                    </Link>
+                                </li>
+                            ))
+                        )}
                     </ul>
                 </div>
 
@@ -170,6 +171,9 @@ const Navbar = ({ role, setUserRole }) => {
                 <div className="actions-section">
                     {role !== 'public' ? (
                         <div className="auth-actions">
+                            <Link to={getDashboardLink()} className="action-icon" title="Dashboard">
+                                <LayoutDashboard size={20} />
+                            </Link>
                             <Link to="/messages" className="action-icon" title="Messages">
                                 <MessageSquare size={20} />
                             </Link>
@@ -237,13 +241,23 @@ const Navbar = ({ role, setUserRole }) => {
                         exit={{ opacity: 0, y: -20 }}
                     >
                         <ul className="mobile-menu-list">
-                            {publicLinks.map((link) => (
-                                <li key={link.id}>
-                                    <a href={`/#${link.id}`} onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>
-                                        {link.label}
-                                    </a>
-                                </li>
-                            ))}
+                            {!isDashboardView ? (
+                                publicLinks.map((link) => (
+                                    <li key={link.id}>
+                                        <a href={`/#${link.id}`} onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>
+                                            {link.label}
+                                        </a>
+                                    </li>
+                                ))
+                            ) : (
+                                dashboardLinks[role]?.map((link) => (
+                                    <li key={link.path}>
+                                        <Link to={link.path} onClick={() => setIsMobileMenuOpen(false)}>
+                                            {link.label}
+                                        </Link>
+                                    </li>
+                                ))
+                            )}
 
                             {role !== 'public' && (
                                 <>
