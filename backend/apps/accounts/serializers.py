@@ -2,12 +2,46 @@ from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from .models import User, Student, Company, AdminProfile
-from .utils import generate_verification_code, send_verification_email
+from apps.api.utils import generate_verification_code, send_verification_email
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'phone', 'role', 'created_at']
+        fields = ['id', 'email', 'phone', 'role', 'first_name', 'last_name', 'created_at', 'email_verified']
+
+class StudentProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = '__all__'
+
+class CompanyProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = '__all__'
+
+class AdminProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdminProfile
+        fields = '__all__'
+
+class MeSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'role', 'first_name', 'last_name', 'phone', 'email_verified', 'profile']
+
+    def get_profile(self, obj):
+        if obj.role == 'student':
+            profile = getattr(obj, 'student_profile', None)
+            return StudentProfileSerializer(profile).data if profile else None
+        elif obj.role == 'company':
+            profile = getattr(obj, 'company_profile', None)
+            return CompanyProfileSerializer(profile).data if profile else None
+        elif obj.role == 'admin':
+            profile = getattr(obj, 'admin_profile', None)
+            return AdminProfileSerializer(profile).data if profile else None
+        return None
 
 class RegisterSerializer(serializers.Serializer):
     # Common Fields
@@ -114,7 +148,6 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"email": "Failed to send verification email. Please check server SMTP settings or use a valid App Password."})
         
         if role == 'student':
-            from .models import Student
             Student.objects.create(
                 user=user,
                 first_name=first_name,
@@ -123,13 +156,11 @@ class RegisterSerializer(serializers.Serializer):
                 cv=cv
             )
         elif role == 'company':
-            from .models import Company
             Company.objects.create(
                 user=user,
                 **company_fields
             )
         elif role == 'admin':
-            from .models import AdminProfile
             AdminProfile.objects.create(
                 user=user,
                 admin_role=admin_role_input
@@ -205,3 +236,15 @@ class ResetPasswordSerializer(serializers.Serializer):
 class VerifyEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6)
+
+class StudentBrowseSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+    phone = serializers.CharField(source='user.phone', read_only=True)
+    
+    class Meta:
+        model = Student
+        fields = [
+            'id', 'first_name', 'last_name', 'email', 'phone', 
+            'university', 'domain', 'speciality', 'academic_year', 
+            'gpa', 'profile_picture', 'profile_completeness'
+        ]

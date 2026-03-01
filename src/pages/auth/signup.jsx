@@ -176,6 +176,17 @@ function SignUp({ setUserRole }) {
             const result = await response.json();
 
             if (response.ok) {
+                // Store tokens and user info for immediate login
+                if (result.user && result.tokens) {
+                    localStorage.setItem('access_token', result.tokens.access);
+                    localStorage.setItem('refresh_token', result.tokens.refresh);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+
+                    // Update global state if available (from props)
+                    if (typeof setUserRole === 'function') {
+                        setUserRole(result.user.role);
+                    }
+                }
                 setStep(step + 1);
             } else {
                 setErrors({ code: result.error || 'Invalid verification code' });

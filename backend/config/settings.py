@@ -52,8 +52,11 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 
+    'apps.accounts',
+    'apps.offers',
     'apps.api',  # our app
 ]
 
@@ -167,7 +170,7 @@ CORS_ALLOW_CREDENTIALS = True
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-AUTH_USER_MODEL = 'api.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 # --- EMAIL SETTINGS ---
 # Option 1: Console Mode (Fastest for testing - code appears in terminal)

@@ -7,10 +7,14 @@ from .serializers import (
     RegisterSerializer, LoginSerializer, UserSerializer,
     ForgotPasswordSerializer, ResetPasswordSerializer, VerifyEmailSerializer,
     ChangePasswordSerializer, UserUpdateSerializer, StudentUpdateSerializer,
-    CompanyUpdateSerializer, AdminProfileUpdateSerializer
+    CompanyUpdateSerializer, AdminProfileUpdateSerializer,
+    StudentBrowseSerializer, MeSerializer
 )
 from .models import User, Student, Company, AdminProfile
-from .utils import generate_verification_code, send_verification_email, send_password_reset_email
+from apps.api.utils import generate_verification_code, send_verification_email, send_password_reset_email
+from apps.api.permissions import IsStudent, IsCompany, IsUniversityAdmin, IsOwnerOrAdmin
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 
 def get_tokens(user):
     refresh = RefreshToken.for_user(user)
@@ -22,7 +26,7 @@ def get_tokens(user):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-    serializer = RegisterSerializer(data=request.data) # DRF combines data and FILES if multipart
+    serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
         tokens = get_tokens(user)
@@ -53,6 +57,15 @@ def get_user_profile(request):
     serializer = UserSerializer(request.user)
     return Response(serializer.data)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_me(request):
+    """
+    Returns the current user's profile and role-specific data.
+    """
+    serializer = MeSerializer(request.user)
+    return Response(serializer.data)
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_email(request):
@@ -63,9 +76,14 @@ def verify_email(request):
         try:
             user = User.objects.get(email=email, verification_code=code)
             user.email_verified = True
-            user.verification_code = None # Clear code after verification
+            user.verification_code = None
             user.save()
-            return Response({'message': 'Email verified successfully'})
+            tokens = get_tokens(user)
+            return Response({
+                'message': 'Email verified successfully',
+                'user': UserSerializer(user).data,
+                'tokens': tokens
+            })
         except User.DoesNotExist:
             return Response({'error': 'Invalid code or email'}, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -93,16 +111,14 @@ def forgot_password(request):
         email = serializer.validated_data['email']
         try:
             user = User.objects.get(email=email)
-            # Use same 6-digit code logic for simpler reset in this implementation
             user.verification_code = generate_verification_code()
             user.save()
             
             if send_password_reset_email(user.email, user.verification_code):
                 return Response({'message': 'Password reset code sent to your email'})
             else:
-                return Response({'error': 'Backend failed to send email. Check SMTP settings.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({'error': 'Backend failed to send email'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except User.DoesNotExist:
-            # Don't reveal if user exists for security, or keep it simple for now
             return Response({'message': 'If an account exists, a reset code was sent'})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -127,16 +143,16 @@ def reset_password_confirm(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout(request):
-    """
-    Simulated logout. Frontend should delete tokens.
-    Blacklisting disabled due to MariaDB 10.4 compatibility.
-    """
-    return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def google_auth_placeholder(request):
-    return Response({'message': 'Google Social Auth endpoint ready for integration'}, status=status.HTTP_200_OK)
+    try:
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
@@ -149,7 +165,6 @@ def update_profile(request):
     
     user_serializer.save()
     
-    # Update role-specific profile
     if user.role == 'student':
         student = getattr(user, 'student_profile', None)
         if student:
@@ -186,3 +201,30 @@ def change_password(request):
 def delete_account(request):
     request.user.delete()
     return Response({'message': 'Account deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+class StudentListView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        if request.user.role not in ['company', 'admin']:
+            return Response({'error': 'Only companies and admins can browse students'}, status=status.HTTP_403_FORBIDDEN)
+            
+        students = Student.objects.all().order_by('-profile_completeness')
+        serializer = StudentBrowseSerializer(students, many=True)
+        return Response(serializer.data)
+
+class StudentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        if request.user.role not in ['company', 'admin']:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            
+        student = get_object_or_404(Student, pk=pk)
+        serializer = StudentBrowseSerializer(student)
+        return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def google_auth_placeholder(request):
+    return Response({'message': 'Google Social Auth endpoint ready for integration'}, status=status.HTTP_200_OK)

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
@@ -7,10 +7,12 @@ import './auth.css';
 
 const Login = ({ setUserRole }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -34,9 +36,9 @@ const Login = ({ setUserRole }) => {
                 localStorage.setItem('refresh_token', data.tokens.refresh);
                 localStorage.setItem('user', JSON.stringify(data.user));
 
-                setUserRole(data.user.role || 'student');
                 navigate('/');
-            } else {
+            }
+            else {
                 setError(data.non_field_errors?.[0] || data.error || data.detail || 'Invalid email or password');
             }
         } catch (err) {

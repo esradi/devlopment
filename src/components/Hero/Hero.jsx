@@ -67,6 +67,10 @@ const Hero = () => {
                             className="cta-button"
                             whileHover={{ scale: 1.05, boxShadow: "0 0 25px rgba(139, 92, 246, 0.5)" }}
                             whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                                const element = document.getElementById('about');
+                                if (element) element.scrollIntoView({ behavior: 'smooth' });
+                            }}
                         >
                             LEARN MORE
                         </motion.button>
