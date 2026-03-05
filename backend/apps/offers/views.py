@@ -44,7 +44,9 @@ class OfferListCreateView(APIView):
                 
                 query = Q()
                 if ids: query |= Q(locations__id__in=ids)
-                if names: query |= Q(locations__name__icontains=names[0]) if names else Q()
+                if names: 
+                    # Search in both Location model and wilaya field
+                    query |= Q(locations__name__icontains=names[0]) | Q(wilaya__icontains=names[0])
                 qs = qs.filter(query)
             
             if types:
@@ -172,12 +174,14 @@ class OfferMetadataView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        from .serializers import DomainSerializer, LocationSerializer, OfferTypeSerializer, DurationOptionSerializer
+        from .serializers import DomainSerializer, LocationSerializer, OfferTypeSerializer, DurationOptionSerializer, SkillSerializer
+        from .models import Domain, Location, OfferType, DurationOption, Skill
         
         data = {
             "domains": DomainSerializer(Domain.objects.all(), many=True).data,
             "locations": LocationSerializer(Location.objects.all(), many=True).data,
             "offer_types": OfferTypeSerializer(OfferType.objects.all(), many=True).data,
             "durations": DurationOptionSerializer(DurationOption.objects.all().order_by('months'), many=True).data,
+            "skills": SkillSerializer(Skill.objects.all(), many=True).data,
         }
         return Response(data)

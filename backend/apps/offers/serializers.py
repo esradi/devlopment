@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Offer, FavoriteOffer, Domain, Location, OfferType, DurationOption
+from .models import Offer, FavoriteOffer, Domain, Location, OfferType, DurationOption, Skill
 
 class DomainSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,6 +21,11 @@ class DurationOptionSerializer(serializers.ModelSerializer):
         model = DurationOption
         fields = ['id', 'months']
 
+class SkillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Skill
+        fields = ['id', 'name']
+
 class OfferSerializer(serializers.ModelSerializer):
     company_name = serializers.ReadOnlyField(source='company.company_name')
     company_logo = serializers.ImageField(source='company.logo', read_only=True)
@@ -31,6 +36,7 @@ class OfferSerializer(serializers.ModelSerializer):
     locations = LocationSerializer(many=True, read_only=True)
     offer_types = OfferTypeSerializer(many=True, read_only=True)
     durations = DurationOptionSerializer(many=True, read_only=True)
+    skills = SkillSerializer(many=True, read_only=True)
     
     # Primary Key handles for POST/PATCH
     domain_ids = serializers.PrimaryKeyRelatedField(
@@ -45,6 +51,11 @@ class OfferSerializer(serializers.ModelSerializer):
     duration_ids = serializers.PrimaryKeyRelatedField(
         queryset=DurationOption.objects.all(), many=True, write_only=True, source='durations'
     )
+    skill_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Skill.objects.all(), many=True, write_only=True, source='skills'
+    )
+
+    match_score = serializers.SerializerMethodField()
 
     class Meta:
         model = Offer
@@ -52,7 +63,9 @@ class OfferSerializer(serializers.ModelSerializer):
             'id', 'company', 'company_name', 'company_logo', 'title', 
             'description', 'domains', 'domain_ids', 'locations', 'location_ids',
             'offer_types', 'offer_type_ids', 'durations', 'duration_ids',
-            'status', 'requirements', 'salary', 'is_favorite', 'created_at', 'updated_at'
+            'skills', 'skill_ids',
+            'status', 'requirements', 'salary', 'is_favorite', 'match_score', 
+            'wilaya', 'created_at', 'updated_at'
         ]
         read_only_fields = ['company', 'created_at', 'updated_at']
 
@@ -61,6 +74,19 @@ class OfferSerializer(serializers.ModelSerializer):
         if user and user.is_authenticated and user.role == 'student':
             return FavoriteOffer.objects.filter(user=user, offer=obj).exists()
         return False
+
+    def get_match_score(self, obj):
+        user = self.context.get('request').user if self.context.get('request') else None
+        if user and user.is_authenticated and user.role == 'student':
+            from apps.matching.services import MatchingService
+            try:
+                student = getattr(user, 'student_profile', None)
+                if student:
+                    match_data = MatchingService.calculate_match_score(student.id, obj.id)
+                    return match_data.get('total_score', 0)
+            except Exception:
+                pass
+        return 0
 
 class FavoriteOfferSerializer(serializers.ModelSerializer):
     offer_details = OfferSerializer(source='offer', read_only=True)

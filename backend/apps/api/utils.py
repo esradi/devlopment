@@ -34,3 +34,4 @@ def send_password_reset_email(email, token):
     except Exception as e:
         print(f"Error sending password reset email: {e}")
         return False
+

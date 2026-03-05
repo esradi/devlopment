@@ -14,13 +14,26 @@ import pymysql
 pymysql.version_info = (2, 2, 1, "final", 0)  # Bypass Django 6.0 mysqlclient version check
 pymysql.install_as_MySQLdb()
 
+from django.db.backends.mysql.features import DatabaseFeatures
+DatabaseFeatures.can_return_rows_from_bulk_insert = False
+DatabaseFeatures.can_return_columns_from_insert = False
+DatabaseFeatures.supports_column_rename = property(lambda self: False)
+
+# Patch for MariaDB 10.4: replace RENAME COLUMN with CHANGE COLUMN
+from django.db.backends.mysql.schema import DatabaseSchemaEditor
+def patched_rename_field_sql(self, table, old_field, new_field, new_type):
+    return "ALTER TABLE %s CHANGE %s %s %s" % (
+        self.quote_name(table),
+        self.quote_name(old_field.column),
+        self.quote_name(new_field.column),
+        new_type,
+    )
+DatabaseSchemaEditor._rename_field_sql = patched_rename_field_sql
+
 # Bypass Django 6.0 MariaDB >= 10.6 version check and RETURNING syntax issue
 from django.db.backends.base.base import BaseDatabaseWrapper
 BaseDatabaseWrapper.check_database_version_supported = lambda self: None
 
-from django.db.backends.mysql.features import DatabaseFeatures
-DatabaseFeatures.can_return_rows_from_bulk_insert = False
-DatabaseFeatures.can_return_columns_from_insert = False
 # Then continue with the rest of settings.py...
 from pathlib import Path
 

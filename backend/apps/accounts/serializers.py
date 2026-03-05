@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
-from .models import User, Student, Company, AdminProfile
+from .models import User, Student, Company, AdminProfile, StudentSkill
+from apps.offers.models import Skill
 from apps.api.utils import generate_verification_code, send_verification_email
 
 class UserSerializer(serializers.ModelSerializer):
@@ -9,7 +10,18 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'phone', 'role', 'first_name', 'last_name', 'created_at', 'email_verified']
 
+class StudentSkillSerializer(serializers.ModelSerializer):
+    skill_name = serializers.ReadOnlyField(source='skill.name')
+    class Meta:
+        model = StudentSkill
+        fields = ['id', 'skill', 'skill_name', 'is_verified']
+
 class StudentProfileSerializer(serializers.ModelSerializer):
+    skills = StudentSkillSerializer(source='studentskill_set', many=True, read_only=True)
+    skill_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Skill.objects.all(), many=True, write_only=True, source='skills', required=False
+    )
+    
     class Meta:
         model = Student
         fields = '__all__'
@@ -54,7 +66,12 @@ class RegisterSerializer(serializers.Serializer):
 
     # Student Specific
     interest = serializers.CharField(required=False, allow_blank=True) # Speciality
+    domain = serializers.CharField(required=False, allow_blank=True) # Alias for interest
     cv = serializers.FileField(required=False, allow_null=True)
+    skill_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Skill.objects.all(), many=True, required=False
+    )
+    wilaya = serializers.CharField(required=False, allow_blank=True)
 
     # Company Specific
     company_name = serializers.CharField(required=False, allow_blank=True)
@@ -106,7 +123,12 @@ class RegisterSerializer(serializers.Serializer):
 
         # Pop role-specific fields
         interest = validated_data.pop('interest', '')
+        # Allow domain as an alias for interest (used by frontend)
+        if not interest:
+            interest = validated_data.pop('domain', '')
+            
         cv = validated_data.pop('cv', None)
+        skill_ids = validated_data.pop('skill_ids', [])
         admin_role_input = validated_data.pop('admin_role', '')
 
         # Company fields pop
@@ -148,13 +170,30 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"email": "Failed to send verification email. Please check server SMTP settings or use a valid App Password."})
         
         if role == 'student':
-            Student.objects.create(
+            # Mapping: speciality -> parent domain
+            SPECIALITY_TO_DOMAIN = {
+                'Computer Science': 'Engineering',
+                'GP': 'Engineering',
+                'ST': 'Engineering',
+                'Polytechnique': 'Engineering',
+                'Medicine': 'Scientific',
+                'Pharmacy': 'Scientific',
+                'Biology': 'Scientific',
+                'English Literature': 'Humanities',
+            }
+            derived_domain = SPECIALITY_TO_DOMAIN.get(interest, interest)  # fallback to interest if not mapped
+
+            student = Student.objects.create(
                 user=user,
                 first_name=first_name,
                 last_name=last_name,
-                domain=interest,
-                cv=cv
+                speciality=interest,        # e.g. "Computer Science"
+                domain=derived_domain,      # e.g. "Engineering"
+                cv=cv,
+                wilaya=validated_data.get('wilaya', '')
             )
+            if skill_ids:
+                student.skills.set(skill_ids)
         elif role == 'company':
             Company.objects.create(
                 user=user,
@@ -184,9 +223,15 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'phone']
 
 class StudentUpdateSerializer(serializers.ModelSerializer):
+    from apps.offers.serializers import SkillSerializer
+    skills = SkillSerializer(many=True, read_only=True)
+    skill_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Skill.objects.all(), many=True, write_only=True, source='skills', required=False
+    )
+    
     class Meta:
         model = Student
-        fields = ['domain', 'cv']
+        fields = ['domain', 'cv', 'skills', 'skill_ids', 'wilaya']
 
 class CompanyUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -240,11 +285,13 @@ class VerifyEmailSerializer(serializers.Serializer):
 class StudentBrowseSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     phone = serializers.CharField(source='user.phone', read_only=True)
+    from apps.offers.serializers import SkillSerializer
+    skills = SkillSerializer(many=True, read_only=True)
     
     class Meta:
         model = Student
         fields = [
             'id', 'first_name', 'last_name', 'email', 'phone', 
             'university', 'domain', 'speciality', 'academic_year', 
-            'gpa', 'profile_picture', 'profile_completeness'
+            'gpa', 'profile_picture', 'profile_completeness', 'skills'
         ]

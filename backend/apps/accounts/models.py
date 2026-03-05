@@ -39,12 +39,27 @@ class Student(models.Model):
     cv = models.FileField(upload_to='cvs/', null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     profile_completeness = models.IntegerField(default=30)
+    skills = models.ManyToManyField('offers.Skill', through='StudentSkill', related_name='students', blank=True)
+    wilaya = models.CharField(max_length=100, blank=True, null=True)
     
     class Meta:
         db_table = 'api_student'
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+class StudentSkill(models.Model):
+    """Bridge model for Student and Skill to track verification"""
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    skill = models.ForeignKey('offers.Skill', on_delete=models.CASCADE)
+    is_verified = models.BooleanField(default=False)
+    
+    class Meta:
+        db_table = 'api_studentskill'
+        unique_together = ('student', 'skill')
+
+    def __str__(self):
+        return f"{self.student} - {self.skill.name} ({'Verified' if self.is_verified else 'Declared'})"
 
 
 class Company(models.Model):
