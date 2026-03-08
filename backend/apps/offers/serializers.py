@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import Offer, FavoriteOffer, Domain, Location, OfferType, DurationOption, Skill
+from .models import (
+    Offer, Domain, Location, OfferType, DurationOption, Skill,
+    FavoriteOffer, Application
+)
 
 class DomainSerializer(serializers.ModelSerializer):
     class Meta:
@@ -99,3 +102,15 @@ class OfferStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offer
         fields = ['status']
+
+class ApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = ['id', 'student', 'offer', 'company', 'status', 'cover_letter', 'created_at', 'updated_at']
+        read_only_fields = ['company', 'status', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        offer = data.get('offer')
+        if offer:
+            data['company'] = offer.company
+        return data

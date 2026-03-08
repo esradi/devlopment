@@ -100,3 +100,25 @@ class FavoriteOffer(models.Model):
 
     def __str__(self):
         return f"{self.user.email} likes {self.offer.title}"
+
+class Application(models.Model):
+    """Student application to an Offer"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+    ]
+    student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE, related_name='applications')
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='applications')
+    company = models.ForeignKey('accounts.Company', on_delete=models.CASCADE, related_name='applications')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    cover_letter = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'api_application'
+        unique_together = ('student', 'offer')
+
+    def __str__(self):
+        return f"{self.student} -> {self.offer.title} ({self.get_status_display()})"

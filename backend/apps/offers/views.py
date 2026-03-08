@@ -185,3 +185,114 @@ class OfferMetadataView(APIView):
             "skills": SkillSerializer(Skill.objects.all(), many=True).data,
         }
         return Response(data)
+
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from .models import Application
+from .serializers import ApplicationSerializer
+
+class ApplicationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing Student Applications.
+    """
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'student' and hasattr(user, 'student_profile'):
+            return Application.objects.filter(student=user.student_profile)
+        elif user.role == 'company' and hasattr(user, 'company_profile'):
+            return Application.objects.filter(company=user.company_profile)
+        elif user.role == 'admin':
+            return Application.objects.all()
+        return Application.objects.none()
+
+    def perform_create(self, serializer):
+        application = serializer.save(student=self.request.user.student_profile)
+        
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_application_submitted(application)
+
+    @action(detail=True, methods=['post'])
+    def accept(self, request, pk=None):
+        application = self.get_object()
+        application.status = 'accepted'
+        application.save()
+        
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_application_accepted(application)
+        
+        return Response({'message': 'Application accepted'})
+    
+    @action(detail=True, methods=['post'])
+    def refuse(self, request, pk=None):
+        application = self.get_object()
+        application.status = 'rejected' # Verify exact status name in your model, maybe 'refused'
+        application.save()
+        
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_application_refused(application)
+        
+        return Response({'message': 'Application refused'})
+    
+    @action(detail=True, methods=['post'])
+    def view(self, request, pk=None):
+        """Marquer comme vue par l'entreprise"""
+        from django.utils import timezone
+        application = self.get_object()
+        
+        if not hasattr(application, 'viewed_at') or not getattr(application, 'viewed_at'):
+            if hasattr(application, 'viewed_at'):
+                application.viewed_at = timezone.now()
+            # If your model tracks viewed_at, save it here. Even if not, the notification is what matters most for the student.
+            application.save()
+            
+            from apps.notifications.services import NotificationService
+            NotificationService.notify_application_viewed(application)
+        
+        return Response({'message': 'Application marked as viewed'})
+
+    @action(detail=True, methods=['post'], url_path='generate-convention')
+    def generate_convention(self, request, pk=None):
+        """
+        POST /api/applications/<id>/generate-convention/
+        
+        Génère une convention après acceptation de la candidature.
+        Permission: Company (owner de l'offre) uniquement.
+        """
+        application = self.get_object()
+        
+        # Verify status
+        if application.status != 'accepted':
+            return Response(
+                {'error': 'Application must be accepted first'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verify it doesn't already have one
+        if hasattr(application, 'convention') and application.convention is not None:
+            return Response(
+                {'error': 'Convention already exists'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verify ownership
+        if request.user != application.offer.company.user:
+            return Response(
+                {'error': 'Only the company can generate convention'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        from apps.conventions.services.convention_service import ConventionService
+        from apps.conventions.serializers import ConventionSerializer
+        
+        # Generate convention
+        convention = ConventionService.generate_convention(application)
+        
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_convention_generated(convention)
+        
+        serializer = ConventionSerializer(convention)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

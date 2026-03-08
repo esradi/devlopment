@@ -21,4 +21,8 @@ urlpatterns = [
     # --- BROWSE STUDENTS ---
     path('students/', views.StudentListView.as_view(), name='student_list'),
     path('students/<int:pk>/', views.StudentDetailView.as_view(), name='student_detail'),
+    
+    # --- WEBAUTHN BIOMETRICS ---
+    path('auth/webauthn/signing-options/', views.WebauthnSigningOptionsView.as_view(), name='webauthn_signing_options'),
+    path('auth/webauthn/verify-signing/', views.WebauthnVerifySigningView.as_view(), name='webauthn_verify_signing'),
 ]
