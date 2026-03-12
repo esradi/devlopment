@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.offers',
     'apps.api',  # our app
+    'apps.specialities',
+    'apps.students',
 ]
 
 MIDDLEWARE = [
@@ -111,7 +113,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'stagio_db',
         'USER': 'root',
-        'PASSWORD': 'youkiyouki2005',  # ← Change this to YOUR MySQL root password
+        'PASSWORD': '',  # ← Change this to YOUR MySQL root password
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
