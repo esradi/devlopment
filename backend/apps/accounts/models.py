@@ -3,7 +3,7 @@ from django.db import models
 from django.conf import settings
 
 class User(AbstractUser):
-    """Custom User with roles"""
+   
     ROLE_CHOICES = [
         ('student', 'Student'),
         ('company', 'Company'),
@@ -30,13 +30,10 @@ class User(AbstractUser):
 class Student(models.Model):
     """Student Profile"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
     university = models.CharField(max_length=100, null=True, blank=True)
     domain = models.CharField(max_length=100, null=True, blank=True)
     speciality = models.CharField(max_length=100, null=True, blank=True)
     academic_year = models.CharField(max_length=10, null=True, blank=True)
-    gpa = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     cv = models.FileField(upload_to='cvs/', null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     profile_completeness = models.IntegerField(default=30)
@@ -47,10 +44,9 @@ class Student(models.Model):
         db_table = 'api_student'
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return self.user.get_full_name() or self.user.email
 
 class StudentSkill(models.Model):
-    """Bridge model for Student and Skill to track verification"""
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     skill = models.ForeignKey('offers.Skill', on_delete=models.CASCADE)
     is_verified = models.BooleanField(default=False)
@@ -127,3 +123,17 @@ class WebauthnAuthentication(models.Model):
     
     class Meta:
         db_table = 'api_webauthnauthentication'
+class StudentBadge(models.Model):
+    """Gamification: Badges earned by students"""
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='badges')
+    badge_name = models.CharField(max_length=100)
+    badge_type = models.CharField(max_length=50) # e.g. 'easy', 'medium', 'hard', 'special'
+    description = models.TextField()
+    earned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_studentbadge'
+        unique_together = ('student', 'badge_name')
+
+    def __str__(self):
+        return f"{self.student} - {self.badge_name}"

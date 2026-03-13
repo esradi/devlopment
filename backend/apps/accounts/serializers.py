@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
-from .models import User, Student, Company, AdminProfile, StudentSkill
+from .models import User, Student, Company, AdminProfile, StudentSkill, StudentBadge
 from apps.offers.models import Skill
 from apps.api.utils import generate_verification_code, send_verification_email
 
@@ -16,8 +16,14 @@ class StudentSkillSerializer(serializers.ModelSerializer):
         model = StudentSkill
         fields = ['id', 'skill', 'skill_name', 'is_verified']
 
+class StudentBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentBadge
+        fields = ['badge_name', 'badge_type', 'description', 'earned_at']
+
 class StudentProfileSerializer(serializers.ModelSerializer):
     skills = StudentSkillSerializer(source='studentskill_set', many=True, read_only=True)
+    badges = StudentBadgeSerializer(many=True, read_only=True)
     skill_ids = serializers.PrimaryKeyRelatedField(
         queryset=Skill.objects.all(), many=True, write_only=True, source='skills', required=False
     )
@@ -100,7 +106,12 @@ class RegisterSerializer(serializers.Serializer):
     def validate_interest(self, value):
         role = self.initial_data.get('role')
         if role == 'student' and value and value not in self.SPECIALITY_CHOICES:
-            raise serializers.ValidationError(f"Please select a valid speciality from the list.")
+            # Check if it matches after stripping or case change
+            val_clean = value.strip()
+            if val_clean in self.SPECIALITY_CHOICES:
+                return val_clean
+            # If still not found, we'll allow it but it might not map to a domain
+            return value
         return value
     
     def validate(self, attrs):
@@ -140,8 +151,8 @@ class RegisterSerializer(serializers.Serializer):
             'address': validated_data.pop('address', ''),
             'postal_code': validated_data.pop('postal_code', ''),
             'website': validated_data.pop('website', None),
-            'nif': validated_data.pop('nif', ''),
-            'registre_commerce': validated_data.pop('registre_commerce', ''),
+            'nif': validated_data.pop('nif', None) or None,
+            'registre_commerce': validated_data.pop('registre_commerce', None) or None,
             'industry': validated_data.pop('industry', ''),
             'company_size': validated_data.pop('company_size', ''),
             'description': validated_data.pop('description', ''),
@@ -185,10 +196,10 @@ class RegisterSerializer(serializers.Serializer):
 
             student = Student.objects.create(
                 user=user,
-                first_name=first_name,
-                last_name=last_name,
                 speciality=interest,        # e.g. "Computer Science"
                 domain=derived_domain,      # e.g. "Engineering"
+                university=validated_data.pop('university', None),
+                academic_year=validated_data.pop('academic_year', None),
                 cv=cv,
                 wilaya=validated_data.get('wilaya', '')
             )
@@ -218,9 +229,19 @@ class ChangePasswordSerializer(serializers.Serializer):
         return attrs
 
 class UserUpdateSerializer(serializers.ModelSerializer):
+    fullName = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone']
+        fields = ['first_name', 'last_name', 'phone', 'fullName']
+
+    def update(self, instance, validated_data):
+        full_name = validated_data.pop('fullName', None)
+        if full_name:
+            parts = full_name.strip().split(' ', 1)
+            instance.first_name = parts[0]
+            instance.last_name = parts[1] if len(parts) > 1 else ''
+        return super().update(instance, validated_data)
 
 class StudentUpdateSerializer(serializers.ModelSerializer):
     from apps.offers.serializers import SkillSerializer
@@ -231,7 +252,7 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Student
-        fields = ['domain', 'cv', 'skills', 'skill_ids', 'wilaya']
+        fields = ['domain', 'speciality', 'university', 'academic_year', 'cv', 'profile_picture', 'skills', 'skill_ids', 'wilaya']
 
 class CompanyUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -240,7 +261,7 @@ class CompanyUpdateSerializer(serializers.ModelSerializer):
             'company_name', 'company_type', 'country', 'city', 
             'address', 'postal_code', 'website', 'nif', 
             'registre_commerce', 'industry', 'company_size', 
-            'description', 'logo'
+            'description', 'logo', 'referral_source'
         ]
 
 class AdminProfileUpdateSerializer(serializers.ModelSerializer):
@@ -285,13 +306,17 @@ class VerifyEmailSerializer(serializers.Serializer):
 class StudentBrowseSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     phone = serializers.CharField(source='user.phone', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
     from apps.offers.serializers import SkillSerializer
     skills = SkillSerializer(many=True, read_only=True)
+    
+    badges = StudentBadgeSerializer(many=True, read_only=True)
     
     class Meta:
         model = Student
         fields = [
             'id', 'first_name', 'last_name', 'email', 'phone', 
             'university', 'domain', 'speciality', 'academic_year', 
-            'gpa', 'profile_picture', 'profile_completeness', 'skills'
+            'profile_picture', 'profile_completeness', 'skills', 'badges'
         ]
