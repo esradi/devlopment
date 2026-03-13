@@ -24,10 +24,16 @@ def list_challenges(request):
     Groups multiple versions of the same skill.
     """
     student    = request.user.student_profile
+    # Filters
     speciality = student.speciality
+    challenge_type = request.query_params.get('type') # 'coding', 'qcm', 'text'
     
     # Get all distinct skill names for this speciality
-    skill_names = SkillChallenge.objects.filter(speciality=speciality).values_list('skill_name', flat=True).distinct()
+    qs = SkillChallenge.objects.filter(speciality=speciality)
+    if challenge_type:
+        qs = qs.filter(challenge_type=challenge_type)
+        
+    skill_names = qs.values_list('skill_name', flat=True).distinct()
     
     data = []
     for skill_name in skill_names:
@@ -279,6 +285,33 @@ def submit_challenge(request, skill_name):
         "score": score,
         "feedback": result.get("overall_feedback", ""),
     })
+
+@api_view(['GET'])
+@permission_classes([IsStudent])
+def challenge_history(request, skill_name):
+    """
+    Returns all submission history (attempts, scores, dates) for a specific skill.
+    """
+    student = request.user.student_profile
+    submissions = SkillChallengeSubmission.objects.filter(
+        student=student, 
+        challenge__skill_name=skill_name
+    ).order_by('-submitted_at')
+    
+    data = [
+        {
+            "id": sub.id,
+            "challenge_title": sub.challenge.title,
+            "challenge_type": sub.challenge.challenge_type,
+            "score": sub.score,
+            "passed": sub.passed,
+            "feedback": sub.feedback,
+            "submitted_at": sub.submitted_at,
+        }
+        for sub in submissions
+    ]
+    
+    return Response(data)
 
 def _on_pass(student, challenge, score):
     _mark_skill_verified(student, challenge)
