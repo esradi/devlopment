@@ -228,3 +228,104 @@ class StudentDetailView(APIView):
 @permission_classes([AllowAny])
 def google_auth_placeholder(request):
     return Response({'message': 'Google Social Auth endpoint ready for integration'}, status=status.HTTP_200_OK)
+
+import json
+from webauthn import (
+    generate_authentication_options,
+    options_to_json,
+    verify_authentication_response,
+    base64url_to_bytes,
+)
+from webauthn.helpers.structs import AuthenticationCredential
+from django.utils import timezone
+from .models import WebauthnAuthentication, WebauthnCredential
+
+class WebauthnSigningOptionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        credentials = WebauthnCredential.objects.filter(user=user)
+
+        # Basic relying party ID, using the host of the request
+        rp_id = request.get_host().split(':')[0] 
+
+        options = generate_authentication_options(
+            rp_id=rp_id,
+            allow_credentials=[
+                {
+                    "id": base64url_to_bytes(cred.credential_id) if isinstance(cred.credential_id, str) else cred.credential_id,
+                    "type": "public-key",
+                }
+                for cred in credentials
+            ],
+        )
+
+        auth, _ = WebauthnAuthentication.objects.get_or_create(user=user)
+        options_dict = json.loads(options_to_json(options))
+        auth.challenge = options_dict["challenge"]
+        auth.created_at = timezone.now()
+        auth.save()
+
+        return Response(options_dict)
+
+class WebauthnVerifySigningView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        try:
+            auth = WebauthnAuthentication.objects.get(user=user)
+        except WebauthnAuthentication.DoesNotExist:
+            return Response({'error': 'No authentication challenge found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            credential = AuthenticationCredential.parse_raw(json.dumps(request.data))
+        except Exception:
+            return Response({'error': 'Invalid WebAuthn response.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Raw ID is byte string when parsed, convert to strings for DB matching if needed
+        # depending on py_webauthn versions. Standardize on bytes or b64 string matching.
+        cred_obj = WebauthnCredential.objects.filter(
+            user=user, 
+            credential_id=credential.id # Use 'id' which py_webauthn represents as b64 string.
+        ).first()
+        
+        if not cred_obj:
+            return Response({'error': 'WebAuthn credential not found for this user.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        rp_id = request.get_host().split(':')[0]
+        # Allow localhost origin mappings
+        expected_origin = f"http://{request.get_host()}"
+        if '127.0.0.1' in expected_origin or 'localhost' in expected_origin:
+            expected_origin = [f"http://{request.get_host()}", "http://localhost:3000", "http://127.0.0.1:3000"]
+
+        try:
+            verification = verify_authentication_response(
+                credential=credential,
+                expected_challenge=base64url_to_bytes(auth.challenge),
+                expected_rp_id=rp_id,
+                expected_origin=expected_origin,
+                credential_public_key=base64url_to_bytes(cred_obj.public_key) if isinstance(cred_obj.public_key, str) else cred_obj.public_key,
+                credential_current_sign_count=cred_obj.sign_count,
+            )
+            
+            # Since webauthn returns an object in newer versions (or pydantic validation json on older)
+            if hasattr(verification, 'json'):
+                verification_dict = json.loads(verification.json())
+                cred_obj.sign_count = verification_dict.get("new_sign_count", cred_obj.sign_count + 1)
+            elif hasattr(verification, 'new_sign_count'):
+                cred_obj.sign_count = verification.new_sign_count
+            else:
+                 cred_obj.sign_count += 1
+                 
+            cred_obj.save()
+
+            return Response(
+                {
+                    "webauthn_verified": True,
+                    "credential_id": cred_obj.credential_id,
+                }
+            )
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

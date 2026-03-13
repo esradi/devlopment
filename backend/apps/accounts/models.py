@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
 
 class User(AbstractUser):
     """Custom User with roles"""
@@ -97,3 +98,32 @@ class AdminProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.admin_role}"
+
+class WebauthnCredential(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="webauthn_credentials",
+    )
+    name = models.CharField(max_length=100, blank=True, null=True)
+    credential_id = models.TextField()
+    public_key = models.TextField()
+    sign_count = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'api_webauthncredential'
+
+    def __str__(self):
+        return self.name or f"Credential {self.pk}"
+
+class WebauthnAuthentication(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="webauthn_auth",
+    )
+    challenge = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'api_webauthnauthentication'
