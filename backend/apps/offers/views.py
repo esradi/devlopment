@@ -133,9 +133,9 @@ class FavoriteOffersListView(APIView):
     permission_classes = [IsStudent]
 
     def get(self, request):
-        favorites = FavoriteOffer.objects.filter(user=request.user).order_by('-created_at')
-        from .serializers import FavoriteOfferSerializer
-        serializer = FavoriteOfferSerializer(favorites, many=True, context={'request': request})
+        # Return a list of Offer objects directly instead of FavoriteOffer wrappers
+        favorite_offers = Offer.objects.filter(favorited_by__user=request.user).order_by('-favorited_by__created_at')
+        serializer = OfferSerializer(favorite_offers, many=True, context={'request': request})
         return Response(serializer.data)
 
 class OfferStatusUpdateView(APIView):

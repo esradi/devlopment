@@ -14,7 +14,7 @@ class SkillChallenge(models.Model):
         ('text', 'Written/Essay'),
     ]
 
-    skill_name         = models.CharField(max_length=100, unique=True)
+    skill_name         = models.CharField(max_length=100)
     speciality         = models.CharField(max_length=100)
     language           = models.CharField(max_length=50, blank=True, null=True)  # coding only
     challenge_type     = models.CharField(max_length=10, choices=TYPE_CHOICES, default='coding')
@@ -63,8 +63,6 @@ class ChallengeSession(models.Model):
 
     class Meta:
         db_table = 'challenge_session'
-        # One active (uncompleted) session per student per challenge at a time
-        unique_together = ('student', 'challenge', 'is_completed')
 
     def __str__(self):
         return f"{self.student} - {self.challenge.skill_name} Session"

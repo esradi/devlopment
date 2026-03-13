@@ -24,12 +24,12 @@ def seed_all_challenges(speciality_filter=None):
             language       = skill.get("language")
             challenge_type = skill["type"]
 
-            # Skip if already exists
-            if SkillChallenge.objects.filter(skill_name=skill_name).exists():
+            # Limit to e.g. 3 challenges per skill to avoid infinite growth
+            if SkillChallenge.objects.filter(skill_name=skill_name).count() >= 3:
                 results.append({
                     "skill": skill_name,
                     "speciality": speciality,
-                    "status": "skipped (already exists)"
+                    "status": "skipped (already has 3 versions)"
                 })
                 continue
 

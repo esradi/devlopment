@@ -4,6 +4,22 @@ from .models import Notification
 
 class NotificationService:
     @staticmethod
+    def _broadcast_to_user(user_id, message_type, payload):
+        """
+        Internal helper to broadcast a message to a user's notification group.
+        """
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            group_name = f"notifications_{user_id}"
+            async_to_sync(channel_layer.group_send)(
+                group_name,
+                {
+                    "type": message_type,
+                    **payload
+                }
+            )
+
+    @staticmethod
     def create_and_send_notification(user, notif_type, title, message, **kwargs):
         """
         Creates a Notification in DB and broadcasts it via WebSockets.
@@ -37,18 +53,24 @@ class NotificationService:
         }
         
         # Send to user's WebSocket group
-        channel_layer = get_channel_layer()
-        if channel_layer:
-            group_name = f"notifications_{user.id}"
-            async_to_sync(channel_layer.group_send)(
-                group_name,
-                {
-                    "type": "notification_message",
-                    "notification": notification_data
-                }
-            )
+        NotificationService._broadcast_to_user(user.id, "notification_message", {"notification": notification_data})
         
         return notification
+
+    @staticmethod
+    def broadcast_notification_read(user_id, notification_id):
+        """Broadcast that a specific notification was marked as read."""
+        NotificationService._broadcast_to_user(user_id, "notification_read", {"notification_id": notification_id})
+
+    @staticmethod
+    def broadcast_all_read(user_id):
+        """Broadcast that all notifications were marked as read."""
+        NotificationService._broadcast_to_user(user_id, "all_notifications_read", {})
+
+    @staticmethod
+    def broadcast_notifications_cleared(user_id):
+        """Broadcast that notifications were cleared."""
+        NotificationService._broadcast_to_user(user_id, "notifications_cleared", {})
 
     # --- Helpers: Applications ---
 
