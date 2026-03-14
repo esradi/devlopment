@@ -224,3 +224,81 @@ class StudentCompetenciesAPITests(TestCase):
         self.assertEqual(response.status_code, 404)
         # Verify the skill was NOT deleted
         self.assertTrue(StudentSkill.objects.filter(id=other_skill.id).exists())
+
+    def test_delete_then_list_updated(self):
+        """Test that list is updated after deletion"""
+        get_response1 = self.client.get('/api/student/competencies/')
+        initial_count = len(get_response1.data['competencies'])
+        self.assertEqual(initial_count, 2)
+        
+        competency_id = self.verified_skill.id
+        delete_response = self.client.delete(f'/api/student/competencies/{competency_id}/')
+        self.assertEqual(delete_response.status_code, 204)
+        
+        get_response2 = self.client.get('/api/student/competencies/')
+        updated_count = len(get_response2.data['competencies'])
+        self.assertEqual(updated_count, initial_count - 1)
+        remaining_skills = [c['skill']['id'] for c in get_response2.data['competencies']]
+        self.assertNotIn(self.skill_python.id, remaining_skills)
+
+    def test_delete_multiple_skills_sequentially(self):
+        """Test deleting multiple skills one by one"""
+        initial_response = self.client.get('/api/student/competencies/')
+        self.assertEqual(len(initial_response.data['competencies']), 2)
+        
+        competency1_id = self.verified_skill.id
+        response1 = self.client.delete(f'/api/student/competencies/{competency1_id}/')
+        self.assertEqual(response1.status_code, 204)
+        check_response1 = self.client.get('/api/student/competencies/')
+        self.assertEqual(len(check_response1.data['competencies']), 1)
+        
+        competency2_id = self.unverified_skill.id
+        response2 = self.client.delete(f'/api/student/competencies/{competency2_id}/')
+        self.assertEqual(response2.status_code, 204)
+        check_response2 = self.client.get('/api/student/competencies/')
+        self.assertEqual(len(check_response2.data['competencies']), 0)
+
+    # CV upload tests
+    def test_upload_cv_success(self):
+        """Test POST /student/profile/upload-cv/ uploads file successfully"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        cv_content = b"dummy cv content"
+        cv_file = SimpleUploadedFile("resume.pdf", cv_content, content_type="application/pdf")
+        response = self.client.post(
+            '/api/student/profile/upload-cv/',
+            {'cv': cv_file},
+            format='multipart'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('message', response.data)
+        self.assertEqual(response.data['message'], 'CV uploaded successfully')
+        self.student.refresh_from_db()
+        self.assertTrue(self.student.cv.name.endswith('resume.pdf'))
+
+    def test_upload_cv_missing_file(self):
+        """Test uploading without providing a file returns 400"""
+        response = self.client.post('/api/student/profile/upload-cv/', {}, format='multipart')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.data)
+
+    def test_upload_cv_unauthenticated(self):
+        """Ensure unauthenticated users cannot upload"""
+        self.client.force_authenticate(user=None)
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        cv_file = SimpleUploadedFile("resume.pdf", b"x", content_type="application/pdf")
+        response = self.client.post('/api/student/profile/upload-cv/', {'cv': cv_file}, format='multipart')
+        self.assertEqual(response.status_code, 401)
+
+    def test_upload_cv_non_student(self):
+        """Non-student role cannot upload CV"""
+        company_user = User.objects.create_user(
+            email='company4@test.com',
+            username='company4@test.com',
+            password='testpass123',
+            role='company'
+        )
+        self.client.force_authenticate(user=company_user)
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        cv_file = SimpleUploadedFile("resume.pdf", b"x", content_type="application/pdf")
+        response = self.client.post('/api/student/profile/upload-cv/', {'cv': cv_file}, format='multipart')
+        self.assertEqual(response.status_code, 403)

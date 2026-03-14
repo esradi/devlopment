@@ -49,6 +49,9 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             'profile_picture',
             'profile_completeness',
             'wilaya',
+            'github_url',
+            'linkedin_url',
+            'portfolio_url',
             'competencies'
         ]
         read_only_fields = ['id', 'user_id', 'user_email', 'profile_completeness']

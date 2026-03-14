@@ -188,8 +188,14 @@ class OfferMetadataView(APIView):
 
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from .models import Application
 from .serializers import ApplicationSerializer
+
+class ApplicationPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class ApplicationViewSet(viewsets.ModelViewSet):
     """
@@ -198,6 +204,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = ApplicationPagination
 
     def get_queryset(self):
         user = self.request.user
@@ -209,11 +216,93 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             return Application.objects.all()
         return Application.objects.none()
 
+    def create(self, request, *args, **kwargs):
+        """Student applies to an offer"""
+        if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
+            return Response({'error': 'Only students can apply.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        student_profile = request.user.student_profile
+        offer_id = request.data.get('offer')
+        
+        if not offer_id:
+            return Response({'error': 'offer is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        offer = get_object_or_404(Offer, id=offer_id)
+        
+        if offer.status != 'active':
+            return Response({'error': 'Cannot apply to an inactive offer.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if Application.objects.filter(student=student_profile, offer=offer).exists():
+            return Response({'error': 'You have already applied to this offer.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         application = serializer.save(student=self.request.user.student_profile)
         
         from apps.notifications.services import NotificationService
         NotificationService.notify_application_submitted(application)
+
+    @action(detail=False, methods=['get'])
+    def mine(self, request):
+        """Student: get all my applications with status timeline"""
+        if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
+            return Response({'error': 'Only students can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        queryset = self.get_queryset()
+        
+        # Filter by status if provided
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+            
+        queryset = queryset.order_by('-created_at')
+        
+        # Apply pagination
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path=r'offer/(?P<offer_id>\d+)')
+    def offer_applicants(self, request, offer_id=None):
+        """Company: get all applicants for one offer"""
+        if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
+            return Response({'error': 'Only companies can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        offer = get_object_or_404(Offer, id=offer_id)
+        
+        # Verify ownership
+        if offer.company != request.user.company_profile:
+            return Response({'error': 'You do not have permission to view this offer.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        queryset = Application.objects.filter(offer=offer).order_by('-created_at')
+        
+        # Apply pagination
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'])
+    def cancel(self, request, pk=None):
+        """Cancel/Withdraw application (if status=pending)"""
+        application = self.get_object()
+        
+        if request.user.role != 'student' or application.student != request.user.student_profile:
+            return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        if application.status != 'pending':
+            return Response({'error': 'Only pending applications can be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        application.delete()
+        return Response({'message': 'Application cancelled successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):

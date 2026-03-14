@@ -43,6 +43,10 @@ class Student(models.Model):
     skills = models.ManyToManyField('offers.Skill', through='StudentSkill', related_name='students', blank=True)
     wilaya = models.CharField(max_length=100, blank=True, null=True)
     
+    github_url = models.URLField(max_length=255, blank=True, null=True)
+    linkedin_url = models.URLField(max_length=255, blank=True, null=True)
+    portfolio_url = models.URLField(max_length=255, blank=True, null=True)
+    
     class Meta:
         db_table = 'api_student'
 

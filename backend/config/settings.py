@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'apps.matching',
     'apps.conventions',
     'apps.notifications',
+    'apps.applications',
 ]
 
 MIDDLEWARE = [
@@ -112,6 +113,8 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CHANNEL_LAYERS = {
     'default': {
