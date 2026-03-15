@@ -3,6 +3,9 @@
 import os
 import sys
 
+# Windows OpenBLAS fix: Limit threads to 1 to avoid memory allocation errors
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
 
 def main():
     """Run administrative tasks."""

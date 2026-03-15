@@ -15,6 +15,7 @@ class OfferListCreateView(APIView):
 
     def get(self, request):
         user = request.user
+        sort = request.query_params.get('sort', 'created_at')
         qs = Offer.objects.all()
 
         if user.role == 'student':
@@ -70,19 +71,14 @@ class OfferListCreateView(APIView):
             qs = qs.filter(company=user.company_profile)
         
         # Sort
-        sort = request.query_params.get('sort', 'created_at')
-        if sort == 'created_at':
-            qs = qs.order_by('-created_at')
-        else:
-            # Basic validation to avoid crashes
-            allowed_sorts = ['title', 'created_at']
-            if sort in allowed_sorts:
-                qs = qs.order_by(sort)
-            else:
-                qs = qs.order_by('-created_at')
-
         serializer = OfferSerializer(qs, many=True, context={'request': request})
-        return Response(serializer.data)
+        data = serializer.data
+        
+        # Sort by match_score if requested
+        if sort == 'match':
+            data = sorted(data, key=lambda x: x.get('match_score', 0), reverse=True)
+            
+        return Response(data)
 
     def post(self, request):
         serializer = OfferSerializer(data=request.data, context={'request': request})
@@ -137,9 +133,9 @@ class FavoriteOffersListView(APIView):
     permission_classes = [IsStudent]
 
     def get(self, request):
-        favorites = FavoriteOffer.objects.filter(user=request.user).order_by('-created_at')
-        from .serializers import FavoriteOfferSerializer
-        serializer = FavoriteOfferSerializer(favorites, many=True, context={'request': request})
+        # Return a list of Offer objects directly instead of FavoriteOffer wrappers
+        favorite_offers = Offer.objects.filter(favorited_by__user=request.user).order_by('-favorited_by__created_at')
+        serializer = OfferSerializer(favorite_offers, many=True, context={'request': request})
         return Response(serializer.data)
 
 class OfferStatusUpdateView(APIView):
@@ -236,6 +232,18 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             return Response({'error': 'You have already applied to this offer.'}, status=status.HTTP_400_BAD_REQUEST)
             
         return super().create(request, *args, **kwargs)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+
+        # Support sorting by match_score
+        sort = request.query_params.get('sort')
+        if sort == 'match':
+            data = sorted(data, key=lambda x: x.get('match_score', 0), reverse=True)
+
+        return Response(data)
 
     def perform_create(self, serializer):
         application = serializer.save(student=self.request.user.student_profile)

@@ -55,6 +55,25 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             "notification": event["notification"]
         }))
 
+    async def notification_read(self, event):
+        """Handler for 'notification_read' event."""
+        await self.send(text_data=json.dumps({
+            "type": "notification_read",
+            "notification_id": event["notification_id"]
+        }))
+
+    async def all_notifications_read(self, event):
+        """Handler for 'all_notifications_read' event."""
+        await self.send(text_data=json.dumps({
+            "type": "all_notifications_read"
+        }))
+
+    async def notifications_cleared(self, event):
+        """Handler for 'notifications_cleared' event."""
+        await self.send(text_data=json.dumps({
+            "type": "notifications_cleared"
+        }))
+
     @database_sync_to_async
     def mark_notification_as_read(self, notification_id):
         try:

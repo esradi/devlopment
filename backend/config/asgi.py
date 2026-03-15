@@ -14,6 +14,7 @@ from channels.security.websocket import AllowedHostsOriginValidator
 from apps.notifications.middleware import JWTAuthMiddleware
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.

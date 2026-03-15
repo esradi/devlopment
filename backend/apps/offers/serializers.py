@@ -104,10 +104,23 @@ class OfferStatusUpdateSerializer(serializers.ModelSerializer):
         fields = ['status']
 
 class ApplicationSerializer(serializers.ModelSerializer):
+    match_score = serializers.SerializerMethodField()
+    student_name = serializers.ReadOnlyField(source='student.user.get_full_name')
+
     class Meta:
         model = Application
-        fields = ['id', 'student', 'offer', 'company', 'status', 'cover_letter', 'created_at', 'updated_at']
+        fields = [
+            'id', 'student', 'student_name', 'offer', 'company', 
+            'status', 'cover_letter', 'match_score', 'created_at', 'updated_at'
+        ]
         read_only_fields = ['company', 'status', 'created_at', 'updated_at']
+
+    def get_match_score(self, obj):
+        from apps.matching.services import MatchingService
+        try:
+            return MatchingService.calculate_match_score(obj.student.id, obj.offer.id).get('total_score', 0)
+        except Exception:
+            return 0
 
     def validate(self, data):
         offer = data.get('offer')

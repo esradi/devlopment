@@ -78,7 +78,9 @@ INSTALLED_APPS = [
     'apps.matching',
     'apps.conventions',
     'apps.notifications',
-    'apps.applications',
+    'challenges',
+
+    # 'apps.applications',
 ]
 
 MIDDLEWARE = [
@@ -139,7 +141,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'stagio_db',
         'USER': 'root',
-        'PASSWORD': '',  # ← Change this to YOUR MySQL root password
+        'PASSWORD': '',  
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
@@ -213,16 +215,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 AUTH_USER_MODEL = 'accounts.User'
 
-# --- EMAIL SETTINGS ---
-# Option 1: Console Mode (Fastest for testing - code appears in terminal)
+
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Option 2: SMTP Mode (For real emails - needs App Password)
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'helpstageio@gmail.com'
 EMAIL_HOST_PASSWORD = 'youkiyouki2005' 
 DEFAULT_FROM_EMAIL = 'helpstageio@gmail.com' 
-# ----------------------
+

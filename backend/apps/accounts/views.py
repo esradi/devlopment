@@ -154,8 +154,11 @@ def logout(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+from django.db import transaction
+
 @api_view(['PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
+@transaction.atomic
 def update_profile(request):
     user = request.user
     user_serializer = UserUpdateSerializer(user, data=request.data, partial=True)

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.utils import timezone
 from .models import Notification
 from .serializers import NotificationSerializer
+from .services import NotificationService
 
 class NotificationViewSet(viewsets.ModelViewSet):
     """
@@ -52,6 +53,9 @@ class NotificationViewSet(viewsets.ModelViewSet):
             notification.read_at = timezone.now()
             notification.save(update_fields=['is_read', 'read_at'])
             
+            # Broadcast real-time update
+            NotificationService.broadcast_notification_read(request.user.id, notification.id)
+            
         serializer = self.get_serializer(notification)
         return Response(serializer.data)
 
@@ -78,6 +82,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
             read_at=timezone.now()
         )
         
+        if updated > 0:
+            # Broadcast real-time update
+            NotificationService.broadcast_all_read(request.user.id)
+        
         return Response({
             'message': f'{updated} notifications marked as read',
             'count': updated
@@ -101,7 +109,11 @@ class NotificationViewSet(viewsets.ModelViewSet):
         
         Supprimer toutes les notifications lues
         """
-        deleted = self.get_queryset().filter(is_read=True).delete()
+        # Clear all notifications for the user
+        deleted = self.get_queryset().delete()
+        
+        # Broadcast real-time update
+        NotificationService.broadcast_notifications_cleared(request.user.id)
         
         return Response({
             'message': f'{deleted[0]} notifications deleted',
