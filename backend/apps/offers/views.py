@@ -98,8 +98,8 @@ class OfferDetailView(APIView):
 
     def put(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)
-        # Check permissions: Only owner (Company) or Admin
-        if request.user.role != 'admin' and offer.company.user != request.user:
+        # Check permissions: Only owner (Company)
+        if offer.company.user != request.user:
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
             
         serializer = OfferSerializer(offer, data=request.data, partial=True, context={'request': request})
@@ -110,8 +110,8 @@ class OfferDetailView(APIView):
 
     def delete(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)
-        # Check permissions: Only owner (Company) or Admin
-        if request.user.role != 'admin' and offer.company.user != request.user:
+        # Check permissions: Only owner (Company)
+        if offer.company.user != request.user:
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
             
         offer.delete()

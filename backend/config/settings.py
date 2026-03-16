@@ -141,7 +141,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'stagio_db',
         'USER': 'root',
-        'PASSWORD': '',  
+        'PASSWORD': 'youkiyouki2005',  
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
