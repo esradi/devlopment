@@ -21,15 +21,13 @@ class OfferListCreateView(APIView):
         if user.role == 'student':
             qs = qs.filter(status='active')
             
-            # Multi-select Filters
-            domains = request.query_params.get('domain') # e.g. "1,2" or "CS,Biology"
+            domains = request.query_params.get('domain') 
             locations = request.query_params.get('location')
             types = request.query_params.get('type')
             durations = request.query_params.get('duration')
 
             if domains:
                 domain_list = domains.split(',')
-                # Separate numeric IDs from names to avoid ValueError
                 ids = [d for d in domain_list if d.isdigit()]
                 names = [d for d in domain_list if not d.isdigit()]
                 
@@ -46,7 +44,6 @@ class OfferListCreateView(APIView):
                 query = Q()
                 if ids: query |= Q(locations__id__in=ids)
                 if names: 
-                    # Search in both Location model and wilaya field
                     query |= Q(locations__name__icontains=names[0]) | Q(wilaya__icontains=names[0])
                 qs = qs.filter(query)
             
@@ -64,7 +61,6 @@ class OfferListCreateView(APIView):
                 dur_list = durations.split(',')
                 qs = qs.filter(durations__months__in=dur_list)
 
-            # Deduplicate because of M2M joins
             qs = qs.distinct()
 
         elif user.role == 'company':
@@ -73,8 +69,7 @@ class OfferListCreateView(APIView):
         # Sort
         serializer = OfferSerializer(qs, many=True, context={'request': request})
         data = serializer.data
-        
-        # Sort by match_score if requested
+   
         if sort == 'match':
             data = sorted(data, key=lambda x: x.get('match_score', 0), reverse=True)
             
@@ -83,7 +78,6 @@ class OfferListCreateView(APIView):
     def post(self, request):
         serializer = OfferSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            # Automatically assign the company profile
             serializer.save(company=request.user.company_profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -98,7 +92,7 @@ class OfferDetailView(APIView):
 
     def put(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)
-        # Check permissions: Only owner (Company) or Admin
+        # permissions: Only owner (Company) or Admin
         if request.user.role != 'admin' and offer.company.user != request.user:
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
             
@@ -110,7 +104,7 @@ class OfferDetailView(APIView):
 
     def delete(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)
-        # Check permissions: Only owner (Company) or Admin
+        # permissions: Only owner (Company) or Admin
         if request.user.role != 'admin' and offer.company.user != request.user:
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
             
@@ -120,7 +114,7 @@ class OfferDetailView(APIView):
 class ToggleFavoriteView(APIView):
     permission_classes = [IsStudent]
 
-    def post(self, request, offer_id): # Use offer_id as in urls.py
+    def post(self, request, offer_id): 
         offer = get_object_or_404(Offer, id=offer_id)
         favorite, created = FavoriteOffer.objects.get_or_create(user=request.user, offer=offer)
         
@@ -133,7 +127,6 @@ class FavoriteOffersListView(APIView):
     permission_classes = [IsStudent]
 
     def get(self, request):
-        # Return a list of Offer objects directly instead of FavoriteOffer wrappers
         favorite_offers = Offer.objects.filter(favorited_by__user=request.user).order_by('-favorited_by__created_at')
         serializer = OfferSerializer(favorite_offers, many=True, context={'request': request})
         return Response(serializer.data)
@@ -160,7 +153,7 @@ class OfferMineListView(APIView):
             qs = Offer.objects.filter(company=user.company_profile)
         elif user.role == 'student':
             qs = Offer.objects.filter(favorited_by__user=user)
-        else: # Admin
+        else: 
             qs = Offer.objects.all()
             
         serializer = OfferSerializer(qs, many=True, context={'request': request})
@@ -238,7 +231,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         data = serializer.data
 
-        # Support sorting by match_score
+        # sorting by match_score
         sort = request.query_params.get('sort')
         if sort == 'match':
             data = sorted(data, key=lambda x: x.get('match_score', 0), reverse=True)
@@ -253,7 +246,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def mine(self, request):
-        """Student: get all my applications with status timeline"""
+        """Student: get all applications with status timeline"""
         if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
             return Response({'error': 'Only students can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
             
@@ -310,7 +303,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Only pending applications can be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
             
         application.delete()
-        return Response({'message': 'Application cancelled successfully.'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Application cancelled successfully.'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
@@ -326,7 +319,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def refuse(self, request, pk=None):
         application = self.get_object()
-        application.status = 'rejected' # Verify exact status name in your model, maybe 'refused'
+        application.status = 'rejected'
         application.save()
         
         from apps.notifications.services import NotificationService
@@ -336,14 +329,12 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def view(self, request, pk=None):
-        """Marquer comme vue par l'entreprise"""
         from django.utils import timezone
         application = self.get_object()
         
         if not hasattr(application, 'viewed_at') or not getattr(application, 'viewed_at'):
             if hasattr(application, 'viewed_at'):
                 application.viewed_at = timezone.now()
-            # If your model tracks viewed_at, save it here. Even if not, the notification is what matters most for the student.
             application.save()
             
             from apps.notifications.services import NotificationService
@@ -355,9 +346,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     def generate_convention(self, request, pk=None):
         """
         POST /api/applications/<id>/generate-convention/
-        
-        Génère une convention après acceptation de la candidature.
-        Permission: Company (owner de l'offre) uniquement.
+        Permission: Company
         """
         application = self.get_object()
         

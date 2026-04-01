@@ -1,4 +1,5 @@
 from django.db import models
+from apps.specialities.models import Domain
 from django.conf import settings
 
 class Domain(models.Model):

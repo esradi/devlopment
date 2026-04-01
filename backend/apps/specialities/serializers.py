@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from .models import Domain, Speciality, Competency
+from .models import Domain, Speciality, Competency, CompetencyQuiz, QuizQuestion, QuizSubmission, PortfolioSubmission
 
 class CompetencySerializer(serializers.ModelSerializer):
-    """Serializer for Competency model"""
     speciality_name = serializers.ReadOnlyField(source='speciality.name')
 
     class Meta:
@@ -12,7 +11,6 @@ class CompetencySerializer(serializers.ModelSerializer):
 
 
 class SpecialitySerializer(serializers.ModelSerializer):
-    """Serializer for Speciality model"""
     domain_name = serializers.ReadOnlyField(source='domain.name')
     competencies_count = serializers.SerializerMethodField()
 
@@ -25,7 +23,6 @@ class SpecialitySerializer(serializers.ModelSerializer):
 
 
 class DomainSerializer(serializers.ModelSerializer):
-    """Serializer for Domain model"""
     specialities_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -37,7 +34,6 @@ class DomainSerializer(serializers.ModelSerializer):
 
 
 class SpecialityDetailSerializer(SpecialitySerializer):
-    """Detailed serializer for Speciality with nested competencies"""
     competencies = CompetencySerializer(many=True, read_only=True)
 
     class Meta(SpecialitySerializer.Meta):
@@ -45,8 +41,35 @@ class SpecialityDetailSerializer(SpecialitySerializer):
 
 
 class DomainDetailSerializer(DomainSerializer):
-    """Detailed serializer for Domain with nested specialities"""
     specialities = SpecialitySerializer(many=True, read_only=True)
 
     class Meta(DomainSerializer.Meta):
         fields = DomainSerializer.Meta.fields + ['specialities']
+
+
+class QuizQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizQuestion
+        fields = ['id', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'order']
+
+
+class CompetencyQuizSerializer(serializers.ModelSerializer):
+    questions = QuizQuestionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CompetencyQuiz
+        fields = ['id', 'competency', 'title', 'instructions', 'time_limit_minutes', 'difficulty', 'questions']
+
+
+class QuizSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizSubmission
+        fields = ['id', 'student', 'quiz', 'answers', 'score', 'passed', 'submitted_at']
+        read_only_fields = ['score', 'passed', 'submitted_at']
+
+
+class PortfolioSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PortfolioSubmission
+        fields = ['id', 'student', 'competency', 'portfolio_url', 'status', 'feedback', 'submitted_at', 'reviewed_at']
+        read_only_fields = ['student', 'competency', 'status', 'feedback', 'submitted_at', 'reviewed_at']

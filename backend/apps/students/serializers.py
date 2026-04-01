@@ -57,6 +57,6 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user_id', 'user_email', 'profile_completeness']
 
     def get_competencies(self, obj):
-        """Get all competencies (skills) for the student"""
+        """Get all competencies for the student"""
         skills = obj.studentskill_set.all()
         return StudentSkillSerializer(skills, many=True).data

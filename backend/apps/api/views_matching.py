@@ -6,7 +6,7 @@ from apps.matching.services import MatchingService
 class MatchingView(APIView):
     """
     Endpoint to get the detailed matching score between a student and an offer.
-    Usage: GET /api/matching/?student_id=X&offer_id=Y
+    GET /api/matching/?student_id=X&offer_id=Y
     """
     permission_classes = [permissions.IsAuthenticated]
 

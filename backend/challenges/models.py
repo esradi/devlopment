@@ -16,13 +16,13 @@ class SkillChallenge(models.Model):
 
     skill_name         = models.CharField(max_length=100)
     speciality         = models.CharField(max_length=100)
-    language           = models.CharField(max_length=50, blank=True, null=True)  # coding only
+    language           = models.CharField(max_length=50, blank=True, null=True)  
     challenge_type     = models.CharField(max_length=10, choices=TYPE_CHOICES, default='coding')
     title              = models.CharField(max_length=200)
     description        = models.TextField()
-    starter_code       = models.TextField(blank=True, null=True)   # coding only
-    test_cases         = models.JSONField(blank=True, null=True)   # coding only — NEVER sent to frontend
-    questions          = models.JSONField(blank=True, null=True)   # QCM questions OR text evaluation criteria
+    starter_code       = models.TextField(blank=True, null=True)  
+    test_cases         = models.JSONField(blank=True, null=True)  
+    questions          = models.JSONField(blank=True, null=True)   
     time_limit_minutes = models.IntegerField(default=15)
     difficulty         = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
     created_at         = models.DateTimeField(auto_now_add=True)
@@ -37,10 +37,10 @@ class SkillChallenge(models.Model):
 class SkillChallengeSubmission(models.Model):
     student           = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='skill_challenge_submissions')
     challenge         = models.ForeignKey(SkillChallenge, on_delete=models.CASCADE, related_name='submissions')
-    submitted_code    = models.TextField(blank=True, null=True)    # coding only
-    submitted_answers = models.JSONField(blank=True, null=True)    # QCM only: {"0": "A", "1": "C", ...}
-    submitted_text    = models.TextField(blank=True, null=True)    # essay only
-    score             = models.IntegerField(default=0)             # 0-100
+    submitted_code    = models.TextField(blank=True, null=True)    
+    submitted_answers = models.JSONField(blank=True, null=True)   
+    submitted_text    = models.TextField(blank=True, null=True)    
+    score             = models.IntegerField(default=0)             
     passed            = models.BooleanField(default=False)
     feedback          = models.TextField(blank=True)
     submitted_at      = models.DateTimeField(auto_now_add=True)

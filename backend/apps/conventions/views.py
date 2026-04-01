@@ -80,19 +80,16 @@ class ConventionViewSet(viewsets.ModelViewSet):
         qs = Convention.objects.all()
 
         if user.role == 'student':
-            # Students see their own conventions
             if hasattr(user, 'student_profile'):
                 qs = qs.filter(student=user.student_profile)
             else:
                 qs = qs.none()
         elif user.role == 'company':
-            # Companies see conventions linked to their profile
             if hasattr(user, 'company_profile'):
                 qs = qs.filter(company=user.company_profile)
             else:
                 qs = qs.none()
         elif user.role == 'admin':
-            # Admins see all conventions
             pass
         else:
             qs = qs.none()
@@ -139,12 +136,9 @@ class ConventionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
             
-        # Ensure we read the file correctly depending on storage backend.
-        # Simple file handling for standard FileSystemStorage
         try:
             file_handle = convention.pdf_file.open('rb')
             response = FileResponse(file_handle, content_type='application/pdf')
-            # Suggest a filename
             filename = f"convention_{convention.id}_{convention.student.first_name}_{convention.student.last_name}.pdf"
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
             return response

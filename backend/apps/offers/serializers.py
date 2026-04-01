@@ -33,15 +33,13 @@ class OfferSerializer(serializers.ModelSerializer):
     company_name = serializers.ReadOnlyField(source='company.company_name')
     company_logo = serializers.ImageField(source='company.logo', read_only=True)
     is_favorite = serializers.SerializerMethodField()
-    
-    # Nested representation for GET
+
     domains = DomainSerializer(many=True, read_only=True)
     locations = LocationSerializer(many=True, read_only=True)
     offer_types = OfferTypeSerializer(many=True, read_only=True)
     durations = DurationOptionSerializer(many=True, read_only=True)
     skills = SkillSerializer(many=True, read_only=True)
-    
-    # Primary Key handles for POST/PATCH
+ 
     domain_ids = serializers.PrimaryKeyRelatedField(
         queryset=Domain.objects.all(), many=True, write_only=True, source='domains'
     )

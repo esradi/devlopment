@@ -249,8 +249,6 @@ class WebauthnSigningOptionsView(APIView):
     def post(self, request):
         user = request.user
         credentials = WebauthnCredential.objects.filter(user=user)
-
-        # Basic relying party ID, using the host of the request
         rp_id = request.get_host().split(':')[0] 
 
         options = generate_authentication_options(
@@ -287,18 +285,16 @@ class WebauthnVerifySigningView(APIView):
         except Exception:
             return Response({'error': 'Invalid WebAuthn response.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Raw ID is byte string when parsed, convert to strings for DB matching if needed
-        # depending on py_webauthn versions. Standardize on bytes or b64 string matching.
         cred_obj = WebauthnCredential.objects.filter(
             user=user, 
-            credential_id=credential.id # Use 'id' which py_webauthn represents as b64 string.
+            credential_id=credential.id 
         ).first()
         
         if not cred_obj:
             return Response({'error': 'WebAuthn credential not found for this user.'}, status=status.HTTP_400_BAD_REQUEST)
 
         rp_id = request.get_host().split(':')[0]
-        # Allow localhost origin mappings
+      
         expected_origin = f"http://{request.get_host()}"
         if '127.0.0.1' in expected_origin or 'localhost' in expected_origin:
             expected_origin = [f"http://{request.get_host()}", "http://localhost:3000", "http://127.0.0.1:3000"]
@@ -313,7 +309,6 @@ class WebauthnVerifySigningView(APIView):
                 credential_current_sign_count=cred_obj.sign_count,
             )
             
-            # Since webauthn returns an object in newer versions (or pydantic validation json on older)
             if hasattr(verification, 'json'):
                 verification_dict = json.loads(verification.json())
                 cred_obj.sign_count = verification_dict.get("new_sign_count", cred_obj.sign_count + 1)

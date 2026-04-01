@@ -17,12 +17,8 @@ urlpatterns = [
     path('profile/update/', views.update_profile, name='update_profile'),
     path('password-change/', views.change_password, name='password_change'),
     path('delete-account/', views.delete_account, name='delete_account'),
-    
-    # --- BROWSE STUDENTS ---
     path('students/', views.StudentListView.as_view(), name='student_list'),
     path('students/<int:pk>/', views.StudentDetailView.as_view(), name='student_detail'),
-    
-    # --- WEBAUTHN BIOMETRICS ---
     path('auth/webauthn/signing-options/', views.WebauthnSigningOptionsView.as_view(), name='webauthn_signing_options'),
     path('auth/webauthn/verify-signing/', views.WebauthnVerifySigningView.as_view(), name='webauthn_verify_signing'),
 ]

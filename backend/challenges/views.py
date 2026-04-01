@@ -13,22 +13,15 @@ MAX_ATTEMPTS  = 3
 PASS_THRESHOLD = 70
 PREP_TIME_SECONDS = 30
 
-# ─────────────────────────────────────────────────────────
-# LIST CHALLENGES  →  GET /api/challenges/
-# ─────────────────────────────────────────────────────────
 @api_view(['GET'])
 @permission_classes([IsStudent])
 def list_challenges(request):
     """
     Returns unique skills available for the student's speciality.
-    Groups multiple versions of the same skill.
     """
     student    = request.user.student_profile
-    # Filters
     speciality = student.speciality
     challenge_type = request.query_params.get('type') # 'coding', 'qcm', 'text'
-    
-    # Get all distinct skill names for this speciality
     qs = SkillChallenge.objects.filter(speciality=speciality)
     if challenge_type:
         qs = qs.filter(challenge_type=challenge_type)
@@ -37,10 +30,8 @@ def list_challenges(request):
     
     data = []
     for skill_name in skill_names:
-        # Get one representative challenge for basic info (type, difficulty)
         ch = SkillChallenge.objects.filter(skill_name=skill_name).first()
         
-        # Submissions are tracked per skill name
         submissions = SkillChallengeSubmission.objects.filter(
             student=student, 
             challenge__skill_name=skill_name
@@ -84,16 +75,13 @@ def list_challenges(request):
 
     return Response(data)
 
-# ─────────────────────────────────────────────────────────
-# START SESSION (TIMER) → POST /api/challenges/<skill_name>/start/
-# ─────────────────────────────────────────────────────────
+
 @api_view(['POST'])
 @permission_classes([IsStudent])
 def start_challenge_session(request, skill_name):
     """Pick a random challenge for the skill and starts the 30-second focus timer."""
     student = request.user.student_profile
-    
-    # Check for existing active session for THIS SKILL
+  
     existing = ChallengeSession.objects.filter(
         student=student, 
         challenge__skill_name=skill_name, 
@@ -101,7 +89,6 @@ def start_challenge_session(request, skill_name):
     ).first()
     
     if existing:
-        # Check if expired
         total_limit = PREP_TIME_SECONDS + (existing.challenge.time_limit_minutes * 60)
         elapsed = (timezone.now() - existing.start_time).total_seconds()
         if elapsed < total_limit:
@@ -115,12 +102,10 @@ def start_challenge_session(request, skill_name):
             existing.is_completed = True
             existing.save()
 
-    # Get available challenges for this skill
     pool = list(SkillChallenge.objects.filter(skill_name=skill_name))
     if not pool:
         return Response({"error": "No challenges found for this skill."}, status=404)
-        
-    # Select one randomly
+
     challenge = random.choice(pool)
     
     session = ChallengeSession.objects.create(
@@ -136,15 +121,12 @@ def start_challenge_session(request, skill_name):
         "challenge_id": challenge.id
     })
 
-# ─────────────────────────────────────────────────────────
-# CHALLENGE DETAIL  →  GET /api/challenges/<skill_name>/
-# ─────────────────────────────────────────────────────────
+
 @api_view(['GET'])
 @permission_classes([IsStudent])
 def challenge_detail(request, skill_name):
     """
     Returns full challenge details.
-    ENFORCES the 30-second timer and the overall time limit.
     """
     student = request.user.student_profile
     session = ChallengeSession.objects.filter(
@@ -160,15 +142,13 @@ def challenge_detail(request, skill_name):
         }, status=403)
 
     elapsed_seconds = (timezone.now() - session.start_time).total_seconds()
-    
-    # 1. Check Preparation (30s)
+  
     if elapsed_seconds < PREP_TIME_SECONDS:
         return Response({
             "error": "Focus mode active. Please wait for the timer to finish.",
             "wait_seconds": round(PREP_TIME_SECONDS - elapsed_seconds, 1)
         }, status=403)
 
-    # 2. Check Expiration
     total_allowed = PREP_TIME_SECONDS + (session.challenge.time_limit_minutes * 60)
     if elapsed_seconds > total_allowed:
         session.is_completed = True
@@ -221,7 +201,6 @@ def submit_challenge(request, skill_name):
     if not session:
          return Response({"error": "No active session found. Start the challenge first."}, status=400)
 
-    # Enforce time limit on submission
     elapsed_seconds = (timezone.now() - session.start_time).total_seconds()
     total_allowed = PREP_TIME_SECONDS + (session.challenge.time_limit_minutes * 60)
     

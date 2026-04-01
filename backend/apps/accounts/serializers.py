@@ -71,8 +71,8 @@ class RegisterSerializer(serializers.Serializer):
     phone = serializers.CharField(required=True)
 
     # Student Specific
-    interest = serializers.CharField(required=False, allow_blank=True) # Speciality
-    domain = serializers.CharField(required=False, allow_blank=True) # Alias for interest
+    interest = serializers.CharField(required=False, allow_blank=True) 
+    domain = serializers.CharField(required=False, allow_blank=True)
     cv = serializers.FileField(required=False, allow_null=True)
     skill_ids = serializers.PrimaryKeyRelatedField(
         queryset=Skill.objects.all(), many=True, required=False
@@ -160,7 +160,6 @@ class RegisterSerializer(serializers.Serializer):
             'logo': validated_data.pop('logo', None),
         }
 
-        # Determine first_name and last_name
         name_parts = full_name.strip().split(' ', 1)
         first_name = name_parts[0]
         last_name = name_parts[1] if len(name_parts) > 1 else ''
@@ -181,7 +180,6 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"email": "Failed to send verification email. Please check server SMTP settings or use a valid App Password."})
         
         if role == 'student':
-            # Mapping: speciality -> parent domain
             SPECIALITY_TO_DOMAIN = {
                 'Computer Science': 'Engineering',
                 'GP': 'Engineering',
@@ -192,12 +190,11 @@ class RegisterSerializer(serializers.Serializer):
                 'Biology': 'Scientific',
                 'English Literature': 'Humanities',
             }
-            derived_domain = SPECIALITY_TO_DOMAIN.get(interest, interest)  # fallback to interest if not mapped
-
+            derived_domain = SPECIALITY_TO_DOMAIN.get(interest, interest) 
             student = Student.objects.create(
                 user=user,
-                speciality=interest,        # e.g. "Computer Science"
-                domain=derived_domain,      # e.g. "Engineering"
+                speciality=interest,        
+                domain=derived_domain,      
                 university=validated_data.pop('university', None),
                 academic_year=validated_data.pop('academic_year', None),
                 cv=cv,

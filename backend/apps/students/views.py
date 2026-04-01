@@ -14,7 +14,6 @@ from .serializers import StudentProfileSerializer, StudentSkillSerializer
 class StudentProfileView(APIView):
     """
     GET: Retrieve student's full profile (domain, speciality, competencies)
-    PUT: Update student profile fields (domain, speciality, cv, etc.)
     """
     permission_classes = [IsAuthenticated, IsStudent]
     
@@ -56,7 +55,7 @@ class StudentProfileView(APIView):
 
 class StudentCompetenciesView(APIView):
     """
-    GET: Retrieve all student's competencies (skills)
+    GET: Retrieve all student's competencies
     POST: Add a new skill to student's competencies
     """
     permission_classes = [IsAuthenticated, IsStudent]
@@ -123,7 +122,7 @@ class StudentCompetenciesView(APIView):
 
 class StudentCompetencyDetailView(APIView):
     """
-    GET: Retrieve a specific student competency (skill)
+    GET: Retrieve a specific student competency
     DELETE: Remove a skill from student's competencies
     """
     permission_classes = [IsAuthenticated, IsStudent]
@@ -184,7 +183,7 @@ class StudentCVUploadView(APIView):
                     {"error": "cv file is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            # assign and save
+
             student.cv = cv_file
             student.save()
             serializer = StudentProfileSerializer(student)
@@ -216,8 +215,7 @@ class StudentCVDeleteView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
                 
-            # Calling delete(save=True) removes the actual file from your /media/ storage
-            # and clears the field in the database.
+            # Calling delete(save=True) file from /media/ storage
             student.cv.delete(save=True)
             
             return Response(
@@ -246,10 +244,9 @@ class StudentCVDownloadView(APIView):
                     {"error": "No CV found to download"},
                     status=status.HTTP_404_NOT_FOUND
                 )
-                
-            # Open the file and prepare the FileResponse to serve it as an attachment
+       
             file = student.cv.open('rb')
-            filename = os.path.basename(student.cv.name) # Extracts just the file name
+            filename = os.path.basename(student.cv.name) 
             
             response = FileResponse(file, as_attachment=True, filename=filename)
             return response
@@ -270,7 +267,6 @@ class StudentPictureUploadView(APIView):
     def post(self, request):
         try:
             student = Student.objects.get(user=request.user)
-            # Expecting 'profile_picture' in the form data
             picture_file = request.FILES.get('profile_picture')
             if not picture_file:
                 return Response(
@@ -308,7 +304,7 @@ class StudentPictureDeleteView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
                 
-            # Calling delete(save=True) removes the actual file from your /media/ storage
+            # Calling delete(save=True) file from /media/ storage
             student.profile_picture.delete(save=True)
             
             return Response(
@@ -332,13 +328,12 @@ class StudentApplicationStatsView(APIView):
         try:
             student = Student.objects.get(user=request.user)
             
-            # Use Django's dynamic aggregation based on the status field
             from apps.offers.models import Application
             stats = Application.objects.filter(student=student).aggregate(
                 total=Count('id'),
                 pending=Count('id', filter=Q(status='pending')),
                 accepted=Count('id', filter=Q(status='accepted')),
-                refused=Count('id', filter=Q(status='rejected')) # using 'rejected' to match the database values
+                refused=Count('id', filter=Q(status='rejected')) 
             )
             
             # aggregate might return None if no records, so we provide default 0
