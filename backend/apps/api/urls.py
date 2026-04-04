@@ -1,6 +1,11 @@
 from django.urls import path, include
 
-from .views_matching import MatchingView
+from .views_matching import (
+    MatchingView, 
+    StudentMatchScoresView, 
+    OfferMatchScoresView, 
+    RecalculateMatchesView
+)
 
 urlpatterns = [
     path('', include('apps.accounts.urls')),
@@ -15,4 +20,7 @@ urlpatterns = [
     path('', include('challenges.urls')), 
 
     path('matching/', MatchingView.as_view(), name='matching'),
+    path('matching/my-scores/', StudentMatchScoresView.as_view(), name='matching-my-scores'),
+    path('matching/offer/<int:offer_id>/scores/', OfferMatchScoresView.as_view(), name='matching-offer-scores'),
+    path('matching/recalculate/', RecalculateMatchesView.as_view(), name='matching-recalculate'),
 ]

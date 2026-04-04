@@ -44,6 +44,28 @@ class MatchingService:
         }
 
     @staticmethod
+    def recalculate_all_scores():
+        from .models import MatchScore
+        students = Student.objects.all()
+        offers = Offer.objects.filter(status='active')  # Assuming we only match against active offers
+
+        # Efficiently calculate and save all scores
+        for student in students:
+            for offer in offers:
+                try:
+                    result = MatchingService.calculate_match_score(student.pk, offer.pk)
+                    MatchScore.objects.update_or_create(
+                        student=student,
+                        offer=offer,
+                        defaults={
+                            'total_score': result['total_score'],
+                            'breakdown': result['breakdown']
+                        }
+                    )
+                except Exception as e:
+                    print(f"Error calculating match for Student {student.pk} and Offer {offer.pk}: {e}")
+
+    @staticmethod
     def _calculate_speciality_score(student, offer) -> float:
         score = 0
         if student.domain:
