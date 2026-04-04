@@ -61,7 +61,7 @@ class ApplicationMinimalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Application
-        fields = ['id', 'student', 'offer', 'status', 'applied_at']
+        fields = ['id', 'student', 'offer', 'status', 'created_at']
         read_only_fields = fields
 
 class UsersStatsSerializer(serializers.Serializer):
@@ -165,7 +165,6 @@ class ConventionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Convention
         fields = '__all__'
-        read_only_fields = fields
         
 
 class AdminUserListSerializer(serializers.ModelSerializer):
@@ -208,7 +207,7 @@ class AdminCompanyListSerializer(serializers.ModelSerializer):
         model = Company
         fields = [
             'id', 'email', 'company_name', 'industry',
-            'wilaya', 'verification_status', 'is_active',
+            'verification_status', 'is_active',
         ]
         read_only_fields = fields
 

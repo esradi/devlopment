@@ -22,4 +22,5 @@ urlpatterns = [
     path('offers/<int:pk>/status/', OfferStatusUpdateView.as_view(), name='offer_status_update'),
     path('offers/mine/', OfferMineListView.as_view(), name='offers_mine'),
     path('offers/options/', OfferMetadataView.as_view(), name='offer_options'),
+    path('offers/<int:pk>/', OfferDetailView.as_view(), name='offer-detail'),
 ]
