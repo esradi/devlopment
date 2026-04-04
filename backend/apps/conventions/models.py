@@ -79,7 +79,6 @@ class Convention(models.Model):
         return f"Convention: {self.student} - {self.offer.title} ({self.get_status_display()})"
 
     def get_signature_status(self):
-        """Retourne le statut des signatures"""
         return {
             'student': {
                 'signed': self.student_signed,

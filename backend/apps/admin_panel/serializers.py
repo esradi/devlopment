@@ -10,7 +10,7 @@ from apps.specialities.serializers import SpecialityDetailSerializer
 User = get_user_model()
 
 class UserMinimalSerializer(serializers.ModelSerializer):
-    """Minimal user info embedded in other serializers."""
+    #Minimal user info embedded in other serializers
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name']
@@ -18,7 +18,7 @@ class UserMinimalSerializer(serializers.ModelSerializer):
 
 
 class StudentMinimalSerializer(serializers.ModelSerializer):
-    """Student info for admin user list and validation detail."""
+    #Student info for admin user list and validation detail
     email = serializers.EmailField(source='user.email', read_only=True)
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
@@ -34,7 +34,7 @@ class StudentMinimalSerializer(serializers.ModelSerializer):
 
 
 class CompanyMinimalSerializer(serializers.ModelSerializer):
-    """Company info for admin company list."""
+    #Company info for admin company list
     email = serializers.EmailField(source='user.email', read_only=True)
     is_active = serializers.BooleanField(source='user.is_active', read_only=True)
 
@@ -81,9 +81,7 @@ class ValidationsStatsSerializer(serializers.Serializer):
     pending = serializers.IntegerField()
 
 class AdminDashboardSerializer(serializers.Serializer):
-    """
-    Used by GET /api/admin/dashboard/
-    """
+    #used by GET /api/admin/dashboard/
     users = UsersStatsSerializer()
     offers = OffersStatsSerializer()
     applications = ApplicationsStatsSerializer()
@@ -91,9 +89,7 @@ class AdminDashboardSerializer(serializers.Serializer):
 
 
 class InternshipValidationListSerializer(serializers.ModelSerializer):
-    """
-    Used by GET /api/admin/validations/
-    """
+    #used by GET /api/admin/validations/
     application = ApplicationMinimalSerializer(read_only=True)
     validated_by = UserMinimalSerializer(read_only=True)
 
@@ -111,9 +107,7 @@ class InternshipValidationListSerializer(serializers.ModelSerializer):
 
 
 class InternshipValidationDetailSerializer(serializers.ModelSerializer):
-    """
-    Used by GET /api/admin/validations/:id/
-    """
+    #used by GET /api/admin/validations/:id/
     application = ApplicationMinimalSerializer(read_only=True)
     validated_by = UserMinimalSerializer(read_only=True)
 
@@ -132,18 +126,14 @@ class InternshipValidationDetailSerializer(serializers.ModelSerializer):
 
 
 class InternshipValidationApproveSerializer(serializers.ModelSerializer):
-    """
-    Used by POST /api/admin/validations/:id/approve/
-    """
+    #used by POST /api/admin/validations/:id/approve/
     class Meta:
         model = InternshipValidation
         fields = ['feedback'] 
 
 
 class InternshipValidationRejectSerializer(serializers.ModelSerializer):
-    """
-    Used by POST /api/admin/validations/:id/reject/
-    """
+    #used by POST /api/admin/validations/:id/reject/
     feedback = serializers.CharField(required=True, allow_blank=False)
 
     class Meta:
@@ -159,18 +149,14 @@ class InternshipValidationRejectSerializer(serializers.ModelSerializer):
 
 
 class ConventionSerializer(serializers.ModelSerializer):
-    """
-    Used by GET /api/admin/documents/
-    """
+    #used by GET /api/admin/documents/
     class Meta:
         model = Convention
         fields = '__all__'
         
 
 class AdminUserListSerializer(serializers.ModelSerializer):
-    """
-    Used by GET /api/admin/users/
-    """
+    #used by GET /api/admin/users/
     domain = serializers.CharField(
         source='student_profile.domain', read_only=True, default=None
     )
@@ -188,18 +174,14 @@ class AdminUserListSerializer(serializers.ModelSerializer):
 
 
 class AdminUserStatusSerializer(serializers.ModelSerializer):
-    """
-    Used by PATCH /api/admin/users/:id/status/
-    """
+    #used by PATCH /api/admin/users/:id/status/
     class Meta:
         model = User
         fields = ['is_active']
 
 
 class AdminCompanyListSerializer(serializers.ModelSerializer):
-    """
-    Used by GET /api/admin/companies/
-    """
+    #used by GET /api/admin/companies/
     email = serializers.EmailField(source='user.email', read_only=True)
     is_active = serializers.BooleanField(source='user.is_active', read_only=True)
 
@@ -213,9 +195,7 @@ class AdminCompanyListSerializer(serializers.ModelSerializer):
 
 
 class AdminCompanyVerifySerializer(serializers.ModelSerializer):
-    """
-    Used by PATCH /api/admin/companies/:id/verify/
-    """
+    #used by PATCH /api/admin/companies/:id/verify/
     class Meta:
         model = Company
         fields = ['verification_status']
@@ -223,9 +203,7 @@ class AdminCompanyVerifySerializer(serializers.ModelSerializer):
 
 
 class AdminDomainTreeSerializer(serializers.ModelSerializer):
-    """
-    Used by GET /api/admin/specialities/
-    """
+    #used by GET /api/admin/specialities/
     specialities = SpecialityDetailSerializer(many=True, read_only=True)
     
     class Meta:
@@ -234,9 +212,7 @@ class AdminDomainTreeSerializer(serializers.ModelSerializer):
 
 
 class PortfolioSubmissionReviewSerializer(serializers.ModelSerializer):
-    """
-    Used by POST /api/admin/portfolio/:submission_id/review/
-    """
+    #used by POST /api/admin/portfolio/:submission_id/review/
     feedback = serializers.CharField(required=False, allow_blank=True)
     
     class Meta:

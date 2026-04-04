@@ -24,7 +24,7 @@ class Speciality(models.Model):
 
 
 class Competency(models.Model):
-    """Skills/Competencies required for a speciality"""
+    #Skills/Competencies required for a speciality
     name = models.CharField(max_length=100)
     speciality = models.ForeignKey(Speciality, on_delete=models.CASCADE, related_name='competencies')
     description = models.TextField(blank=True, null=True)
@@ -48,7 +48,7 @@ class Competency(models.Model):
 
 
 class CompetencyQuiz(models.Model):
-    """Quiz associated with a specific competency"""
+    #Quiz associated with a specific competency
     competency = models.OneToOneField(Competency, on_delete=models.CASCADE, related_name='quiz')
     title = models.CharField(max_length=255)
     instructions = models.TextField(blank=True, null=True)
@@ -72,7 +72,7 @@ class CompetencyQuiz(models.Model):
 
 
 class QuizQuestion(models.Model):
-    """Multiple choice question for a competency quiz"""
+    #Multiple choice question for a competency quiz
     quiz = models.ForeignKey(CompetencyQuiz, on_delete=models.CASCADE, related_name='questions')
     question_text = models.TextField()
     option_a = models.CharField(max_length=255)
@@ -95,7 +95,7 @@ class QuizQuestion(models.Model):
 
 
 class QuizSubmission(models.Model):
-    """Record of a student's quiz attempt"""
+    #Record of a student's quiz attempt
     student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE, related_name='quiz_submissions')
     quiz = models.ForeignKey(CompetencyQuiz, on_delete=models.CASCADE, related_name='submissions')
     answers = models.JSONField(default=dict)
@@ -111,7 +111,7 @@ class QuizSubmission(models.Model):
 
 
 class PortfolioSubmission(models.Model):
-    """Student submitting a portfolio to verify a specific competency"""
+    #Student submitting a portfolio to verify a specific competency
     student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE, related_name='portfolio_submissions')
     competency = models.ForeignKey('Competency', on_delete=models.CASCADE, related_name='portfolio_submissions')
     portfolio_url = models.URLField(max_length=500)

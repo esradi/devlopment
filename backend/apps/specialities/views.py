@@ -18,7 +18,7 @@ from apps.api.permissions import IsUniversityAdmin
 
 
 class DomainListCreateView(APIView):
-    """GET returns all domains; POST creates a domain (admin only)"""
+    #GET returns all domains; POST creates a domain (admin only)#
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsUniversityAdmin()]
@@ -38,7 +38,7 @@ class DomainListCreateView(APIView):
 
 
 class SpecialityListCreateView(APIView):
-    """GET returns all specialities; POST creates a speciality (admin only)"""
+    #GET returns all specialities; POST creates a speciality (admin only)#
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsUniversityAdmin()]
@@ -61,7 +61,7 @@ class SpecialityListCreateView(APIView):
 
 
 class CompetencyListCreateView(APIView):
-    """GET returns all competencies (with optional filters); POST creates competency (admin only)"""
+    #GET returns all competencies (with optional filters); POST creates competency (admin only)#
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsUniversityAdmin()]
@@ -87,7 +87,7 @@ class CompetencyListCreateView(APIView):
 
 
 class SpecialitiesByDomainView(APIView):
-    """List specialities under a specific domain"""
+    #List specialities under a specific domain#
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, domain_pk):
@@ -98,7 +98,7 @@ class SpecialitiesByDomainView(APIView):
 
 
 class CompetenciesBySpecialityView(APIView):
-    """List competencies under a specific speciality"""
+    #List competencies under a specific speciality#
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, speciality_pk):
@@ -109,7 +109,7 @@ class CompetenciesBySpecialityView(APIView):
 
 
 class VerifyQuizListView(APIView):
-    """List all MCQ quizzes (non-CS). Shows status per student."""
+    #List all MCQ quizzes (non-CS). Shows status per student.#
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -138,7 +138,7 @@ class VerifyQuizListView(APIView):
 
 
 class VerifyQuizDetailView(APIView):
-    """Get quiz questions"""
+    #Get quiz questions#
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, competency_id):
@@ -148,7 +148,7 @@ class VerifyQuizDetailView(APIView):
 
 
 class VerifyQuizSubmitView(APIView):
-    """Submit quiz answers. Auto-graded."""
+    #Submit quiz answers. Auto-graded.#
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, competency_id):
@@ -191,10 +191,7 @@ class VerifyQuizSubmitView(APIView):
 
 
 class VerifyPortfolioSubmitView(APIView):
-    """
-    POST /api/verify/portfolio/:competency_id/submit/
-    Submit a portfolio URL to verify a competency
-    """
+    #POST /api/verify/portfolio/:competency_id/submit/ Submit a portfolio URL to verify a competency
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, competency_id):
@@ -224,10 +221,7 @@ class VerifyPortfolioSubmitView(APIView):
 
 
 class VerifyPortfolioStatusView(APIView):
-    """
-    GET /api/verify/portfolio/:competency_id/status/
-    Check the status of a portfolio submission for a competency
-    """
+    #GET /api/verify/portfolio/:competency_id/status/ Check the status of a portfolio submission for a competency
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, competency_id):

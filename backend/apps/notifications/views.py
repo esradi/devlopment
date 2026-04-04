@@ -7,9 +7,6 @@ from .serializers import NotificationSerializer
 from .services import NotificationService
 
 class NotificationViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for viewing and managing User Notifications.
-    """
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -61,22 +58,14 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def unread(self, request):
-        """
-        GET /api/notifications/unread/
-        
-        Liste des notifications non lues uniquement
-        """
+        #GET /api/notifications/unread/
         notifications = self.get_queryset().filter(is_read=False)
         serializer = self.get_serializer(notifications, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['post'], url_path='mark-all-read')
     def mark_all_read(self, request):
-        """
-        POST /api/notifications/mark-all-read/
-        
-        Marquer toutes les notifications comme lues
-        """
+        #POST /api/notifications/mark-all-read/
         updated = self.get_queryset().filter(is_read=False).update(
             is_read=True,
             read_at=timezone.now()
@@ -93,22 +82,14 @@ class NotificationViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['delete'])
     def delete_notification(self, request, pk=None):
-        """
-        DELETE /api/notifications/<id>/
-        
-        Supprimer une notification
-        """
+        #DELETE /api/notifications/<id>/
         notification = self.get_object()
         notification.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     @action(detail=False, methods=['delete'], url_path='clear-all')
     def clear_all(self, request):
-        """
-        DELETE /api/notifications/clear-all/
-        
-        Supprimer toutes les notifications lues
-        """
+        #DELETE /api/notifications/clear-all/
         # Clear all notifications for the user
         deleted = self.get_queryset().delete()
         

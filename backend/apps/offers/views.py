@@ -187,9 +187,6 @@ class ApplicationPagination(PageNumberPagination):
     max_page_size = 100
 
 class ApplicationViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing Student Applications.
-    """
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -206,7 +203,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return Application.objects.none()
 
     def create(self, request, *args, **kwargs):
-        """Student applies to an offer"""
+        #Student applies to an offer
         if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
             return Response({'error': 'Only students can apply.'}, status=status.HTTP_403_FORBIDDEN)
             
@@ -246,7 +243,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def mine(self, request):
-        """Student: get all applications with status timeline"""
+        #Student: get all applications with status timeline
         if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
             return Response({'error': 'Only students can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
             
@@ -270,7 +267,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path=r'offer/(?P<offer_id>\d+)')
     def offer_applicants(self, request, offer_id=None):
-        """Company: get all applicants for one offer"""
+        #Company: get all applicants for one offer
         if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
             return Response({'error': 'Only companies can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
             
@@ -293,7 +290,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def cancel(self, request, pk=None):
-        """Cancel/Withdraw application (if status=pending)"""
+        #Cancel application if status=pending
         application = self.get_object()
         
         if request.user.role != 'student' or application.student != request.user.student_profile:
@@ -344,10 +341,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='generate-convention')
     def generate_convention(self, request, pk=None):
-        """
-        POST /api/applications/<id>/generate-convention/
-        Permission: Company
-        """
+        #POST /api/applications/<id>/generate-convention/ Permission: Company
         application = self.get_object()
         
         # Verify status

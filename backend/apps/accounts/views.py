@@ -60,9 +60,7 @@ def get_user_profile(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_me(request):
-    """
-    Returns the current user's profile and role-specific data.
-    """
+    #Returns the current user's profile and role-specific data.
     serializer = MeSerializer(request.user)
     return Response(serializer.data)
 

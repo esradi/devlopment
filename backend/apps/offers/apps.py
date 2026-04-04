@@ -5,4 +5,4 @@ class OffersConfig(AppConfig):
     name = 'apps.offers'
 
     def ready(self):
-        import apps.offers.signals  # noqa: F401
+        import apps.offers.signals 

@@ -27,9 +27,7 @@ from apps.specialities.models import Domain, PortfolioSubmission
 User = get_user_model()
 
 class AdminDashboardStatsView(APIView):
-    """
-    GET /api/admin/dashboard/
-    """
+    #GET /api/admin/dashboard/
     permission_classes = [permissions.IsAdminUser]
 
     def get(self, request):
@@ -59,10 +57,7 @@ class AdminDashboardStatsView(APIView):
 
 
 class PendingValidationListView(generics.ListAPIView):
-    """
-    GET /api/admin/validations/
-    All pending internship validations queue
-    """
+    #GET /api/admin/validations/ All pending internship validations queue
     permission_classes = [permissions.IsAdminUser]
     serializer_class = InternshipValidationListSerializer
 
@@ -74,10 +69,7 @@ class PendingValidationListView(generics.ListAPIView):
 
 
 class ValidationDetailView(generics.RetrieveAPIView):
-    """
-    GET /api/admin/validations/:id/
-    Validation detail
-    """
+    #GET /api/admin/validations/:id/
     permission_classes = [permissions.IsAdminUser]
     serializer_class = InternshipValidationDetailSerializer
     queryset = InternshipValidation.objects.select_related(
@@ -88,10 +80,7 @@ class ValidationDetailView(generics.RetrieveAPIView):
 
 
 class ValidationApproveView(APIView):
-    """
-    POST /api/admin/validations/:id/approve/
-    Approve validation + auto-generate Convention PDF
-    """
+    #POST /api/admin/validations/:id/approve/ Approve validation + auto-generate Convention PDF
     permission_classes = [permissions.IsAdminUser]
 
     def post(self, request, pk):
@@ -133,10 +122,7 @@ class ValidationApproveView(APIView):
 
 
 class ValidationRejectView(APIView):
-    """
-    POST /api/admin/validations/:id/reject/
-    Reject validation with a required reason
-    """
+    #POST /api/admin/validations/:id/reject/
     permission_classes = [permissions.IsAdminUser]
 
     def post(self, request, pk):
@@ -169,10 +155,7 @@ class ValidationRejectView(APIView):
 
 
 class AdminDocumentsListView(generics.ListAPIView):
-    """
-    GET /api/admin/documents/
-    All generated documents
-    """
+    #GET /api/admin/documents/
     permission_classes = [permissions.IsAdminUser]
     serializer_class = ConventionSerializer
     queryset = Convention.objects.all().select_related(
@@ -182,10 +165,7 @@ class AdminDocumentsListView(generics.ListAPIView):
 
 
 class AdminUserListView(generics.ListAPIView):
-    """
-    GET /api/admin/users/
-    All students list
-    """
+    #GET /api/admin/users/
     permission_classes = [permissions.IsAdminUser]
     serializer_class = AdminUserListSerializer
 
@@ -194,40 +174,28 @@ class AdminUserListView(generics.ListAPIView):
 
 
 class AdminUserStatusView(generics.UpdateAPIView):
-    """
-    PATCH /api/admin/users/:id/status/
-    Activate / deactivate a user
-    """
+    #PATCH /api/admin/users/:id/status/
     permission_classes = [permissions.IsAdminUser]
     serializer_class = AdminUserStatusSerializer
     queryset = User.objects.all()
 
 
 class AdminCompanyListView(generics.ListAPIView):
-    """
-    GET /api/admin/companies/
-    All companies list
-    """
+    #GET /api/admin/companies/
     permission_classes = [permissions.IsAdminUser]
     serializer_class = AdminCompanyListSerializer
     queryset = Company.objects.all().select_related('user')
 
 
 class AdminCompanyVerifyView(generics.UpdateAPIView):
-    """
-    PATCH /api/admin/companies/:id/verify/
-    Verify a company
-    """
+    #PATCH /api/admin/companies/:id/verify/
     permission_classes = [permissions.IsAdminUser]
     serializer_class = AdminCompanyVerifySerializer
     queryset = Company.objects.all()
 
 
 class AdminSpecialitiesListView(generics.ListAPIView):
-    """
-    GET /api/admin/specialities/
-    Manage domains, specialities, competencies
-    """
+    #GET /api/admin/specialities/
     permission_classes = [permissions.IsAdminUser]
     serializer_class = AdminDomainTreeSerializer
     
@@ -236,10 +204,7 @@ class AdminSpecialitiesListView(generics.ListAPIView):
 
 
 class PortfolioSubmissionReviewView(APIView):
-    """
-    POST /api/admin/portfolio/:submission_id/review/
-    Approve or reject a portfolio submission
-    """
+    #POST /api/admin/portfolio/:submission_id/review/ Approve or reject a portfolio submission
     permission_classes = [permissions.IsAdminUser]
 
     def post(self, request, pk):

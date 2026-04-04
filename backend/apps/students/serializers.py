@@ -4,14 +4,14 @@ from apps.offers.models import Skill, Domain
 
 
 class SkillDetailSerializer(serializers.ModelSerializer):
-    """Serializer for skills with domain info"""
+    #Serializer for skills with domain info#
     class Meta:
         model = Skill
         fields = ['id', 'name']
 
 
 class StudentSkillSerializer(serializers.ModelSerializer):
-    """Serializer for StudentSkill (ties skill with verification status)"""
+    #Serializer for StudentSkill (ties skill with verification status)#
     skill = SkillDetailSerializer(read_only=True)
     skill_id = serializers.PrimaryKeyRelatedField(
         write_only=True, 
@@ -27,7 +27,7 @@ class StudentSkillSerializer(serializers.ModelSerializer):
 
 
 class StudentProfileSerializer(serializers.ModelSerializer):
-    """Complete Student Profile with domain, speciality, and competencies"""
+    #Complete Student Profile with domain, speciality, and competencies#
     user_email = serializers.EmailField(source='user.email', read_only=True)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     competencies = serializers.SerializerMethodField()
@@ -57,6 +57,6 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user_id', 'user_email', 'profile_completeness']
 
     def get_competencies(self, obj):
-        """Get all competencies for the student"""
+        #Get all competencies for the student#
         skills = obj.studentskill_set.all()
         return StudentSkillSerializer(skills, many=True).data

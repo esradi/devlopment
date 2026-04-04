@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 
 class InternshipValidation(models.Model):
-    """Admin validation/approval of a student's internship application"""
+    #Admin validation/approval of a student's internship application
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),

@@ -11,12 +11,8 @@ from apps.offers.models import Offer, Application
 from apps.api.permissions import IsStudent
 from .serializers import StudentProfileSerializer, StudentSkillSerializer
 
-# ─────────────────────────────────────────────────────────────────────────────
-# HELPERS  (private functions used by the views below)
-# ─────────────────────────────────────────────────────────────────────────────
-
 def _get_average_match_score(student):
-    """Compute average match score across up to 20 active offers."""
+    #Compute average match score across up to 20 active offers
     try:
         from apps.matching.services import MatchingService
         active_offers = Offer.objects.filter(status='active')[:20]
@@ -33,7 +29,7 @@ def _get_average_match_score(student):
 
 
 def _get_upcoming_interviews_count(student):
-    """Count upcoming interviews for the student."""
+    #Count upcoming interviews for the student
     try:
         from apps.interviews.models import InterviewSlot
         from django.utils import timezone
@@ -47,7 +43,7 @@ def _get_upcoming_interviews_count(student):
 
 
 def _build_recent_activity(student):
-    """Build a chronological activity feed from applications and challenge submissions."""
+    #Build a chronological activity feed from applications and challenge submissions
     activity = []
 
     # Recent applications
@@ -98,7 +94,7 @@ def _build_recent_activity(student):
 
 
 def _get_recommended_offers(student, limit=3):
-    """Return top N active offers not yet applied to, sorted by match score."""
+    #Return top active offers not yet applied to, sorted by match score
     try:
         from apps.matching.services import MatchingService
         applied_offer_ids = set(
@@ -106,7 +102,7 @@ def _get_recommended_offers(student, limit=3):
         )
         active_offers = Offer.objects.filter(status='active').exclude(id__in=applied_offer_ids)
         scored = []
-        for offer in active_offers[:30]:  # check up to 30, return top N
+        for offer in active_offers[:30]:  # check up to 30, return top n
             try:
                 result = MatchingService.calculate_match_score(student.id, offer.id)
                 scored.append((result['total_score'], offer))
@@ -134,13 +130,11 @@ def _get_recommended_offers(student, limit=3):
 
 
 class StudentProfileView(APIView):
-    """
-    GET: Retrieve student's full profile (domain, speciality, competencies)
-    """
+    #GET: Retrieve student's full profile (domain, speciality, competencies)
     permission_classes = [IsAuthenticated, IsStudent]
     
     def get(self, request):
-        """Get the authenticated student's full profile"""
+        #Get the authenticated student's full profile
         try:
             student = Student.objects.get(user=request.user)
             serializer = StudentProfileSerializer(student)
@@ -152,7 +146,7 @@ class StudentProfileView(APIView):
             )
     
     def put(self, request):
-        """Update the authenticated student's profile fields"""
+        #Update the authenticated student's profile fields
         try:
             student = Student.objects.get(user=request.user)
             serializer = StudentProfileSerializer(student, data=request.data, partial=True)
@@ -176,14 +170,12 @@ class StudentProfileView(APIView):
 
 
 class StudentCompetenciesView(APIView):
-    """
-    GET: Retrieve all student's competencies
-    POST: Add a new skill to student's competencies
-    """
+    #GET: Retrieve all student's competencies
+    #POST: Add a new skill to student's competencies
     permission_classes = [IsAuthenticated, IsStudent]
     
     def get(self, request):
-        """Get all competencies for the authenticated student"""
+        #Get all competencies for the authenticated student
         try:
             student = Student.objects.get(user=request.user)
             competencies = StudentSkill.objects.filter(student=student)
@@ -199,7 +191,7 @@ class StudentCompetenciesView(APIView):
             )
     
     def post(self, request):
-        """Add a new skill to the authenticated student's competencies"""
+        #Add a new skill to the authenticated student's competencies
         try:
             student = Student.objects.get(user=request.user)
             
@@ -243,14 +235,12 @@ class StudentCompetenciesView(APIView):
 
 
 class StudentCompetencyDetailView(APIView):
-    """
-    GET: Retrieve a specific student competency
-    DELETE: Remove a skill from student's competencies
-    """
+    #GET: Retrieve a specific student competency
+    #DELETE: Remove a skill from student's competencies
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request, competency_id):
-        """Get details of a specific competency for the authenticated student"""
+        #Get details of a specific competency for the authenticated student#
         try:
             student = Student.objects.get(user=request.user)
             competency = StudentSkill.objects.get(id=competency_id, student=student)
@@ -268,7 +258,7 @@ class StudentCompetencyDetailView(APIView):
             )
     
     def delete(self, request, competency_id):
-        """Delete a skill from the authenticated student's competencies"""
+        #Delete a skill from the authenticated student's competencies#
         try:
             student = Student.objects.get(user=request.user)
             competency = StudentSkill.objects.get(id=competency_id, student=student)
@@ -291,9 +281,7 @@ class StudentCompetencyDetailView(APIView):
 
 
 class StudentCVUploadView(APIView):
-    """
-    POST: Upload or replace student's CV file
-    """
+    #POST: Upload or replace student's CV file
     permission_classes = [IsAuthenticated, IsStudent]
 
     def post(self, request):
@@ -321,9 +309,7 @@ class StudentCVUploadView(APIView):
 
 
 class StudentCVDeleteView(APIView):
-    """
-    DELETE: Remove the student's CV file
-    """
+    #DELETE: Remove the student's CV file
     permission_classes = [IsAuthenticated, IsStudent]
 
     def delete(self, request):
@@ -352,9 +338,7 @@ class StudentCVDeleteView(APIView):
 
 
 class StudentCVDownloadView(APIView):
-    """
-    GET: Download the student's CV
-    """
+    #GET: Download the student's CV
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request):
@@ -381,9 +365,7 @@ class StudentCVDownloadView(APIView):
 
 
 class StudentPictureUploadView(APIView):
-    """
-    POST: Upload or replace student's profile picture
-    """
+    #POST: Upload or replace student's profile picture
     permission_classes = [IsAuthenticated, IsStudent]
 
     def post(self, request):
@@ -411,9 +393,7 @@ class StudentPictureUploadView(APIView):
 
 
 class StudentPictureDeleteView(APIView):
-    """
-    DELETE: Remove the student's profile picture
-    """
+    #DELETE: Remove the student's profile picture
     permission_classes = [IsAuthenticated, IsStudent]
 
     def delete(self, request):
@@ -439,15 +419,8 @@ class StudentPictureDeleteView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-# ─────────────────────────────────────────────────────────────────────────────
-# STUDENT DASHBOARD  →  GET /api/student/dashboard/
-# ─────────────────────────────────────────────────────────────────────────────
-
 class StudentDashboardView(APIView):
-    """
-    GET /api/student/dashboard/
-    Returns stats card, recent activity feed, and top 3 recommended offers.
-    """
+    #GET /api/student/dashboard/
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request):
@@ -499,16 +472,8 @@ class StudentDashboardView(APIView):
             'recommended_offers':   _get_recommended_offers(student, limit=3),
         })
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# STUDENT ANALYTICS  →  GET /api/student/analytics/
-# ─────────────────────────────────────────────────────────────────────────────
-
 class StudentAnalyticsView(APIView):
-    """
-    GET /api/student/analytics/
-    Deep performance metrics: applications, skills, match scores, challenges, badges.
-    """
+    #GET /api/student/analytics/ Deep performance metrics: applications, skills, match scores, challenges, badges.
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request):
@@ -517,7 +482,7 @@ class StudentAnalyticsView(APIView):
         except Student.DoesNotExist:
             return Response({'error': 'Student profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # ── Applications ──────────────────────────────────────────────────
+        #Applications
         applications = Application.objects.filter(student=student)
         total_apps   = applications.count()
         accepted     = applications.filter(status='accepted').count()
@@ -544,7 +509,7 @@ class StudentAnalyticsView(APIView):
             for m in monthly
         ]
 
-        # ── Skills ────────────────────────────────────────────────────────
+        #Skills
         all_skills        = StudentSkill.objects.filter(student=student).select_related('skill')
         total_skills      = all_skills.count()
         verified_count    = all_skills.filter(is_verified=True).count()
@@ -553,7 +518,7 @@ class StudentAnalyticsView(APIView):
         verified_names    = list(all_skills.filter(is_verified=True).values_list('skill__name', flat=True))
         unverified_names  = list(all_skills.filter(is_verified=False).values_list('skill__name', flat=True))
 
-        # ── Match Scores ──────────────────────────────────────────────────
+        #Match Scores
         scores_by_offer = []
         avg_score = 0
         highest   = 0
@@ -586,7 +551,7 @@ class StudentAnalyticsView(APIView):
         except Exception:
             lowest = 0
 
-        # ── Challenges ────────────────────────────────────────────────────
+        #Challenges 
         challenges_data     = []
         total_attempted     = 0
         total_passed_ch     = 0
@@ -612,7 +577,7 @@ class StudentAnalyticsView(APIView):
         except Exception:
             pass
 
-        # ── Badges ────────────────────────────────────────────────────────
+        #Badges 
         badges = StudentBadge.objects.filter(student=student).order_by('-earned_at')
         badges_data = [
             {
@@ -659,17 +624,9 @@ class StudentAnalyticsView(APIView):
             'badges': badges_data,
         })
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# STUDENT RECOMMENDATIONS  →  GET /api/student/recommendations/
-# ─────────────────────────────────────────────────────────────────────────────
-
 class StudentRecommendationsView(APIView):
-    """
-    GET /api/student/recommendations/
-    Returns top matching offers the student hasn't applied to yet,
-    with a breakdown of matching vs missing skills.
-    """
+    #GET /api/student/recommendations/
+    #Returns top matching offers the student hasn't applied to yet,with a breakdown of matching vs missing skills.
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request):
@@ -745,16 +702,8 @@ class StudentRecommendationsView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# STUDENT APPLICATION STATS  →  GET /api/student/applications/stats/
-# ─────────────────────────────────────────────────────────────────────────────
-
 class StudentApplicationStatsView(APIView):
-    """
-    GET /api/student/applications/stats/
-    Quick stats summary used by the My Applications page header.
-    """
+    #GET /api/student/applications/stats/
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request):

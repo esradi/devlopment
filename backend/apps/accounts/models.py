@@ -28,7 +28,7 @@ class User(AbstractUser):
 
 
 class Student(models.Model):
-    """Student Profile"""
+    #student profile
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     university = models.CharField(max_length=100, null=True, blank=True)
     domain = models.CharField(max_length=100, null=True, blank=True)
@@ -64,7 +64,7 @@ class StudentSkill(models.Model):
 
 
 class Company(models.Model):
-    """Company Profile"""
+    #company profile
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='company_profile')
     company_name = models.CharField(max_length=200)
     company_type = models.CharField(max_length=100, null=True, blank=True)
@@ -89,9 +89,8 @@ class Company(models.Model):
         return self.company_name
 
 class AdminProfile(models.Model):
-    """University Administration Profile"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
-    admin_role = models.CharField(max_length=100) # e.g. Dean, Career Service, Dept Head
+    admin_role = models.CharField(max_length=100) 
     
     class Meta:
         db_table = 'api_adminprofile'
@@ -128,10 +127,9 @@ class WebauthnAuthentication(models.Model):
     class Meta:
         db_table = 'api_webauthnauthentication'
 class StudentBadge(models.Model):
-    """Gamification: Badges earned by students"""
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='badges')
     badge_name = models.CharField(max_length=100)
-    badge_type = models.CharField(max_length=50) # e.g. 'easy', 'medium', 'hard', 'special'
+    badge_type = models.CharField(max_length=50) #easy,medium,hard,special
     description = models.TextField()
     earned_at = models.DateTimeField(auto_now_add=True)
 

@@ -39,9 +39,6 @@ class ConventionSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        """
-        Ensure the offer belongs to the company, and auto-assign the company from the offer.
-        """
         offer = data.get('offer')
         if offer:
             data['company'] = offer.company

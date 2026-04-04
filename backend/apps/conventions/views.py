@@ -9,7 +9,6 @@ from .serializers import ConventionSerializer
 from apps.api.permissions import IsOwnerOrAdmin
 
 def get_client_ip(request):
-    """Récupère l'IP du client"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
@@ -66,16 +65,11 @@ def verify_webauthn_for_user(request, user, webauthn_data):
         return False, str(e)
 
 class ConventionViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing Conventions.
-    """
     serializer_class = ConventionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """
-        Filter queryset based on user role.
-        """
+        
         user = self.request.user
         qs = Convention.objects.all()
 
@@ -97,19 +91,11 @@ class ConventionViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_permissions(self):
-        """
-        Apply IsOwnerOrAdmin for retrieve and download actions.
-        """
         if self.action in ['retrieve', 'download', 'status', 'history']:
             self.permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
         return super().get_permissions()
 
     def check_object_permissions(self, request, obj):
-        """
-        Custom check for IsOwnerOrAdmin mapping.
-        In IsOwnerOrAdmin, we check if obj.user == request.user or obj.company.user == request.user.
-        For conventions, owner applies to both the linked student and company.
-        """
         if request.user.role == 'admin':
             return True
             
@@ -125,9 +111,6 @@ class ConventionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def download(self, request, pk=None):
-        """
-        Download the convention PDF file.
-        """
         convention = self.get_object()
         
         if not convention.pdf_file:
@@ -150,9 +133,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='sign-student')
     def sign_student(self, request, pk=None):
-        """
-        POST /api/conventions/<id>/sign-student/
-        """
+        #POST /api/conventions/<id>/sign-student/
         convention = self.get_object()
         
         if request.user.role != 'student' or convention.student.user != request.user:
@@ -219,9 +200,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], url_path='sign-company')
     def sign_company(self, request, pk=None):
-        """
-        POST /api/conventions/<id>/sign-company/
-        """
+        #POST /api/conventions/<id>/sign-company/
         convention = self.get_object()
         
         if request.user.role != 'company' or convention.company.user != request.user:
@@ -288,9 +267,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], url_path='validate', permission_classes=[permissions.IsAdminUser])
     def validate_convention(self, request, pk=None):
-        """
-        POST /api/conventions/<id>/validate/
-        """
+        #POST /api/conventions/<id>/validate/
         convention = self.get_object()
         
         if convention.status != 'pending_admin_validation':
@@ -352,10 +329,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='reject')
     def reject_convention(self, request, pk=None):
-        """
-        POST /api/conventions/<id>/reject/
-        Admin rejection.
-        """
+        #POST /api/conventions/<id>/reject/
         convention = self.get_object()
         
         if request.user.role != 'admin':
@@ -383,10 +357,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def status(self, request, pk=None):
-        """
-        Lightweight endpoint returning only the convention status.
-        GET /api/conventions/<id>/status/
-        """
+        #GET /api/conventions/<id>/status/
         convention = self.get_object()
         return Response({
             "id": convention.id,
@@ -395,10 +366,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def history(self, request, pk=None):
-        """
-        Lightweight endpoint returning the signature history and timestamps.
-        GET /api/conventions/<id>/history/
-        """
+        #GET /api/conventions/<id>/history/
         convention = self.get_object()
         return Response({
             "id": convention.id,
@@ -408,22 +376,14 @@ class ConventionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
     def pending(self, request):
-        """
-        GET /api/conventions/pending/
-        
-        List conventions awaiting admin validation.
-        """
+        #GET /api/conventions/pending/
         qs = Convention.objects.filter(status='pending_admin_validation')
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
     def stats(self, request):
-        """
-        GET /api/conventions/stats/
-        
-        Get statistics on conventions for the admin dashboard.
-        """
+        #GET /api/conventions/stats/
         from django.db.models import Count
         stats = Convention.objects.values('status').annotate(count=Count('status'))
         

@@ -154,7 +154,7 @@ class NotificationService:
                 related_object_id=convention.id
             )
             
-        # Also let student know the company signed
+        #student know the company signed
         return NotificationService.create_and_send_notification(
             user=convention.student.user,
             notif_type="convention_company_signed",
