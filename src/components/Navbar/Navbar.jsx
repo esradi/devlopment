@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Menu, X, LayoutDashboard, MessageSquare, Bell, User } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import './Navbar.css';
+import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 
 const Navbar = ({ role, setUserRole }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -83,6 +83,8 @@ const Navbar = ({ role, setUserRole }) => {
         location.pathname.includes('/company/') ||
         location.pathname.includes('/admin/');
 
+    const isStudentDashboard = location.pathname.startsWith('/dashboard/student');
+
     const getDashboardLink = () => {
         switch (role) {
             case 'student': return '/student/dashboard';
@@ -103,7 +105,7 @@ const Navbar = ({ role, setUserRole }) => {
 
     const getProfileName = () => {
         switch (role) {
-            case 'student': return 'JD';
+            case 'student': return 'AB';
             case 'company': return 'Tech';
             case 'admin': return 'Admin';
             default: return 'User';
@@ -113,10 +115,6 @@ const Navbar = ({ role, setUserRole }) => {
     return (
         <motion.nav
             className={`navbar ${isScrolled ? 'scrolled' : ''}`}
-            style={{
-                background: navbarBackground,
-                backdropFilter: isScrolled ? 'blur(10px)' : 'none',
-            }}
             initial={{ y: -100 }}
             animate={{ y: 0 }}
             transition={{ duration: 0.5 }}
@@ -138,8 +136,7 @@ const Navbar = ({ role, setUserRole }) => {
                 {/* CENTRAL MENU */}
                 <div className="menu-section">
                     <ul className="menu-list">
-                        {!isDashboardView ? (
-                            // Public / Landing Page Links
+                        {!isDashboardView || isStudentDashboard ? (
                             publicLinks.map((link) => (
                                 <li key={link.id}>
                                     <a
@@ -155,7 +152,6 @@ const Navbar = ({ role, setUserRole }) => {
                                 </li>
                             ))
                         ) : (
-                            // Role-Specific Dashboard Links
                             dashboardLinks[role]?.map((link) => (
                                 <li key={link.path}>
                                     <Link to={link.path} className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}>
@@ -171,27 +167,17 @@ const Navbar = ({ role, setUserRole }) => {
                 <div className="actions-section">
                     {role !== 'public' ? (
                         <div className="auth-actions">
-                            <Link to={getDashboardLink()} className="action-icon" title="Dashboard">
-                                <LayoutDashboard size={20} />
-                            </Link>
-                            <Link to="/messages" className="action-icon" title="Messages">
-                                <MessageSquare size={20} />
-                            </Link>
-                            <Link to="/notifications" className="action-icon" title="Notifications">
+                            <Link to="/notifications" className="action-icon icon-btn" title="Notifications" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', color: '#fff', marginRight: '16px' }}>
                                 <Bell size={20} />
-                                <span className="notification-dot"></span>
+                                <span className="notification-dot" style={{ position: 'absolute', top: '10px', right: '10px', width: '6px', height: '6px', backgroundColor: '#ff1b90', borderRadius: '50%' }}></span>
                             </Link>
 
-                            {/* Profile with Dropdown */}
                             <div className="profile-container">
-                                <div className="profile-pill" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-                                    <span>{getProfileName()}</span>
-                                    <div
-                                        className="profile-avatar"
-                                        style={{ background: getProfileColor() }}
-                                    >
-                                        <User size={14} color="white" />
+                                <div className="profile-trigger" onClick={() => setIsProfileOpen(!isProfileOpen)} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 12px 4px 4px', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                    <div className="profile-avatar" style={{ backgroundColor: '#9e59ff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
+                                        {getProfileName()}
                                     </div>
+                                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>Ahmed B.</span>
                                 </div>
 
                                 <AnimatePresence>
@@ -241,7 +227,7 @@ const Navbar = ({ role, setUserRole }) => {
                         exit={{ opacity: 0, y: -20 }}
                     >
                         <ul className="mobile-menu-list">
-                            {!isDashboardView ? (
+                            {!isDashboardView || isStudentDashboard ? (
                                 publicLinks.map((link) => (
                                     <li key={link.id}>
                                         <a href={`/#${link.id}`} onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>
@@ -266,7 +252,7 @@ const Navbar = ({ role, setUserRole }) => {
                                     <li><button onClick={handleLogout} className="mobile-logout-link">Logout</button></li>
                                 </>
                             )}
-                            {role === 'public' && (
+                            {role === 'public' && !isDashboardView && (
                                 <li><Link to="/login" className="mobile-login-btn" onClick={() => setIsMobileMenuOpen(false)}>Login</Link></li>
                             )}
                         </ul>

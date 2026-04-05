@@ -13,6 +13,8 @@ import Login from './pages/auth/login';
 import SignUp from './pages/auth/signup';
 import ForgotPassword from './pages/auth/forgotpassword';
 import ResetPassword from './pages/auth/resetpassword';
+import StudentDashboard from './pages/student/StudentDashboard';
+import OfferDetails from './pages/student/OfferDetails';
 import './App.css';
 
 const LandingPage = ({ userRole }) => {
@@ -124,14 +126,18 @@ const LandingPage = ({ userRole }) => {
 };
 
 function App() {
-  const [userRole, setUserRole] = useState('public');
+  const [userRole, setUserRole] = useState(() => {
+    return window.location.pathname.startsWith('/dashboard') ? 'student' : 'public';
+  });
   const location = useLocation();
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
+  const isDashboard = location.pathname.startsWith('/dashboard');
   const isAuthPage = authPaths.includes(location.pathname);
+  const hideLayout = isAuthPage;
 
   return (
     <div className="app">
-      {!isAuthPage && <Navbar role={userRole} setUserRole={setUserRole} />}
+      {!hideLayout && <Navbar role={userRole} setUserRole={setUserRole} />}
 
       <Routes>
         <Route path="/" element={<LandingPage userRole={userRole} />} />
@@ -139,9 +145,11 @@ function App() {
         <Route path="/signup" element={<SignUp setUserRole={setUserRole} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/dashboard/student/*" element={<StudentDashboard setUserRole={setUserRole} />} />
+        <Route path="/dashboard/student/offer/:id" element={<OfferDetails setUserRole={setUserRole} />} />
       </Routes>
 
-      {!isAuthPage && <Footer />}
+      {!hideLayout && !isDashboard && <Footer />}
     </div>
   );
 }

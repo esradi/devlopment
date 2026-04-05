@@ -35,7 +35,11 @@ const Login = ({ setUserRole }) => {
                 localStorage.setItem('user', JSON.stringify(data.user));
 
                 setUserRole(data.user.role || 'student');
-                navigate('/');
+                if (data.user.role === 'student') {
+                    navigate('/dashboard/student');
+                } else {
+                    navigate('/');
+                }
             } else {
                 setError(data.non_field_errors?.[0] || data.error || data.detail || 'Invalid email or password');
             }
@@ -106,6 +110,16 @@ const Login = ({ setUserRole }) => {
                     <p className="toggle-text">
                         Don't have an account? <Link to="/signup" className="link">Register here</Link>
                     </p>
+                    <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
+                        <p style={{ fontSize: '0.8rem', color: '#8892b0', marginBottom: '10px' }}>Testing Mode:</p>
+                        <button
+                            type="button"
+                            onClick={() => { setUserRole('student'); navigate('/dashboard/student'); }}
+                            style={{ background: 'rgba(158, 89, 255, 0.1)', color: '#9e59ff', border: '1px solid #9e59ff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                        >
+                            Preview Student Dashboard
+                        </button>
+                    </div>
                 </div>
 
                 {/* Right Side: Info Section */}

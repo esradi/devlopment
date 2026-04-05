@@ -603,7 +603,11 @@ function SignUp({ setUserRole }) {
                                 </div>
                                 <button className="btn-next full" style={{ marginTop: '30px' }} onClick={() => {
                                     setUserRole(formData.role);
-                                    navigate('/');
+                                    if (formData.role === 'student') {
+                                        navigate('/dashboard/student');
+                                    } else {
+                                        navigate('/');
+                                    }
                                 }}>Enter Portal</button>
                             </div>
                         </div>
@@ -612,6 +616,16 @@ function SignUp({ setUserRole }) {
                     <p className="toggle-text">
                         Joined already? <Link to="/login" className="link">Sign In</Link>
                     </p>
+                    <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
+                        <p style={{ fontSize: '0.8rem', color: '#8892b0', marginBottom: '10px' }}>Testing Mode:</p>
+                        <button
+                            type="button"
+                            onClick={() => { setUserRole('student'); navigate('/dashboard/student'); }}
+                            style={{ background: 'rgba(158, 89, 255, 0.1)', color: '#9e59ff', border: '1px solid #9e59ff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                        >
+                            Preview Student Dashboard
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
