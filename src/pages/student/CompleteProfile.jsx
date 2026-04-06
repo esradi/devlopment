@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { dashboardService } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     User, 
@@ -500,12 +501,23 @@ const CompleteProfile = ({ userData, onSave }) => {
                         <button 
                             className="btn-save-go" 
                             disabled={isSaving}
-                            onClick={() => {
+                            onClick={async () => {
                                 setIsSaving(true);
-                                setTimeout(() => {
-                                    setIsSaving(false);
+                                try {
+                                    const payload = {
+                                        // Map current local states to backend fields
+                                        wilaya: locations[0], 
+                                        academic_year: "Master 2",
+                                        speciality: userData?.profile?.speciality,
+                                        skill_names: skills.map(s => s.name)
+                                    };
+                                    await dashboardService.updateProfile(payload);
                                     if(onSave) onSave();
-                                }, 1000);
+                                } catch (error) {
+                                    console.error("Failed to complete profile:", error);
+                                } finally {
+                                    setIsSaving(false);
+                                }
                             }}
                         >
                             {isSaving ? 'Saving...' : 'Save & Go to Dashboard'}

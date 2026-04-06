@@ -60,11 +60,17 @@ const OfferDetails = ({ setUserRole }) => {
 
     const handleApply = async () => {
         setIsApplying(true);
-        // Simulate API call to apply
-        setTimeout(() => {
+        try {
+            await dashboardService.applyToOffer({
+                offer: id,
+                cover_letter: coverLetter
+            });
+            navigate('/dashboard/student');
+        } catch (error) {
+            console.error("Failed to apply:", error);
+        } finally {
             setIsApplying(false);
-            navigate('/dashboard/student'); // Redirect back to dashboard after apply for this demo
-        }, 1500);
+        }
     };
 
     if (loading) {
