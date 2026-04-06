@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { dashboardService } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     CheckCircle2,
@@ -32,14 +33,56 @@ const StudentSettings = ({ userData }) => {
 
     // Form State
     const [formData, setFormData] = useState({
-        firstName: userData?.first_name || 'Amine',
-        lastName: userData?.last_name || 'Kheddar',
-        email: userData?.email || 'amine.k@univ-alger.dz',
-        phone: '+213 550 123 456',
-        wilaya: '16 - Algiers',
-        educationLevel: 'Master 2',
-        specialization: userData?.profile?.speciality || 'Software Engineering'
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        wilaya: '',
+        educationLevel: '',
+        specialization: ''
     });
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [matchScore, setMatchScore] = useState(70);
+
+    // Skills
+    const [skills, setSkills] = useState([]);
+    const [skillInput, setSkillInput] = useState('');
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                setIsLoading(true);
+                const data = await dashboardService.getMe();
+                if (data) {
+                    setFormData({
+                        firstName: data.first_name || '',
+                        lastName: data.last_name || '',
+                        email: data.email || '',
+                        phone: data.phone || '',
+                        wilaya: data.profile?.wilaya || '',
+                        educationLevel: data.profile?.academic_year || 'Master 2',
+                        specialization: data.profile?.speciality || ''
+                    });
+                    
+                    // Handle complex skills objects from backend
+                    const backendSkills = data.profile?.skills || [];
+                    setSkills(backendSkills);
+                    
+                    // Update match score if available
+                    if (data.profile?.profile_completeness) {
+                        setMatchScore(data.profile.profile_completeness);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile:", error);
+                triggerToast("Failed to load profile data");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     // Toggles
     const [notifications, setNotifications] = useState({
@@ -60,19 +103,15 @@ const StudentSettings = ({ userData }) => {
         setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
-    // Skills
-    const [skills, setSkills] = useState(['React', 'Python', 'Figma']);
-    const [skillInput, setSkillInput] = useState('');
-
     const handleAddSkill = (e) => {
         if (e.key === 'Enter' && skillInput.trim()) {
-            setSkills([...skills, skillInput.trim()]);
+            setSkills([...skills, { skill_name: skillInput.trim(), is_verified: false }]);
             setSkillInput('');
         }
     };
 
     const removeSkill = (skillToRemove) => {
-        setSkills(skills.filter(s => s !== skillToRemove));
+        setSkills(skills.filter(s => (s.skill_name || s) !== (skillToRemove.skill_name || skillToRemove)));
     };
 
     const handlePhotoClick = () => {
@@ -296,12 +335,17 @@ const StudentSettings = ({ userData }) => {
                             <div className="pref-block mt-6">
                                 <h3>Core Skills</h3>
                                 <div className="skills-input-wrapper">
-                                    {skills.map(skill => (
-                                        <div key={skill} className="skill-chip">
-                                            {skill}
-                                            <button onClick={() => removeSkill(skill)}><XIcon size={12} /></button>
-                                        </div>
-                                    ))}
+                                    {skills.map((skill, idx) => {
+                                        const name = typeof skill === 'string' ? skill : skill.skill_name;
+                                        const isVerified = skill.is_verified;
+                                        return (
+                                            <div key={idx} className={`skill-chip ${isVerified ? 'verified-skill' : ''}`}>
+                                                {isVerified && <Check size={12} className="verified-icon" />}
+                                                {name}
+                                                <button onClick={() => removeSkill(skill)}><XIcon size={12} /></button>
+                                            </div>
+                                        );
+                                    })}
                                     <input
                                         type="text"
                                         placeholder="Type a skill..."
@@ -473,10 +517,10 @@ const StudentSettings = ({ userData }) => {
                         <div className="settings-card match-o-meter mt-6">
                             <div className="mom-header">
                                 <h3>Match-O-Meter</h3>
-                                <span>70%</span>
+                                <span>{matchScore}%</span>
                             </div>
                             <div className="mom-bar-bg">
-                                <div className="mom-bar-fill" style={{ width: '70%' }}></div>
+                                <div className="mom-bar-fill" style={{ width: `${matchScore}%` }}></div>
                             </div>
                             <p className="mom-text">Your profile visibility is increased when you reach 90% completion. Add your project details to boost it!</p>
                         </div>
@@ -490,12 +534,27 @@ const StudentSettings = ({ userData }) => {
                 <button className="btn-text" onClick={() => triggerToast("Changes discarded")}>Discard Changes</button>
                 <button
                     className="btn-save-changes"
-                    onClick={() => {
+                    onClick={async () => {
                         setIsSaving(true);
-                        setTimeout(() => {
-                            setIsSaving(false);
+                        try {
+                            const payload = {
+                                first_name: formData.firstName,
+                                last_name: formData.lastName,
+                                phone: formData.phone,
+                                wilaya: formData.wilaya,
+                                academic_year: formData.educationLevel,
+                                speciality: formData.specialization,
+                                // Pass skill names or IDs
+                                skill_names: skills.map(s => s.skill_name || s)
+                            };
+                            await dashboardService.updateProfile(payload);
                             triggerToast("Settings saved successfully");
-                        }, 1000);
+                        } catch (error) {
+                            console.error("Save error:", error);
+                            triggerToast("Failed to save changes");
+                        } finally {
+                            setIsSaving(false);
+                        }
                     }}
                     disabled={isSaving}
                 >

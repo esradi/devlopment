@@ -28,22 +28,9 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         queryset=Skill.objects.all(), many=True, write_only=True, source='skills', required=False
     )
     
-    applications_sent = serializers.SerializerMethodField()
-    offers_received = serializers.SerializerMethodField()
-    favorite_offers_count = serializers.SerializerMethodField()
-
     class Meta:
         model = Student
         fields = '__all__'
-
-    def get_applications_sent(self, obj):
-        return obj.applications.count()
-
-    def get_offers_received(self, obj):
-        return obj.applications.filter(status='accepted').count()
-
-    def get_favorite_offers_count(self, obj):
-        return obj.user.favorite_offers.count()
 
 class CompanyProfileSerializer(serializers.ModelSerializer):
     class Meta:

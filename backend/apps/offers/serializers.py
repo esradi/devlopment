@@ -104,16 +104,12 @@ class OfferStatusUpdateSerializer(serializers.ModelSerializer):
 class ApplicationSerializer(serializers.ModelSerializer):
     match_score = serializers.SerializerMethodField()
     student_name = serializers.ReadOnlyField(source='student.user.get_full_name')
-    offer_title = serializers.ReadOnlyField(source='offer.title')
-    company_name = serializers.ReadOnlyField(source='company.company_name')
-    company_logo = serializers.ImageField(source='company.logo', read_only=True)
 
     class Meta:
         model = Application
         fields = [
-            'id', 'student', 'student_name', 'offer', 'offer_title', 'company', 
-            'company_name', 'company_logo', 'status', 'cover_letter', 
-            'match_score', 'created_at', 'updated_at'
+            'id', 'student', 'student_name', 'offer', 'company', 
+            'status', 'cover_letter', 'match_score', 'created_at', 'updated_at'
         ]
         read_only_fields = ['company', 'status', 'created_at', 'updated_at']
 

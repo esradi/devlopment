@@ -64,4 +64,5 @@ export const dashboardService = {
     getOfferDetails: (id) => api.get(`/offers/${id}/`),
     getMatchingBreakdown: (studentId, offerId) =>
         api.get(`/matching/?student_id=${studentId}&offer_id=${offerId}`),
+    updateProfile: (data) => api.post('/profile/update/', data),
 };
