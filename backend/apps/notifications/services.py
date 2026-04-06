@@ -11,13 +11,18 @@ class NotificationService:
         channel_layer = get_channel_layer()
         if channel_layer:
             group_name = f"notifications_{user_id}"
-            async_to_sync(channel_layer.group_send)(
-                group_name,
-                {
-                    "type": message_type,
-                    **payload
-                }
-            )
+            try:
+                async_to_sync(channel_layer.group_send)(
+                    group_name,
+                    {
+                        "type": message_type,
+                        **payload
+                    }
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"WebSocket broadcast failed for user {user_id}: {e}")
 
     @staticmethod
     def create_and_send_notification(user, notif_type, title, message, **kwargs):
@@ -77,7 +82,7 @@ class NotificationService:
     @staticmethod
     def notify_application_submitted(application):
         company_user = application.offer.company.user
-        student_name = f"{application.student.first_name} {application.student.last_name}"
+        student_name = f"{application.student.user.first_name} {application.student.user.last_name}"
         return NotificationService.create_and_send_notification(
             user=company_user,
             notif_type="application_submitted",
@@ -124,7 +129,7 @@ class NotificationService:
     def notify_convention_student_signed(convention):
         # Notify company that student signed
         company_user = convention.company.user
-        student_name = f"{convention.student.first_name} {convention.student.last_name}"
+        student_name = f"{convention.student.user.first_name} {convention.student.user.last_name}"
         return NotificationService.create_and_send_notification(
             user=company_user,
             notif_type="convention_student_signed",

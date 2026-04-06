@@ -20,8 +20,8 @@ class ConventionSerializer(serializers.ModelSerializer):
     def get_student_details(self, obj):
         return {
             "id": obj.student.id,
-            "first_name": obj.student.first_name,
-            "last_name": obj.student.last_name,
+            "first_name": obj.student.user.first_name,
+            "last_name": obj.student.user.last_name,
             "domain": obj.student.domain,
             "speciality": obj.student.speciality,
         }
