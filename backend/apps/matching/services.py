@@ -143,9 +143,9 @@ class MatchingService:
 
     @staticmethod
     def _calculate_location_score(student, offer) -> float:
-        """Simple location matching. Expand later with GeoPy."""
-        if not student.location or not offer.location:
+        """Simple location matching using wilaya."""
+        if not student.wilaya or not offer.wilaya:
             return 50.0
-        if student.location.lower() == offer.location.lower():
+        if student.wilaya.strip().lower() == offer.wilaya.strip().lower():
             return 100.0
         return 0.0

@@ -300,12 +300,26 @@ def _on_pass(student, challenge, score):
 def _mark_skill_verified(student, challenge):
     try:
         from apps.accounts.models import StudentSkill
-        from apps.offers.models import Skill
-        skill_obj, _ = Skill.objects.get_or_create(name=challenge.skill_name)
+        from apps.specialities.models import Skill, Speciality
+        
+        # Determine the student's Speciality object
+        spec_obj = Speciality.objects.filter(name__iexact=student.speciality).first()
+        if not spec_obj:
+            # Fallback: find any speciality if user's string is generic
+            spec_obj = Speciality.objects.first()
+            
+        if not spec_obj:
+            print("[challenges] No speciality found in DB to link skill.")
+            return
+
+        skill_obj, _ = Skill.objects.get_or_create(
+            name=challenge.skill_name,
+            speciality=spec_obj
+        )
         student_skill, _ = StudentSkill.objects.get_or_create(student=student, skill=skill_obj)
         student_skill.is_verified = True
         student_skill.save()
-    except Exception as e: print(f"Error: {e}")
+    except Exception as e: print(f"Error marking skill verified: {e}")
 
 def _unlock_badge(student, challenge):
     try:

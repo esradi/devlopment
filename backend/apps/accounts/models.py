@@ -37,7 +37,7 @@ class Student(models.Model):
     cv = models.FileField(upload_to='cvs/', null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     profile_completeness = models.IntegerField(default=30)
-    skills = models.ManyToManyField('offers.Skill', through='StudentSkill', related_name='students', blank=True)
+    skills = models.ManyToManyField('specialities.Skill', through='StudentSkill', related_name='students', blank=True)
     wilaya = models.CharField(max_length=100, blank=True, null=True)
     
     github_url = models.URLField(max_length=255, blank=True, null=True)
@@ -52,7 +52,7 @@ class Student(models.Model):
 
 class StudentSkill(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    skill = models.ForeignKey('offers.Skill', on_delete=models.CASCADE)
+    skill = models.ForeignKey('specialities.Skill', on_delete=models.CASCADE)
     is_verified = models.BooleanField(default=False)
     
     class Meta:

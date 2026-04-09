@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from apps.accounts.models import Student, StudentSkill
-from apps.offers.models import Skill, Domain
+from apps.specialities.models import Skill, Domain
 
 
 class SkillDetailSerializer(serializers.ModelSerializer):
@@ -27,10 +27,10 @@ class StudentSkillSerializer(serializers.ModelSerializer):
 
 
 class StudentProfileSerializer(serializers.ModelSerializer):
-    #Complete Student Profile with domain, speciality, and competencies#
+    #Complete Student Profile with domain, speciality, and skills#
     user_email = serializers.EmailField(source='user.email', read_only=True)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
-    competencies = serializers.SerializerMethodField()
+    skills = serializers.SerializerMethodField()
     
     class Meta:
         model = Student
@@ -52,11 +52,11 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             'github_url',
             'linkedin_url',
             'portfolio_url',
-            'competencies'
+            'skills'
         ]
         read_only_fields = ['id', 'user_id', 'user_email', 'profile_completeness']
 
-    def get_competencies(self, obj):
-        #Get all competencies for the student#
+    def get_skills(self, obj):
+        #Get all skills for the student#
         skills = obj.studentskill_set.all()
         return StudentSkillSerializer(skills, many=True).data

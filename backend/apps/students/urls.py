@@ -11,7 +11,7 @@ urlpatterns = [
     path('student/dashboard/',views.StudentDashboardView.as_view(),name='student_dashboard'),
     path('student/analytics/',views.StudentAnalyticsView.as_view(),name='student_analytics'),
     path('student/recommendations/',views.StudentRecommendationsView.as_view(),name='student_recommendations'),
-    path('student/competencies/',views.StudentCompetenciesView.as_view(),name='student_competencies'),
-    path('student/competencies/<int:competency_id>/', views.StudentCompetencyDetailView.as_view(), name='student_competency_detail'),
+    path('student/skills/',views.StudentSkillsView.as_view(),name='student_skills'),
+    path('student/skills/<int:skill_id>/', views.StudentSkillDetailView.as_view(), name='student_skill_detail'),
     path('student/applications/stats/',views.StudentApplicationStatsView.as_view(),name='student_application_stats'),
 ]

@@ -1,13 +1,10 @@
 from rest_framework import serializers
 from .models import (
-    Offer, Domain, Location, OfferType, DurationOption, Skill,
+    Offer, Location, OfferType, DurationOption,
     FavoriteOffer, Application
 )
-
-class DomainSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Domain
-        fields = ['id', 'name']
+from apps.specialities.models import Domain, Skill
+from apps.specialities.serializers import DomainSerializer, SkillSerializer
 
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,11 +20,6 @@ class DurationOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DurationOption
         fields = ['id', 'months']
-
-class SkillSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Skill
-        fields = ['id', 'name']
 
 class OfferSerializer(serializers.ModelSerializer):
     company_name = serializers.ReadOnlyField(source='company.company_name')
@@ -104,14 +96,19 @@ class OfferStatusUpdateSerializer(serializers.ModelSerializer):
 class ApplicationSerializer(serializers.ModelSerializer):
     match_score = serializers.SerializerMethodField()
     student_name = serializers.ReadOnlyField(source='student.user.get_full_name')
+    offer_title = serializers.ReadOnlyField(source='offer.title')
+    company_name = serializers.ReadOnlyField(source='offer.company.company_name')
+    company_logo = serializers.ImageField(source='offer.company.logo', read_only=True)
 
     class Meta:
         model = Application
         fields = [
-            'id', 'student', 'student_name', 'offer', 'company', 
-            'status', 'cover_letter', 'match_score', 'created_at', 'updated_at'
+            'id', 'student', 'student_name', 'offer', 'offer_title',
+            'company', 'company_name', 'company_logo',
+            'status', 'cover_letter', 'company_notes',
+            'match_score', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['company', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['company', 'status', 'company_notes', 'created_at', 'updated_at']
 
     def get_match_score(self, obj):
         from apps.matching.services import MatchingService
@@ -125,3 +122,10 @@ class ApplicationSerializer(serializers.ModelSerializer):
         if offer:
             data['company'] = offer.company
         return data
+
+
+class ApplicationNotesSerializer(serializers.ModelSerializer):
+    """Serializer for company to update internal notes on an application."""
+    class Meta:
+        model = Application
+        fields = ['company_notes']

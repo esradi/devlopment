@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from .models import User, Student, Company, AdminProfile, StudentSkill, StudentBadge
-from apps.offers.models import Skill
+from apps.specialities.models import Skill, Speciality, Domain
 from apps.api.utils import generate_verification_code, send_verification_email
 
 class UserSerializer(serializers.ModelSerializer):
@@ -98,19 +98,14 @@ class RegisterSerializer(serializers.Serializer):
     # Admin Specific
     admin_role = serializers.CharField(required=False, allow_blank=True)
 
-    SPECIALITY_CHOICES = [
-        'Computer Science', 'Medicine', 'Pharmacy', 'Biology', 
-        'Polytechnique', 'GP', 'ST', 'English Literature'
-    ]
-    
     def validate_interest(self, value):
         role = self.initial_data.get('role')
-        if role == 'student' and value and value not in self.SPECIALITY_CHOICES:
-            # Check if it matches after stripping or case change
-            val_clean = value.strip()
-            if val_clean in self.SPECIALITY_CHOICES:
-                return val_clean
-            # If still not found, we'll allow it but it might not map to a domain
+        if role == 'student' and value:
+            # Check if this speciality exists in the database
+            if not Speciality.objects.filter(name__iexact=value).exists():
+                # For now, we allow it to be flexible but warn/log
+                # In a strict system, we would raise a ValidationError
+                pass
             return value
         return value
     
@@ -180,17 +175,12 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"email": "Failed to send verification email. Please check server SMTP settings or use a valid App Password."})
         
         if role == 'student':
-            SPECIALITY_TO_DOMAIN = {
-                'Computer Science': 'Engineering',
-                'GP': 'Engineering',
-                'ST': 'Engineering',
-                'Polytechnique': 'Engineering',
-                'Medicine': 'Scientific',
-                'Pharmacy': 'Scientific',
-                'Biology': 'Scientific',
-                'English Literature': 'Humanities',
-            }
-            derived_domain = SPECIALITY_TO_DOMAIN.get(interest, interest) 
+            # Dynamically fetch domain based on speciality (interest)
+            try:
+                spec_obj = Speciality.objects.filter(name__iexact=interest).first()
+                derived_domain = spec_obj.domain.name if spec_obj else "Engineering" # Fallback
+            except Exception:
+                derived_domain = "Engineering"
             student = Student.objects.create(
                 user=user,
                 speciality=interest,        
@@ -241,7 +231,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class StudentUpdateSerializer(serializers.ModelSerializer):
-    from apps.offers.serializers import SkillSerializer
+    from apps.specialities.serializers import SkillSerializer
     skills = SkillSerializer(many=True, read_only=True)
     skill_ids = serializers.PrimaryKeyRelatedField(
         queryset=Skill.objects.all(), many=True, write_only=True, source='skills', required=False
@@ -305,7 +295,7 @@ class StudentBrowseSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(source='user.phone', read_only=True)
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
-    from apps.offers.serializers import SkillSerializer
+    from apps.specialities.serializers import SkillSerializer
     skills = SkillSerializer(many=True, read_only=True)
     
     badges = StudentBadgeSerializer(many=True, read_only=True)

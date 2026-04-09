@@ -130,7 +130,7 @@ def _get_recommended_offers(student, limit=3):
 
 
 class StudentProfileView(APIView):
-    #GET: Retrieve student's full profile (domain, speciality, competencies)
+    #GET: Retrieve student's full profile (domain, speciality, skills)
     permission_classes = [IsAuthenticated, IsStudent]
     
     def get(self, request):
@@ -169,19 +169,19 @@ class StudentProfileView(APIView):
             )
 
 
-class StudentCompetenciesView(APIView):
-    #GET: Retrieve all student's competencies
-    #POST: Add a new skill to student's competencies
+class StudentSkillsView(APIView):
+    #GET: Retrieve all student's skills
+    #POST: Add a new skill to student's profile
     permission_classes = [IsAuthenticated, IsStudent]
     
     def get(self, request):
-        #Get all competencies for the authenticated student
+        #Get all skills for the authenticated student
         try:
             student = Student.objects.get(user=request.user)
-            competencies = StudentSkill.objects.filter(student=student)
-            serializer = StudentSkillSerializer(competencies, many=True)
+            skills = StudentSkill.objects.filter(student=student)
+            serializer = StudentSkillSerializer(skills, many=True)
             return Response(
-                {"competencies": serializer.data},
+                {"skills": serializer.data},
                 status=status.HTTP_200_OK
             )
         except Student.DoesNotExist:
@@ -191,7 +191,7 @@ class StudentCompetenciesView(APIView):
             )
     
     def post(self, request):
-        #Add a new skill to the authenticated student's competencies
+        #Add a new skill to the authenticated student's profile
         try:
             student = Student.objects.get(user=request.user)
             
@@ -234,17 +234,17 @@ class StudentCompetenciesView(APIView):
             )
 
 
-class StudentCompetencyDetailView(APIView):
-    #GET: Retrieve a specific student competency
-    #DELETE: Remove a skill from student's competencies
+class StudentSkillDetailView(APIView):
+    #GET: Retrieve a specific student skill
+    #DELETE: Remove a skill from student's profile
     permission_classes = [IsAuthenticated, IsStudent]
-
-    def get(self, request, competency_id):
-        #Get details of a specific competency for the authenticated student#
+ 
+    def get(self, request, skill_id):
+        #Get details of a specific skill for the authenticated student#
         try:
             student = Student.objects.get(user=request.user)
-            competency = StudentSkill.objects.get(id=competency_id, student=student)
-            serializer = StudentSkillSerializer(competency)
+            student_skill = StudentSkill.objects.get(id=skill_id, student=student)
+            serializer = StudentSkillSerializer(student_skill)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Student.DoesNotExist:
             return Response(
@@ -253,19 +253,19 @@ class StudentCompetencyDetailView(APIView):
             )
         except StudentSkill.DoesNotExist:
             return Response(
-                {"error": "Competency not found"},
+                {"error": "Skill not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
     
-    def delete(self, request, competency_id):
-        #Delete a skill from the authenticated student's competencies#
+    def delete(self, request, skill_id):
+        #Delete a skill from the authenticated student's profile#
         try:
             student = Student.objects.get(user=request.user)
-            competency = StudentSkill.objects.get(id=competency_id, student=student)
-            skill_name = competency.skill.name
-            competency.delete()
+            student_skill = StudentSkill.objects.get(id=skill_id, student=student)
+            skill_name = student_skill.skill.name
+            student_skill.delete()
             return Response(
-                {"message": f"Competency '{skill_name}' removed successfully"},
+                {"message": f"Skill '{skill_name}' removed successfully"},
                 status=status.HTTP_204_NO_CONTENT
             )
         except Student.DoesNotExist:
@@ -275,7 +275,7 @@ class StudentCompetencyDetailView(APIView):
             )
         except StudentSkill.DoesNotExist:
             return Response(
-                {"error": "Competency not found"},
+                {"error": "Skill not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 

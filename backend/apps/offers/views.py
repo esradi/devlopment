@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from .models import Offer, FavoriteOffer, Domain, Location, OfferType, DurationOption
+from .models import Offer, FavoriteOffer, Location, OfferType, DurationOption
+from apps.specialities.models import Domain, Skill
 from .serializers import OfferSerializer, OfferStatusUpdateSerializer
 from apps.api.permissions import IsCompany, IsStudent, IsOwnerOrAdmin
 
@@ -164,7 +165,8 @@ class OfferMetadataView(APIView):
 
     def get(self, request):
         from .serializers import DomainSerializer, LocationSerializer, OfferTypeSerializer, DurationOptionSerializer, SkillSerializer
-        from .models import Domain, Location, OfferType, DurationOption, Skill
+        from .models import Location, OfferType, DurationOption
+        from apps.specialities.models import Domain, Skill
         
         data = {
             "domains": DomainSerializer(Domain.objects.all(), many=True).data,
@@ -179,7 +181,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from .models import Application
-from .serializers import ApplicationSerializer
+from .serializers import ApplicationSerializer, ApplicationNotesSerializer
 
 class ApplicationPagination(PageNumberPagination):
     page_size = 10
@@ -203,24 +205,25 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return Application.objects.none()
 
     def create(self, request, *args, **kwargs):
-        #Student applies to an offer
+        # Student applies to an offer.
+        # Validates: user is a student, offer exists and is active, not already applied.
         if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
             return Response({'error': 'Only students can apply.'}, status=status.HTTP_403_FORBIDDEN)
-            
+
         student_profile = request.user.student_profile
         offer_id = request.data.get('offer')
-        
+
         if not offer_id:
             return Response({'error': 'offer is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         offer = get_object_or_404(Offer, id=offer_id)
-        
+
         if offer.status != 'active':
             return Response({'error': 'Cannot apply to an inactive offer.'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         if Application.objects.filter(student=student_profile, offer=offer).exists():
             return Response({'error': 'You have already applied to this offer.'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         return super().create(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
@@ -228,7 +231,6 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         data = serializer.data
 
-        # sorting by match_score
         sort = request.query_params.get('sort')
         if sort == 'match':
             data = sorted(data, key=lambda x: x.get('match_score', 0), reverse=True)
@@ -237,26 +239,29 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         application = serializer.save(student=self.request.user.student_profile)
-        
+
         from apps.notifications.services import NotificationService
         NotificationService.notify_application_submitted(application)
 
+    # ─────────────────────────────────────────
+    # STUDENT ACTIONS
+    # ─────────────────────────────────────────
+
     @action(detail=False, methods=['get'])
     def mine(self, request):
-        #Student: get all applications with status timeline
+        """
+        GET /api/applications/mine/
+        Student: list all personal applications, optionally filtered by ?status=
+        """
         if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
             return Response({'error': 'Only students can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
-            
+
         queryset = self.get_queryset()
-        
-        # Filter by status if provided
         status_filter = request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
-            
         queryset = queryset.order_by('-created_at')
-        
-        # Apply pagination
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -265,114 +270,324 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'], url_path=r'offer/(?P<offer_id>\d+)')
-    def offer_applicants(self, request, offer_id=None):
-        #Company: get all applicants for one offer
-        if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
-            return Response({'error': 'Only companies can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
-            
-        offer = get_object_or_404(Offer, id=offer_id)
-        
-        # Verify ownership
-        if offer.company != request.user.company_profile:
-            return Response({'error': 'You do not have permission to view this offer.'}, status=status.HTTP_403_FORBIDDEN)
-            
-        queryset = Application.objects.filter(offer=offer).order_by('-created_at')
-        
-        # Apply pagination
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+    @action(detail=False, methods=['get'])
+    def pending(self, request):
+        """
+        GET /api/applications/pending/
+        Student: list only applications with status='pending'.
+        Shows everything the student has submitted but the company hasn't yet reviewed.
+        """
+        if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
+            return Response({'error': 'Only students can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
 
+        queryset = self.get_queryset().filter(status='pending').order_by('-created_at')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def accepted(self, request):
+        """
+        GET /api/applications/accepted/
+        Student: list only applications with status='accepted'.
+        Shows internship offers the company accepted. Students can then generate a convention.
+        """
+        if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
+            return Response({'error': 'Only students can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+
+        queryset = self.get_queryset().filter(status='accepted').order_by('-updated_at')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def refused(self, request):
+        """
+        GET /api/applications/refused/
+        Student: list only applications with status='rejected'.
+        Shows applications the company declined.
+        """
+        if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
+            return Response({'error': 'Only students can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+
+        queryset = self.get_queryset().filter(status='rejected').order_by('-updated_at')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['delete'], url_path='withdraw')
+    def withdraw(self, request, pk=None):
+        """
+        DELETE /api/applications/<pk>/withdraw/
+        Student: permanently withdraw (delete) a pending application.
+        Only works if status is 'pending' — cannot withdraw an accepted/refused application.
+        """
+        application = self.get_object()
+
+        if request.user.role != 'student' or application.student != request.user.student_profile:
+            return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if application.status != 'pending':
+            return Response({'error': 'Only pending applications can be withdrawn.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        application.delete()
+        return Response({'message': 'Application withdrawn successfully.'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'])
     def cancel(self, request, pk=None):
-        #Cancel application if status=pending
+        """
+        PATCH /api/applications/<pk>/cancel/  (legacy alias for withdraw)
+        Student: cancel a pending application.
+        """
         application = self.get_object()
-        
+
         if request.user.role != 'student' or application.student != request.user.student_profile:
             return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
-            
+
         if application.status != 'pending':
             return Response({'error': 'Only pending applications can be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         application.delete()
         return Response({'message': 'Application cancelled successfully.'}, status=status.HTTP_200_OK)
 
+    # ─────────────────────────────────────────
+    # COMPANY ACTIONS
+    # ─────────────────────────────────────────
+
+    @action(detail=False, methods=['get'], url_path='company/list')
+    def company_list(self, request):
+        """
+        GET /api/applications/company/list/
+        Company: list all applications received for all their offers.
+        Supports ?offer_id= filter to narrow by a specific offer.
+        """
+        if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
+            return Response({'error': 'Only companies can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+
+        queryset = self.get_queryset().order_by('-created_at')
+
+        offer_id = request.query_params.get('offer_id')
+        if offer_id:
+            queryset = queryset.filter(offer_id=offer_id)
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='company/detail')
+    def company_detail(self, request, pk=None):
+        """
+        GET /api/applications/<pk>/company/detail/
+        Company: retrieve full details of one specific application.
+        Includes student name, match score, cover letter, and company notes.
+        """
+        application = self.get_object()
+
+        if request.user.role != 'company' or application.company != request.user.company_profile:
+            return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(application)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'])
+    def notes(self, request, pk=None):
+        """
+        PATCH /api/applications/<pk>/notes/
+        Company: add or update internal private notes on an application.
+        Notes are NOT visible to the student — internal company use only.
+        """
+        application = self.get_object()
+
+        if request.user.role != 'company' or application.company != request.user.company_profile:
+            return Response({'error': 'Only the owning company can update notes.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ApplicationNotesSerializer(application, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Notes updated.', 'company_notes': serializer.data['company_notes']})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
+        """
+        POST /api/applications/<pk>/accept/
+        Company: mark an application as accepted.
+        Sends a notification to the student automatically.
+        """
         application = self.get_object()
+
+        if request.user.role != 'company' or application.company != request.user.company_profile:
+            return Response({'error': 'Only the owning company can accept applications.'}, status=status.HTTP_403_FORBIDDEN)
+
         application.status = 'accepted'
         application.save()
-        
+
         from apps.notifications.services import NotificationService
         NotificationService.notify_application_accepted(application)
-        
+
         return Response({'message': 'Application accepted'})
-    
+
     @action(detail=True, methods=['post'])
     def refuse(self, request, pk=None):
+        """
+        POST /api/applications/<pk>/refuse/
+        Company: mark an application as rejected.
+        Sends a notification to the student automatically.
+        """
         application = self.get_object()
+
+        if request.user.role != 'company' or application.company != request.user.company_profile:
+            return Response({'error': 'Only the owning company can refuse applications.'}, status=status.HTTP_403_FORBIDDEN)
+
         application.status = 'rejected'
         application.save()
-        
+
         from apps.notifications.services import NotificationService
         NotificationService.notify_application_refused(application)
-        
+
         return Response({'message': 'Application refused'})
-    
+
+    @action(detail=False, methods=['get'], url_path=r'offer/(?P<offer_id>\d+)')
+    def offer_applicants(self, request, offer_id=None):
+        """
+        GET /api/applications/offer/<offer_id>/
+        Company: get all applicants for one specific offer.
+        """
+        if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
+            return Response({'error': 'Only companies can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+
+        offer = get_object_or_404(Offer, id=offer_id)
+
+        if offer.company != request.user.company_profile:
+            return Response({'error': 'You do not have permission to view this offer.'}, status=status.HTTP_403_FORBIDDEN)
+
+        queryset = Application.objects.filter(offer=offer).order_by('-created_at')
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['post'])
     def view(self, request, pk=None):
+        """
+        POST /api/applications/<pk>/view/
+        Company: mark an application as viewed. Triggers a notification to the student.
+        Auto-timestamps the first time a company opens the application.
+        """
         from django.utils import timezone
         application = self.get_object()
-        
+
         if not hasattr(application, 'viewed_at') or not getattr(application, 'viewed_at'):
             if hasattr(application, 'viewed_at'):
                 application.viewed_at = timezone.now()
             application.save()
-            
+
             from apps.notifications.services import NotificationService
             NotificationService.notify_application_viewed(application)
-        
+
         return Response({'message': 'Application marked as viewed'})
 
     @action(detail=True, methods=['post'], url_path='generate-convention')
     def generate_convention(self, request, pk=None):
-        #POST /api/applications/<id>/generate-convention/ Permission: Company
+        """
+        POST /api/applications/<pk>/generate-convention/
+        Company: generate an internship convention PDF for an accepted application.
+        Fails if application is not accepted, or if a convention already exists.
+        """
         application = self.get_object()
-        
-        # Verify status
+
         if application.status != 'accepted':
-            return Response(
-                {'error': 'Application must be accepted first'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Verify it doesn't already have one
+            return Response({'error': 'Application must be accepted first'}, status=status.HTTP_400_BAD_REQUEST)
+
         if hasattr(application, 'convention') and application.convention is not None:
-            return Response(
-                {'error': 'Convention already exists'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Verify ownership
+            return Response({'error': 'Convention already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
         if request.user != application.offer.company.user:
-            return Response(
-                {'error': 'Only the company can generate convention'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-            
+            return Response({'error': 'Only the company can generate convention'}, status=status.HTTP_403_FORBIDDEN)
+
         from apps.conventions.services.convention_service import ConventionService
         from apps.conventions.serializers import ConventionSerializer
-        
-        # Generate convention
+
         convention = ConventionService.generate_convention(application)
-        
+
         from apps.notifications.services import NotificationService
         NotificationService.notify_convention_generated(convention)
-        
+
         serializer = ConventionSerializer(convention)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    # ─────────────────────────────────────────
+    # ADMIN ACTIONS
+    # ─────────────────────────────────────────
+
+    @action(detail=False, methods=['get'], url_path='admin/list')
+    def admin_list(self, request):
+        """
+        GET /api/applications/admin/list/
+        Admin: see ALL applications across every student and company in the platform.
+        Supports ?status= and ?offer_id= filters.
+        """
+        if request.user.role != 'admin':
+            return Response({'error': 'Admin only.'}, status=status.HTTP_403_FORBIDDEN)
+
+        queryset = Application.objects.all().order_by('-created_at')
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        offer_id = request.query_params.get('offer_id')
+        if offer_id:
+            queryset = queryset.filter(offer_id=offer_id)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='admin/stats')
+    def admin_stats(self, request):
+        """
+        GET /api/applications/admin/stats/
+        Admin: global application statistics across the entire platform.
+        Returns total, pending, accepted, refused counts, and acceptance rate.
+        """
+        if request.user.role != 'admin':
+            return Response({'error': 'Admin only.'}, status=status.HTTP_403_FORBIDDEN)
+
+        from django.db.models import Count
+        all_apps = Application.objects.all()
+        total    = all_apps.count()
+        pending  = all_apps.filter(status='pending').count()
+        accepted = all_apps.filter(status='accepted').count()
+        refused  = all_apps.filter(status='rejected').count()
+
+        # Top offers by number of applications
+        top_offers = (
+            Application.objects
+            .values('offer__id', 'offer__title', 'offer__company__company_name')
+            .annotate(application_count=Count('id'))
+            .order_by('-application_count')[:5]
+        )
+
+        return Response({
+            'total':           total,
+            'pending':         pending,
+            'accepted':        accepted,
+            'refused':         refused,
+            'acceptance_rate': round(accepted / total * 100, 1) if total > 0 else 0.0,
+            'top_offers':      list(top_offers),
+        })
+

@@ -3,15 +3,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
-from .models import Domain, Speciality, Competency, CompetencyQuiz, QuizSubmission, PortfolioSubmission
+from .models import Domain, Speciality, Skill, SkillQuiz, SkillQuizSubmission, PortfolioSubmission
 from .serializers import (
     DomainSerializer,
     DomainDetailSerializer,
     SpecialitySerializer,
     SpecialityDetailSerializer,
-    CompetencySerializer,
-    CompetencyQuizSerializer,
-    QuizSubmissionSerializer,
+    SkillSerializer,
+    SkillQuizSerializer,
+    SkillQuizSubmissionSerializer,
     PortfolioSubmissionSerializer
 )
 from apps.api.permissions import IsUniversityAdmin
@@ -60,26 +60,26 @@ class SpecialityListCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CompetencyListCreateView(APIView):
-    #GET returns all competencies (with optional filters); POST creates competency (admin only)#
+class SkillListCreateView(APIView):
+    #GET returns all skills (with optional filters); POST creates skill (admin only)#
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsUniversityAdmin()]
         return [permissions.AllowAny()]
 
     def get(self, request):
-        qs = Competency.objects.all()
+        qs = Skill.objects.all()
         speciality = request.query_params.get('speciality')
         domain = request.query_params.get('domain')
         if speciality:
             qs = qs.filter(speciality__id=speciality)
         if domain:
             qs = qs.filter(speciality__domain__id=domain)
-        serializer = CompetencySerializer(qs, many=True)
+        serializer = SkillSerializer(qs, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = CompetencySerializer(data=request.data)
+        serializer = SkillSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -97,14 +97,14 @@ class SpecialitiesByDomainView(APIView):
         return Response(serializer.data)
 
 
-class CompetenciesBySpecialityView(APIView):
-    #List competencies under a specific speciality#
+class SkillsBySpecialityView(APIView):
+    #List skills under a specific speciality#
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, speciality_pk):
         speciality = get_object_or_404(Speciality, pk=speciality_pk)
-        comps = speciality.competencies.all()
-        serializer = CompetencySerializer(comps, many=True)
+        skills = speciality.skills.all()
+        serializer = SkillSerializer(skills, many=True)
         return Response(serializer.data)
 
 
@@ -113,13 +113,13 @@ class VerifyQuizListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        quizzes = CompetencyQuiz.objects.exclude(competency__speciality__domain__name__icontains='Computer Science')
-        serializer = CompetencyQuizSerializer(quizzes, many=True)
+        quizzes = SkillQuiz.objects.exclude(skill__speciality__domain__name__icontains='Computer Science')
+        serializer = SkillQuizSerializer(quizzes, many=True)
         
         data = serializer.data
         if hasattr(request.user, 'student_profile'):
             student = request.user.student_profile
-            submissions = QuizSubmission.objects.filter(student=student)
+            submissions = SkillQuizSubmission.objects.filter(student=student)
             
             # Create a lookup for quizzes the student has taken
             # Format: { quiz_id: { "passed": True/False, "score": score } }
@@ -141,9 +141,9 @@ class VerifyQuizDetailView(APIView):
     #Get quiz questions#
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, competency_id):
-        quiz = get_object_or_404(CompetencyQuiz, competency__id=competency_id)
-        serializer = CompetencyQuizSerializer(quiz)
+    def get(self, request, skill_id):
+        quiz = get_object_or_404(SkillQuiz, skill__id=skill_id)
+        serializer = SkillQuizSerializer(quiz)
         return Response(serializer.data)
 
 
@@ -151,12 +151,12 @@ class VerifyQuizSubmitView(APIView):
     #Submit quiz answers. Auto-graded.#
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, competency_id):
+    def post(self, request, skill_id):
         if not hasattr(request.user, 'student_profile'):
             return Response({"error": "Only students can submit quizzes."}, status=status.HTTP_403_FORBIDDEN)
             
         student = request.user.student_profile
-        quiz = get_object_or_404(CompetencyQuiz, competency__id=competency_id)
+        quiz = get_object_or_404(SkillQuiz, skill__id=skill_id)
         
         # Expected format: { "question_id": "A" } or similar
         answers = request.data.get('answers', {})
@@ -178,40 +178,49 @@ class VerifyQuizSubmitView(APIView):
         score_percentage = (correct_count / total_questions) * 100
         passed = score_percentage >= 70
         
-        submission = QuizSubmission.objects.create(
+        submission = SkillQuizSubmission.objects.create(
             student=student,
             quiz=quiz,
             answers=answers,
             score=score_percentage,
             passed=passed
         )
+
+        if passed:
+            from apps.accounts.models import StudentSkill
+            student_skill, created = StudentSkill.objects.get_or_create(
+                student=student,
+                skill=quiz.skill
+            )
+            student_skill.is_verified = True
+            student_skill.save()
         
-        serializer = QuizSubmissionSerializer(submission)
+        serializer = SkillQuizSubmissionSerializer(submission)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class VerifyPortfolioSubmitView(APIView):
-    #POST /api/verify/portfolio/:competency_id/submit/ Submit a portfolio URL to verify a competency
+    #POST /api/verify/portfolio/:skill_id/submit/ Submit a portfolio URL to verify a skill
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, competency_id):
+    def post(self, request, skill_id):
         if not hasattr(request.user, 'student_profile'):
             return Response({"error": "Only students can submit portfolios."}, status=status.HTTP_403_FORBIDDEN)
             
         student = request.user.student_profile
-        competency = get_object_or_404(Competency, pk=competency_id)
+        skill = get_object_or_404(Skill, pk=skill_id)
         
         portfolio_url = request.data.get('portfolio_url')
         if not portfolio_url:
             return Response({"error": "portfolio_url is required."}, status=status.HTTP_400_BAD_REQUEST)
     
-        existing = PortfolioSubmission.objects.filter(student=student, competency=competency).exclude(status='rejected').first()
+        existing = PortfolioSubmission.objects.filter(student=student, skill=skill).exclude(status='rejected').first()
         if existing:
-            return Response({"error": f"You already have a {existing.status} submission for this competency."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"You already have a {existing.status} submission for this skill."}, status=status.HTTP_400_BAD_REQUEST)
 
         submission = PortfolioSubmission.objects.create(
             student=student,
-            competency=competency,
+            skill=skill,
             portfolio_url=portfolio_url,
             status='pending'
         )
@@ -221,18 +230,18 @@ class VerifyPortfolioSubmitView(APIView):
 
 
 class VerifyPortfolioStatusView(APIView):
-    #GET /api/verify/portfolio/:competency_id/status/ Check the status of a portfolio submission for a competency
+    #GET /api/verify/portfolio/:skill_id/status/ Check the status of a portfolio submission for a skill
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, competency_id):
+    def get(self, request, skill_id):
         if not hasattr(request.user, 'student_profile'):
             return Response({"error": "Only students can check portfolio status."}, status=status.HTTP_403_FORBIDDEN)
             
         student = request.user.student_profile
-        competency = get_object_or_404(Competency, pk=competency_id)
+        skill = get_object_or_404(Skill, pk=skill_id)
         
         # Get the latest submission
-        submission = PortfolioSubmission.objects.filter(student=student, competency=competency).order_by('-submitted_at').first()
+        submission = PortfolioSubmission.objects.filter(student=student, skill=skill).order_by('-submitted_at').first()
         if not submission:
             return Response({"status": "unsubmitted"}, status=status.HTTP_200_OK)
             

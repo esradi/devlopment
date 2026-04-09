@@ -1,11 +1,6 @@
 from django.db import models
-from apps.specialities.models import Domain
+from apps.specialities.models import Domain, Skill
 from django.conf import settings
-
-class Domain(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    def __str__(self): return self.name
-    class Meta: db_table = 'api_domain'
 
 class Location(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -21,11 +16,6 @@ class DurationOption(models.Model):
     months = models.IntegerField(unique=True)
     def __str__(self): return f"{self.months} months"
     class Meta: db_table = 'api_durationoption'
-
-class Skill(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    def __str__(self): return self.name
-    class Meta: db_table = 'api_skill'
 
 class Offer(models.Model):
     """Internship/Job Offer"""
@@ -61,7 +51,6 @@ class Offer(models.Model):
         return f"{self.title} at {self.company.company_name}"
 
 
-
 class FavoriteOffer(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorite_offers')
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='favorited_by')
@@ -86,6 +75,7 @@ class Application(models.Model):
     company = models.ForeignKey('accounts.Company', on_delete=models.CASCADE, related_name='applications')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     cover_letter = models.TextField(blank=True, null=True)
+    company_notes = models.TextField(blank=True, null=True)  # Company internal notes
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

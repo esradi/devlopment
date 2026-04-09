@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('accounts', '0009_merge_20260314_0828'),
-        ('specialities', '0001_initial'),
+        ('specialities', '0002_competencyquiz_quizquestion_quizsubmission'),
     ]
 
     operations = [
