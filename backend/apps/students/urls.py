@@ -11,7 +11,11 @@ urlpatterns = [
     path('student/dashboard/',views.StudentDashboardView.as_view(),name='student_dashboard'),
     path('student/analytics/',views.StudentAnalyticsView.as_view(),name='student_analytics'),
     path('student/recommendations/',views.StudentRecommendationsView.as_view(),name='student_recommendations'),
-    path('student/skills/',views.StudentSkillsView.as_view(),name='student_skills'),
-    path('student/skills/<int:skill_id>/', views.StudentSkillDetailView.as_view(), name='student_skill_detail'),
+    path('student/skills/',                   views.StudentSkillsView.as_view(),          name='student_skills'),
+    # Sub-routes MUST come before the <skill_id> detail route
+    path('student/skills/verified/',          views.StudentSkillsVerifiedView.as_view(),  name='student_skills_verified'),
+    path('student/skills/unverified/',        views.StudentSkillsUnverifiedView.as_view(),name='student_skills_unverified'),
+    path('student/skills/stats/',             views.StudentSkillsStatsView.as_view(),     name='student_skills_stats'),
+    path('student/skills/<int:skill_id>/',    views.StudentSkillDetailView.as_view(),     name='student_skill_detail'),
     path('student/applications/stats/',views.StudentApplicationStatsView.as_view(),name='student_application_stats'),
 ]

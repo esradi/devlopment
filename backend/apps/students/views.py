@@ -236,9 +236,10 @@ class StudentSkillsView(APIView):
 
 class StudentSkillDetailView(APIView):
     #GET: Retrieve a specific student skill
+    #PUT: Swap the skill for another one (resets verification)
     #DELETE: Remove a skill from student's profile
     permission_classes = [IsAuthenticated, IsStudent]
- 
+
     def get(self, request, skill_id):
         #Get details of a specific skill for the authenticated student#
         try:
@@ -256,7 +257,40 @@ class StudentSkillDetailView(APIView):
                 {"error": "Skill not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-    
+
+    def put(self, request, skill_id):
+        #Swap the skill on an existing StudentSkill record and reset verification#
+        try:
+            student = Student.objects.get(user=request.user)
+            student_skill = StudentSkill.objects.get(id=skill_id, student=student)
+        except Student.DoesNotExist:
+            return Response({"error": "Student profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        except StudentSkill.DoesNotExist:
+            return Response({"error": "Skill not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        new_skill_id = request.data.get('skill_id')
+        if not new_skill_id:
+            return Response({"error": "skill_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Prevent duplicate — new skill must not already be in the student's list
+        if StudentSkill.objects.filter(student=student, skill_id=new_skill_id).exclude(id=skill_id).exists():
+            return Response(
+                {"error": "You already have this skill in your profile"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = StudentSkillSerializer(student_skill, data={'skill_id': new_skill_id}, partial=True)
+        if serializer.is_valid():
+            updated = serializer.save()
+            # Reset verification since the skill changed
+            updated.is_verified = False
+            updated.save()
+            return Response(
+                {"message": "Skill updated successfully", "data": StudentSkillSerializer(updated).data},
+                status=status.HTTP_200_OK
+            )
+        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
     def delete(self, request, skill_id):
         #Delete a skill from the authenticated student's profile#
         try:
@@ -278,6 +312,60 @@ class StudentSkillDetailView(APIView):
                 {"error": "Skill not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class StudentSkillsVerifiedView(APIView):
+    #GET /api/student/skills/verified/ — skills the student has proven (is_verified=True)
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({"error": "Student profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        skills = StudentSkill.objects.filter(student=student, is_verified=True)
+        serializer = StudentSkillSerializer(skills, many=True)
+        return Response({"skills": serializer.data}, status=status.HTTP_200_OK)
+
+
+class StudentSkillsUnverifiedView(APIView):
+    #GET /api/student/skills/unverified/ — self-declared skills not yet proven (is_verified=False)
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({"error": "Student profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        skills = StudentSkill.objects.filter(student=student, is_verified=False)
+        serializer = StudentSkillSerializer(skills, many=True)
+        return Response({"skills": serializer.data}, status=status.HTTP_200_OK)
+
+
+class StudentSkillsStatsView(APIView):
+    #GET /api/student/skills/stats/ — summary counts for student's skills
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({"error": "Student profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        all_skills   = StudentSkill.objects.filter(student=student)
+        total        = all_skills.count()
+        verified     = all_skills.filter(is_verified=True).count()
+        unverified   = total - verified
+        rate         = round(verified / total * 100, 1) if total > 0 else 0.0
+
+        return Response({
+            "total_skills":      total,
+            "verified_skills":   verified,
+            "unverified_skills": unverified,
+            "verification_rate": rate,
+        }, status=status.HTTP_200_OK)
 
 
 class StudentCVUploadView(APIView):

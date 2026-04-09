@@ -14,7 +14,7 @@ from .serializers import (
     SkillQuizSubmissionSerializer,
     PortfolioSubmissionSerializer
 )
-from apps.api.permissions import IsUniversityAdmin
+from apps.api.permissions import IsUniversityAdmin, IsStudent
 
 
 class DomainListCreateView(APIView):
@@ -247,3 +247,31 @@ class VerifyPortfolioStatusView(APIView):
             
         serializer = PortfolioSubmissionSerializer(submission)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AvailableSkillsView(APIView):
+    #GET /api/skills/available/ — skills the student hasn't added yet
+    permission_classes = [permissions.IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        try:
+            student = request.user.student_profile
+        except Exception:
+            return Response({"error": "Student profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # IDs of skills the student already has
+        existing_ids = student.skills.values_list('id', flat=True)
+
+        # All skills not yet in the student's list
+        qs = Skill.objects.exclude(id__in=existing_ids).select_related('speciality')
+
+        # Optional filters
+        speciality = request.query_params.get('speciality')
+        domain = request.query_params.get('domain')
+        if speciality:
+            qs = qs.filter(speciality__id=speciality)
+        if domain:
+            qs = qs.filter(speciality__domain__id=domain)
+
+        serializer = SkillSerializer(qs, many=True)
+        return Response({"available_skills": serializer.data}, status=status.HTTP_200_OK)
