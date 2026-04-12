@@ -15,6 +15,7 @@ import ForgotPassword from './pages/auth/forgotpassword';
 import ResetPassword from './pages/auth/resetpassword';
 import StudentDashboard from './pages/student/StudentDashboard';
 import OfferDetails from './pages/student/OfferDetails';
+import CompanyDashboard from './pages/company/CompanyDashboard';
 import './App.css';
 
 const LandingPage = ({ userRole }) => {
@@ -147,6 +148,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard/student/*" element={<StudentDashboard setUserRole={setUserRole} />} />
         <Route path="/dashboard/student/offer/:id" element={<OfferDetails setUserRole={setUserRole} />} />
+        <Route path="/dashboard/company/*" element={<CompanyDashboard setUserRole={setUserRole} />} />
       </Routes>
 
       {!hideLayout && !isDashboard && <Footer />}

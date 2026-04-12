@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
@@ -12,12 +12,15 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { offerService } from '../../services/api';
 import './StudentOffers.css';
 
 const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover, hoveredMatch, matchBreakdown, onApply, onToggleFavorite, showToast }) => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [viewMode, setViewMode] = useState('recommended'); // 'recommended' | 'all'
+    const [allOffers, setAllOffers] = useState([]);
     
     // Advanced Filters State
     const [filters, setFilters] = useState({
@@ -33,14 +36,24 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
         setFilters({ domain: 'all', duration: 'all', remun: 'all', telework: 'all', city: 'all' });
     };
 
-    // Simulated Match Algorithm comparing User Profile and Offer
-    const getMatchScore = (offer) => {
-        let score = 60;
-        if(userData?.profile?.speciality && offer.skills?.some(s => userData.profile.speciality.includes(s.name))) score += 20;
-        if(offer.wilaya && userData?.city && offer.wilaya === userData.city) score += 15;
-        // Mock a base random score if above conditions don't hit, but keep it deterministic by offer id
-        return Math.min(98, score + ((offer.id || 0) % 35)); 
-    };
+    useEffect(() => {
+        const fetchAllOffers = async () => {
+            try {
+                const data = await offerService.getOffers();
+                setAllOffers(data?.results || data || []);
+            } catch (error) {
+                console.error("Failed to fetch all offers:", error);
+            }
+        };
+        fetchAllOffers();
+    }, []);
+
+    // Filter recommendations or all offers by search term locally for immediate feedback
+    const baseSource = viewMode === 'recommended' ? recommendations : allOffers;
+    const filteredOffers = baseSource.filter(offer => 
+        (offer.title?.toLowerCase().includes(searchTerm.toLowerCase()) || '') || 
+        (offer.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) || '')
+    );
 
     const handleLoadMore = () => {
         setIsLoadingMore(true);
@@ -67,7 +80,7 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
                 <div className="offers-header-content">
                     <div>
                         <h1>Available Internship Offers</h1>
-                        <p>{recommendations.length} offers available</p>
+                        <p>{baseSource.length} {viewMode === 'recommended' ? 'recommended' : ''} offers available</p>
                     </div>
                     <div className="offers-header-actions">
                         <div className="search-bar">
@@ -89,6 +102,22 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
                             <img src={userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar" />
                         </div>
                     </div>
+                </div>
+
+                {/* Scope Toggles */}
+                <div className="offers-scope-toggles" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                    <button 
+                        className={`filter-tab ${viewMode === 'recommended' ? 'active' : ''}`}
+                        onClick={() => setViewMode('recommended')}
+                    >
+                        Recommended for You ({recommendations.length})
+                    </button>
+                    <button 
+                        className={`filter-tab ${viewMode === 'all' ? 'active' : ''}`}
+                        onClick={() => setViewMode('all')}
+                    >
+                        Explore All Offers ({allOffers.length})
+                    </button>
                 </div>
 
                 {/* Filters */}
@@ -140,7 +169,7 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
                 initial="hidden"
                 animate="visible"
             >
-                {recommendations.map((offer) => (
+                {filteredOffers.map((offer) => (
                     <motion.div key={offer.id} className="offer-card-detailed" variants={itemVariants}>
                         <div className="card-top">
                             <div className="company-logo">
@@ -175,9 +204,9 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
                             {offer.durations?.map((d, i) => (
                                 <span key={`d-${i}`} className="tag intern">{d.months} months</span>
                             ))}
-                            {/* Display AI Match based on mock logic */}
+                            {/* AI Match */}
                             <span className="tag match-score" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                                {getMatchScore(offer)}% Match
+                                {offer.match_score > 0 ? `${offer.match_score}% Match` : 'Unscored'}
                             </span>
                         </div>
 

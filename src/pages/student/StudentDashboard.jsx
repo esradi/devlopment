@@ -24,10 +24,12 @@ import {
     Info,
     CheckCircle,
     Loader2,
-    Plus
+    Plus,
+    Target,
+    BarChart3
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { dashboardService } from '../../services/api';
+import { studentService, applicationService, offerService } from '../../services/api';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import StudentOffers from './StudentOffers';
 import StudentApplications from './StudentApplications';
@@ -35,6 +37,8 @@ import StudentFavorites from './StudentFavorites';
 import StudentMessages from './StudentMessages';
 import StudentSettings from './StudentSettings';
 import CompleteProfile from './CompleteProfile';
+import StudentChallenges from './StudentChallenges';
+import StudentAnalytics from './StudentAnalytics';
 import './StudentDashboard.css';
 
 const formatDate = (dateString) => {
@@ -69,42 +73,31 @@ const StudentDashboard = ({ setUserRole }) => {
         setTimeout(() => setToastMessage(null), 3000);
     };
 
-    const handleMockApply = (offer) => {
-        const newApp = {
-            id: Date.now(),
-            company_name: offer.company_name || 'Unknown Company',
-            offer_title: offer.title || 'Position',
-            status: 'pending',
-            created_at: new Date().toISOString(),
-            offer: offer.id
-        };
-        setRecentApps(prev => [newApp, ...prev]);
-        setUserData(prev => prev ? {
-            ...prev,
-            profile: {
-                ...prev.profile,
-                applications_sent: (prev.profile.applications_sent || 0) + 1
-            }
-        } : prev);
-        showToast(`Successfully applied to ${offer.company_name || 'this offer'}!`);
+    const handleMockApply = async (offer) => {
+        try {
+            await applicationService.apply(offer.id);
+            showToast(`Successfully applied to ${offer.company_name || 'this offer'}!`);
+            // Refresh applications array
+            const apps = await applicationService.getMine();
+            setRecentApps(apps || []);
+        } catch (error) {
+            showToast(`Failed to apply: ${error.message || 'Unknown error'}`);
+        }
     };
 
-    const handleToggleFavorite = (offerId) => {
-        setRecommendations(prev => prev.map(o => {
-            if (o.id === offerId) {
-                const wasFavorite = o.is_favorite;
-                setUserData(u => u ? {
-                    ...u,
-                    profile: {
-                        ...u.profile,
-                        favorite_offers_count: Math.max(0, (u.profile.favorite_offers_count || 0) + (wasFavorite ? -1 : 1))
-                    }
-                } : u);
-                showToast(wasFavorite ? "Removed from favorites" : "Added to favorites");
-                return { ...o, is_favorite: !wasFavorite };
-            }
-            return o;
-        }));
+    const handleToggleFavorite = async (offerId) => {
+        try {
+            const result = await offerService.toggleFavorite(offerId);
+            setRecommendations(prev => prev.map(o => {
+                if (o.id === offerId) {
+                    return { ...o, is_favorite: result.is_favorite };
+                }
+                return o;
+            }));
+            showToast(result.is_favorite ? "Added to favorites" : "Removed from favorites");
+        } catch (error) {
+            showToast("Failed to toggle favorite");
+        }
     };
 
     useEffect(() => {
@@ -115,16 +108,26 @@ const StudentDashboard = ({ setUserRole }) => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [me, apps, recs] = await Promise.all([
-                    dashboardService.getMe(),
-                    dashboardService.getRecentApplications(),
-                    dashboardService.getRecommendations()
+                const [profileRes, dashboardRes, appsRes] = await Promise.all([
+                    studentService.getProfile(),
+                    studentService.getDashboard(),
+                    applicationService.getMine()
                 ]);
-                setUserData(me);
-                setRecentApps(apps || []);
-                setRecommendations(recs || []);
+                
+                // Combine into a usable userData state unifying the stats
+                setUserData({
+                    ...profileRes, 
+                    dashboardStats: dashboardRes?.stats || {},
+                    recentActivity: dashboardRes?.recent_activity || [],
+                    completeness: dashboardRes?.profile_completeness || 0
+                });
+                setRecentApps(appsRes || []);
+                setRecommendations(dashboardRes?.recommended_offers || []);
             } catch (err) {
                 console.error("Failed to fetch dashboard data:", err);
+                if (err.message.includes('401')) {
+                    handleLogout();
+                }
             } finally {
                 setLoading(false);
             }
@@ -133,12 +136,13 @@ const StudentDashboard = ({ setUserRole }) => {
     }, []);
 
     const fetchBreakdown = async (offerId) => {
-        if (!userData?.profile?.id) return;
-        try {
-            const result = await dashboardService.getMatchingBreakdown(userData.profile.id, offerId);
-            setMatchBreakdown(result);
-        } catch (err) {
-            console.error("Error fetching breakdown:", err);
+        // Now using actual DB breakdown if possible
+        // Actually, backend /student/recommendations/ already returns score_breakdown. Let's see if we can use that instead of fetching.
+        const recommendation = recommendations.find(r => r.id === offerId);
+        if (recommendation && recommendation.score_breakdown) {
+            setMatchBreakdown(recommendation.score_breakdown);
+        } else {
+             setMatchBreakdown(null);
         }
     };
 
@@ -160,25 +164,25 @@ const StudentDashboard = ({ setUserRole }) => {
             icon: <Briefcase size={20} color="#9e59ff" />
         },
         {
-            label: 'Applications Sent',
-            value: userData?.profile?.applications_sent || '0',
-            change: `${(recentApps || []).filter(a => a?.status === 'pending').length} pending`,
+            label: 'Applications',
+            value: userData?.dashboardStats?.total_applications || '0',
+            change: `${userData?.dashboardStats?.pending_applications || '0'} pending`,
             positive: true,
             icon: <Send size={20} color="#db2777" />
         },
         {
-            label: 'Offers Received',
-            value: userData?.profile?.offers_received || '0',
+            label: 'Offers Accepted',
+            value: userData?.dashboardStats?.accepted_applications || '0',
             change: 'Accepted/Received',
             positive: true,
             icon: <Zap size={20} color="#9e59ff" />
         },
         {
-            label: 'Favorite Offers',
-            value: userData?.profile?.favorite_offers_count || '0',
-            change: 'Saved items',
+            label: 'Verified Skills',
+            value: userData?.dashboardStats?.verified_skills || '0',
+            change: `of ${userData?.dashboardStats?.total_skills || '0'} total skills`,
             positive: true,
-            icon: <Heart size={20} color="#db2777" />
+            icon: <CheckCircle2 size={20} color="#10b981" />
         },
     ];
 
@@ -227,7 +231,7 @@ const StudentDashboard = ({ setUserRole }) => {
                         <img src={userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
                         <div>
                             <h4>{userData?.first_name || 'Guest'} {userData?.last_name || ''}</h4>
-                            <p>Student Portal / {userData?.profile?.profile_completeness > 80 ? 'Active Applicant' : 'New Member'}</p>
+                            <p>Student Portal / {userData?.completeness > 80 ? 'Active Applicant' : 'New Member'}</p>
                         </div>
                     </div>
                 </div>
@@ -248,6 +252,14 @@ const StudentDashboard = ({ setUserRole }) => {
                     <Link to="/dashboard/student/favorites" className={`nav-item ${activeTab === 'favorites' ? 'active' : ''}`}>
                         <Heart size={20} />
                         <span>Favorites</span>
+                    </Link>
+                    <Link to="/dashboard/student/challenges" className={`nav-item ${activeTab === 'challenges' ? 'active' : ''}`}>
+                        <Target size={20} />
+                        <span>Skill Challenges</span>
+                    </Link>
+                    <Link to="/dashboard/student/analytics" className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`}>
+                        <BarChart3 size={20} />
+                        <span>Analytics</span>
                     </Link>
                     <Link to="/dashboard/student/messages" className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}>
                         <MessageSquare size={20} />
@@ -276,7 +288,7 @@ const StudentDashboard = ({ setUserRole }) => {
             </aside>
 
             {/* Main Content */}
-            <main className="dashboard-main" style={['offers', 'applications', 'favorites', 'messages', 'settings', 'complete-profile'].includes(activeTab) ? { padding: '110px 0 0 0' } : {}}>
+            <main className="dashboard-main" style={['offers', 'applications', 'favorites', 'messages', 'settings', 'complete-profile', 'challenges', 'analytics'].includes(activeTab) ? { padding: '110px 0 0 0' } : {}}>
                 {activeTab === 'dashboard' ? (
                     <>
                         <header className="dashboard-header">
@@ -411,7 +423,7 @@ const StudentDashboard = ({ setUserRole }) => {
                                             <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
                                             <circle
                                                 cx="60" cy="60" r="54" fill="none" stroke="url(#gradient)" strokeWidth="12"
-                                                strokeDasharray="339.29" strokeDashoffset={339.29 * (1 - (userData?.profile?.profile_completeness || 30) / 100)}
+                                                strokeDasharray="339.29" strokeDashoffset={339.29 * (1 - (userData?.completeness || 0) / 100)}
                                                 strokeLinecap="round"
                                             />
                                             <defs>
@@ -421,11 +433,11 @@ const StudentDashboard = ({ setUserRole }) => {
                                                 </linearGradient>
                                             </defs>
                                         </svg>
-                                        <div className="percentage">{userData?.profile?.profile_completeness || 30}%</div>
+                                        <div className="percentage">{userData?.completeness || 0}%</div>
                                     </div>
-                                    <h3>Profile Strength: {userData?.profile?.profile_completeness > 70 ? 'Solid' : 'In Progress'}</h3>
+                                    <h3>Profile Strength: {userData?.completeness > 70 ? 'Solid' : 'In Progress'}</h3>
                                     <p style={{ color: '#8892b0', fontSize: '14px', marginBottom: '24px' }}>
-                                        {userData?.profile?.profile_completeness > 70 ? 'You\'ve unlocked the "Rising Star" badge!' : 'Complete your profile to unlock more opportunities.'}
+                                        {userData?.completeness > 70 ? 'You\'ve unlocked the "Rising Star" badge!' : 'Complete your profile to unlock more opportunities.'}
                                     </p>
                                     <button
                                         className="btn-secondary-dark"
@@ -443,7 +455,7 @@ const StudentDashboard = ({ setUserRole }) => {
                                         <Link to="/dashboard/student/applications" className="view-all">View all</Link>
                                     </div>
                                     <div className="pipeline-container">
-                                        {(recentApps || []).map((app) => {
+                                        {(recentApps || []).slice(0,4).map((app) => {
                                             const states = ['Applied', 'Review', 'Interview', 'Offer'];
                                             let currentIndex = 0;
                                             if (app.status === 'under review') currentIndex = 1;
@@ -505,6 +517,14 @@ const StudentDashboard = ({ setUserRole }) => {
                 ) : activeTab === 'messages' ? (
                     <StudentMessages
                         userData={userData}
+                    />
+                ) : activeTab === 'challenges' ? (
+                    <StudentChallenges 
+                        userData={userData} 
+                    />
+                ) : activeTab === 'analytics' ? (
+                    <StudentAnalytics 
+                        userData={userData} 
                     />
                 ) : activeTab === 'settings' ? (
                     <StudentSettings
