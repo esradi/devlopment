@@ -4,21 +4,31 @@ import {
     LayoutDashboard,
     Briefcase,
     Settings,
-    Search,
-    Bell,
     LogOut,
     Plus,
     Users,
     TrendingUp,
     FileText,
-    Info,
-    CheckCircle2
+    CheckCircle2,
+    MessageSquare,
+    User,
+    ChevronRight,
+    Search,
+    Bell,
+    X,
+    Check,
+    ArrowUpRight,
+    Building2,
+    Shield,
+    Calendar,
+    Folder
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { companyService } from '../../services/api';
 import CompanyOffers from './CompanyOffers';
 import CompanyCandidates from './CompanyCandidates';
 import CreateOffer from './CreateOffer';
+import CompanySidebar from '../../components/CompanySidebar';
 import './CompanyDashboard.css';
 
 const CompanyDashboard = ({ setUserRole }) => {
@@ -30,7 +40,7 @@ const CompanyDashboard = ({ setUserRole }) => {
         if (path.includes('/offer/create')) return 'create-offer';
         if (path.includes('/candidates')) return 'candidates';
         if (parts[parts.length - 1] === 'company' || parts[parts.length - 1] === 'dashboard') return 'dashboard';
-        return parts[parts.length - 1]; // e.g., 'offers'
+        return parts[parts.length - 1];
     };
 
     const [activeTab, setActiveTab] = useState(getTabFromPath(location.pathname));
@@ -51,16 +61,16 @@ const CompanyDashboard = ({ setUserRole }) => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                // Defensive check if dashboard method is configured
                 let res = {};
                 try {
                     res = await companyService.getDashboard();
                 } catch(e) {
-                    console.warn("Could not fetch detailed company dashboard, using mock data for layout");
+                    console.warn("Using mock data for layout");
                     res = {
-                        first_name: 'Company',
-                        last_name: 'Admin',
-                        company_name: 'Stage-IO Partner'
+                        first_name: 'Sonatrach',
+                        company_name: 'Sonatrach',
+                        industry: 'Energy & Oil',
+                        location: 'Algiers'
                     };
                 }
                 setUserData(res || {});
@@ -91,197 +101,296 @@ const CompanyDashboard = ({ setUserRole }) => {
 
     return (
         <div className="company-dashboard">
-            {/* Sidebar */}
-            <aside className="dashboard-sidebar">
-                <div className="sidebar-header">
-                    <div className="company-logo-area">
-                        <div className="logo-icon-wrap">
-                            <span style={{color: '#fff', fontSize: '18px', fontWeight: '800'}}>S</span>
-                        </div>
-                        <div>
-                            <h2>{userData?.company_name || 'Stage-IO Partner'}</h2>
-                            <span>Espace Entreprise</span>
-                        </div>
-                    </div>
-                </div>
+            {/* 1. Sidebar (Navbar) */}
+            <CompanySidebar activePath={activeTab} />
 
-                <nav className="sidebar-nav">
-                    <Link to="/dashboard/company" className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}>
-                        <LayoutDashboard size={20} />
-                        <span>Tableau de bord</span>
-                    </Link>
-                    <Link to="/dashboard/company/offers" className={`nav-item ${activeTab === 'offers' ? 'active' : ''}`}>
-                        <Briefcase size={20} />
-                        <span>Mes Offres</span>
-                    </Link>
-                    <Link to="/dashboard/company/offer/create" className={`nav-item ${activeTab === 'create-offer' ? 'active' : ''}`}>
-                        <Plus size={20} />
-                        <span>Publier une Offre</span>
-                    </Link>
-                    <Link to="#" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); showToast("Settings coming soon"); }}>
-                        <Settings size={20} />
-                        <span>Paramètres</span>
-                    </Link>
-                </nav>
+            {/* 2. Main Content Area */}
+            <div className="company-main">
+                <main className={`main-content-scroll ${activeTab !== 'dashboard' ? 'full-width-scroll' : ''}`}>
+                    {activeTab === 'dashboard' ? (
+                        <>
+                            {/* Summary Header */}
+                            <header className="dashboard-summary-header">
+                                <div className="welcome-section">
+                                    <h2>Welcome back, {userData?.company_name || 'Partner'}! 👋</h2>
+                                    <p>You have <strong>3 new applications</strong> today.</p>
+                                </div>
+                                <button className="post-offer-btn" onClick={() => navigate('/dashboard/company/offer/create')}>
+                                    <Plus size={20} />
+                                    <span>Post an Offer</span>
+                                </button>
+                            </header>
 
-                <div className="sidebar-footer">
-                    <div className="premium-support">
-                        <p>Besoin d'aide pour recruter ?</p>
-                        <button className="btn-expert">Contacter un Expert</button>
-                    </div>
-                    <button onClick={handleLogout} className="nav-item logout" style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', marginTop: '12px' }}>
-                        <LogOut size={20} />
-                        <span>Déconnexion</span>
-                    </button>
-                </div>
-            </aside>
+                            {/* Stat Cards */}
+                            <div className="stats-row">
+                                <div className="stat-pille">
+                                    <div className="stat-icon-row">
+                                        <div className="icon-box" style={{ background: 'rgba(158, 89, 255, 0.15)', color: '#9e59ff' }}>
+                                            <Briefcase size={24} />
+                                        </div>
+                                        <span className="trend-badge">+1 this week</span>
+                                    </div>
+                                    <span className="stat-label">Active Offers</span>
+                                    <span className="stat-value">4</span>
+                                </div>
+                                <div className="stat-pille">
+                                    <div className="stat-icon-row">
+                                        <div className="icon-box" style={{ background: 'rgba(255, 27, 144, 0.15)', color: '#ff1b90' }}>
+                                            <Users size={24} />
+                                        </div>
+                                        <span className="trend-badge" style={{ color: '#ff1b90', background: 'rgba(255, 27, 144, 0.1)' }}>Across all offers</span>
+                                    </div>
+                                    <span className="stat-label">Total Applications</span>
+                                    <span className="stat-value">23</span>
+                                </div>
+                                <div className="stat-pille">
+                                    <div className="stat-icon-row">
+                                        <div className="icon-box" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
+                                            <FileText size={24} />
+                                        </div>
+                                        <span className="trend-badge" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>To process</span>
+                                    </div>
+                                    <span className="stat-label">Pending Review</span>
+                                    <span className="stat-value">12</span>
+                                </div>
+                                <div className="stat-pille">
+                                    <div className="stat-icon-row">
+                                        <div className="icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                                            <CheckCircle2 size={24} />
+                                        </div>
+                                        <span className="trend-badge" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' }}>This month</span>
+                                    </div>
+                                    <span className="stat-label">Accepted</span>
+                                    <span className="stat-value">5</span>
+                                </div>
+                            </div>
 
-            {/* Main Content */}
-            <main className="dashboard-main" style={{display: 'flex', flexDirection: 'column'}}>
-                {activeTab === 'dashboard' ? (
-                    <>
-                        <header className="dashboard-header">
-                            <div>
-                                <h1>Bonjour, {userData?.first_name || 'Admin'}</h1>
-                                <p>Voici un aperçu de vos activités de recrutement.</p>
-                            </div>
-                            <div className="header-actions">
-                                <div className="notification-btn icon-btn">
-                                    <Bell size={18} />
-                                    <span className="dot"></span>
+                            {/* Recent Offers */}
+                            <section className="recent-offers-section">
+                                <div className="section-header">
+                                    <h3>Recent Offers</h3>
+                                    <Link to="/dashboard/company/offers" className="view-all-link">
+                                        View all <ChevronRight size={16} />
+                                    </Link>
                                 </div>
-                                <div className="user-dropdown">
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#9e59ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
-                                        {userData?.first_name ? userData.first_name[0] : 'C'}
-                                    </div>
-                                    <span>{userData?.first_name || 'Compte'}</span>
-                                </div>
-                            </div>
-                        </header>
-
-                        <div className="stats-grid">
-                            <div className="stat-card">
-                                <div className="stat-content">
-                                    <h3>Candidatures en attente</h3>
-                                    <div className="stat-numbers">
-                                        <span className="value">12</span>
-                                    </div>
-                                </div>
-                                <div className="stat-icon-bg"><Users /></div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-content">
-                                    <h3>Offres Actives</h3>
-                                    <div className="stat-numbers">
-                                        <span className="value">3</span>
-                                    </div>
-                                </div>
-                                <div className="stat-icon-bg"><Briefcase /></div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-content">
-                                    <h3>Taux de Match</h3>
-                                    <div className="stat-numbers">
-                                        <span className="value">85%</span>
-                                        <span className="change positive">+5%</span>
-                                    </div>
-                                </div>
-                                <div className="stat-icon-bg"><TrendingUp /></div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-content">
-                                    <h3>Conventions Générées</h3>
-                                    <div className="stat-numbers">
-                                        <span className="value">4</span>
-                                    </div>
-                                </div>
-                                <div className="stat-icon-bg"><FileText /></div>
-                            </div>
-                        </div>
-
-                        <div className="dashboard-layout">
-                            <div className="left-column">
-                                <div className="pipeline-section">
-                                    <div className="section-title">
-                                        <h2>Pipeline Récent</h2>
-                                        <Link to="/dashboard/company/offers" className="view-all">Voir tout</Link>
-                                    </div>
-                                    <div className="table-container">
-                                        <table className="candidates-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Candidat</th>
-                                                    <th>Offre</th>
-                                                    <th>Match AI</th>
-                                                    <th>Statut</th>
-                                                    <th>Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td className="candidate-info">
-                                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#333' }}></div>
-                                                        <div>
-                                                            <h4>Mohamed A.</h4>
-                                                            <p>Software Engineering</p>
-                                                        </div>
-                                                    </td>
-                                                    <td className="role-text">Développeur React</td>
-                                                    <td>
-                                                        <div className="match-badge">
-                                                            <span className="match-value">92%</span>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span className="status-indicator"><span className="dot" style={{ background: '#f59e0b'}}></span> En revue</span>
-                                                    </td>
-                                                    <td><button className="btn-action">Action</button></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                            <aside className="right-column">
-                                <div className="analytics-card">
-                                    <h4 className="subtitle">PERFORMANCE DES OFFRES</h4>
-                                    <div className="bar-chart-container">
-                                        <div className="bars">
-                                            <div className="bar-wrap"><div className="bar" style={{height: '30%'}}></div></div>
-                                            <div className="bar-wrap"><div className="bar" style={{height: '50%'}}></div></div>
-                                            <div className="bar-wrap"><div className="bar" style={{height: '80%'}}></div></div>
-                                            <div className="bar-wrap"><div className="bar" style={{height: '40%'}}></div></div>
-                                            <div className="bar-wrap"><div className="bar" style={{height: '90%'}}></div></div>
-                                            <div className="bar-wrap"><div className="bar" style={{height: '60%'}}></div></div>
+                                <div className="offers-list-vertical">
+                                    <div className="offer-wide-card">
+                                        <div className="offer-main-info">
+                                            <div className="offer-title-row">
+                                                <h4>Data Scientist Intern</h4>
+                                                <span className="status-badge active">Active</span>
+                                            </div>
+                                            <div className="offer-tags">
+                                                <span className="tag-pill">PFE</span>
+                                                <span className="tag-pill">4 Months</span>
+                                                <span className="tag-pill">Python, SQL</span>
+                                            </div>
+                                            <div className="offer-stats-row">
+                                                <span><Users size={12} /> 12 candidates</span>
+                                                <span><TrendingUp size={12} /> Posted 2d ago</span>
+                                            </div>
+                                        </div>
+                                        <div className="offer-actions">
+                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/1/candidates')}>View Candidates</button>
+                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/1/edit')}>Edit</button>
                                         </div>
                                     </div>
-                                    <div className="analytics-metrics">
-                                        <div className="metric-item">
-                                            <div className="metric-header">
-                                                <span>Vues de profil</span>
-                                                <span>1,240</span>
+
+                                    <div className="offer-wide-card">
+                                        <div className="offer-main-info">
+                                            <div className="offer-title-row">
+                                                <h4>Full Stack Dev (MERN)</h4>
+                                                <span className="status-badge closed">Closed</span>
                                             </div>
-                                            <div className="progress-bg">
-                                                <div className="progress-fill" style={{width: '75%'}}></div>
+                                            <div className="offer-tags">
+                                                <span className="tag-pill">PFE</span>
+                                                <span className="tag-pill">6 Months</span>
+                                                <span className="tag-pill">React, Node.js</span>
                                             </div>
+                                            <div className="offer-stats-row">
+                                                <span><Users size={12} /> 45 candidates</span>
+                                                <span><TrendingUp size={12} /> Expired 1w ago</span>
+                                            </div>
+                                        </div>
+                                        <div className="offer-actions">
+                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/2/candidates')}>View Talent</button>
+                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/2/edit')}>Edit</button>
                                         </div>
                                     </div>
                                 </div>
-                            </aside>
+                            </section>
+
+                            {/* Recent Applications */}
+                            <section className="recent-applications-section">
+                                <div className="section-header">
+                                    <h3>Recent Applications</h3>
+                                    <Link to="/dashboard/company/offer/1/candidates" className="view-all-link">
+                                        View all <ChevronRight size={16} />
+                                    </Link>
+                                </div>
+                                <div className="modern-table-card">
+                                    <table className="modern-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Candidate</th>
+                                                <th>University</th>
+                                                <th>Skills</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {[
+                                                { name: 'Amira Benali', univ: 'ESI Alger', skills: ['React', 'Tailwind'], status: 'Pending', time: '2h ago' },
+                                                { name: 'Yacine Meziane', univ: 'USTHB Alger', skills: ['Python', 'Django'], status: 'Pending', time: '5h ago' },
+                                                { name: 'Sara Ould Ali', univ: 'University of Tlemcen', skills: ['UI/UX', 'Figma'], status: 'Accepted', time: 'Yesterday' }
+                                            ].map((cand, i) => (
+                                                <tr key={i}>
+                                                    <td>
+                                                        <div className="candidate-cell">
+                                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, #333, #555)' }}></div>
+                                                            <div className="candidate-name-wrap">
+                                                                <h5>{cand.name}</h5>
+                                                                <p>Applied {cand.time}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{cand.univ}</td>
+                                                    <td>
+                                                        <div className="skill-list">
+                                                            {cand.skills.map((s, j) => <span key={j} className="skill-tag">{s}</span>)}
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`status-text ${cand.status.toLowerCase()}`}>{cand.status}</span>
+                                                    </td>
+                                                    <td>
+                                                        <div className="action-circles">
+                                                            <button 
+                                                                className="btn-view-app" 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate(`/dashboard/company/offer/1/application/${i + 1}`);
+                                                                }}
+                                                            >
+                                                                View
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </>
+                    ) : activeTab === 'offers' ? (
+                        <CompanyOffers userData={userData} />
+                    ) : activeTab === 'candidates' ? (
+                        <CompanyCandidates userData={userData} />
+                    ) : activeTab === 'create-offer' ? (
+                        <CreateOffer userData={userData} onSuccess={() => navigate('/dashboard/company/offers')} />
+                    ) : (
+                        <div className="placeholder-pane" style={{ padding: '80px', textAlign: 'center' }}>
+                            <h2 style={{ fontSize: '32px', marginBottom: '16px' }}>Section Coming Soon</h2>
+                            <p style={{ color: 'var(--text-secondary)' }}>We are working hard to bring you more company features.</p>
                         </div>
-                    </>
-                ) : activeTab === 'offers' ? (
-                    <CompanyOffers userData={userData} />
-                ) : activeTab === 'candidates' ? (
-                    <CompanyCandidates userData={userData} />
-                ) : activeTab === 'create-offer' ? (
-                    <CreateOffer userData={userData} onSuccess={() => navigate('/dashboard/company/offers')} />
-                ) : (
-                    <div className="placeholder-pane">
-                        <h2>Section En Développement</h2>
-                    </div>
+                    )}
+                </main>
+
+                {/* 3. Right Sidebar Panel */}
+                {activeTab === 'dashboard' && (
+                    <aside className="company-right-panel">
+                        <div className="profile-preview-card">
+                            <div className="company-large-icon">
+                                {userData?.company_name ? userData.company_name[0] : 'S'}
+                            </div>
+                            <h3>{userData?.company_name || 'Sonatrach'} <Shield size={18} color="#10b981" fill="#10b981" /></h3>
+                            <p>{userData?.industry || 'Energy & Oil'} • {userData?.location || 'Algiers'}</p>
+                            
+                            <div className="strength-wrap">
+                                <div className="completion-header">
+                                    <span style={{ color: 'var(--text-secondary)' }}>Profile Strength</span>
+                                    <span style={{ color: 'var(--accent-primary)' }}>75%</span>
+                                </div>
+                                <div className="progress-bar-container">
+                                    <div className="progress-bar-fill" style={{ width: '75%' }}></div>
+                                </div>
+                            </div>
+                            <button 
+                                className="btn-full-outline"
+                                onClick={() => navigate('/dashboard/company/complete-profile')}
+                            >
+                                Complete Profile
+                            </button>
+                        </div>
+
+                        <div className="quick-actions-section">
+                            <h4 style={{ fontSize: '14px', marginBottom: '16px', color: 'var(--text-secondary)' }}>Quick Actions</h4>
+                            <div className="quick-actions-grid">
+                                <div className="action-pille" onClick={() => navigate('/dashboard/company/offer/create')}>
+                                    <Plus size={20} color={'var(--accent-secondary)'} />
+                                    <span>New Offer</span>
+                                </div>
+                                <div className="action-pille" onClick={() => setActiveTab('offers')}>
+                                    <Briefcase size={20} color={'var(--accent-primary)'} />
+                                    <span>My Offers</span>
+                                </div>
+                                <div className="action-pille" onClick={() => navigate('/dashboard/company/messages')}>
+                                    <MessageSquare size={20} color="#00f2fe" />
+                                    <span>Messages</span>
+                                </div>
+                                <div className="action-pille" onClick={() => navigate('/dashboard/company/offer/1/candidates')}>
+                                    <Users size={20} color={'var(--success)'} />
+                                    <span>Applications</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="applications-chart">
+                            <h4 style={{ fontSize: '14px', marginBottom: '16px', color: 'var(--text-secondary)' }}>Applications This Week</h4>
+                            <div className="chart-placeholder-box">
+                                {/* Simplified Bar Chart visualization */}
+                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', height: '100px' }}>
+                                    {[30, 45, 25, 60, 80, 50, 40].map((h, i) => (
+                                        <div key={i} style={{ 
+                                            width: '12px', 
+                                            height: `${h}%`, 
+                                            background: i === 4 ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                            borderRadius: '4px 4px 0 0'
+                                        }}></div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '10px', color: 'var(--text-muted)' }}>
+                                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                            </div>
+                        </div>
+
+                        <div className="activity-section">
+                            <h4 style={{ fontSize: '14px', marginBottom: '16px', color: 'var(--text-secondary)' }}>Recent Activity</h4>
+                            <div className="activity-feed">
+                                <div className="activity-item">
+                                    <div className="activity-dot" style={{ background: 'var(--accent-primary)' }}></div>
+                                    <div className="activity-meta">
+                                        <h5>New application received</h5>
+                                        <p>Amira Benali applied for Data Scientist</p>
+                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>2 minutes ago</span>
+                                    </div>
+                                </div>
+                                <div className="activity-item">
+                                    <div className="activity-dot" style={{ background: 'var(--success)' }}></div>
+                                    <div className="activity-meta">
+                                        <h5>Candidate Accepted</h5>
+                                        <p>Sara Ould Ali accepted the interview invite</p>
+                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>3 hours ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
                 )}
-            </main>
+            </div>
 
             <AnimatePresence>
                 {toastMessage && (
@@ -289,6 +398,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
+                        className="toast-notification"
                         style={{
                             position: 'fixed',
                             bottom: '24px',

@@ -134,34 +134,22 @@ const Navbar = ({ role, setUserRole }) => {
                 </div>
 
                 {/* CENTRAL MENU */}
-                <div className="menu-section">
                     <ul className="menu-list">
-                        {!isDashboardView || isStudentDashboard ? (
-                            publicLinks.map((link) => (
-                                <li key={link.id}>
-                                    <a
-                                        href={`/#${link.id}`}
-                                        className="nav-link"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            scrollToSection(link.id);
-                                        }}
-                                    >
-                                        {link.label}
-                                    </a>
-                                </li>
-                            ))
-                        ) : (
-                            dashboardLinks[role]?.map((link) => (
-                                <li key={link.path}>
-                                    <Link to={link.path} className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}>
-                                        {link.label}
-                                    </Link>
-                                </li>
-                            ))
-                        )}
+                        {publicLinks.map((link) => (
+                            <li key={link.id}>
+                                <a
+                                    href={`/#${link.id}`}
+                                    className="nav-link"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        scrollToSection(link.id);
+                                    }}
+                                >
+                                    {link.label}
+                                </a>
+                            </li>
+                        ))}
                     </ul>
-                </div>
 
                 {/* RIGHT ACTIONS */}
                 <div className="actions-section">
@@ -227,23 +215,13 @@ const Navbar = ({ role, setUserRole }) => {
                         exit={{ opacity: 0, y: -20 }}
                     >
                         <ul className="mobile-menu-list">
-                            {!isDashboardView || isStudentDashboard ? (
-                                publicLinks.map((link) => (
-                                    <li key={link.id}>
-                                        <a href={`/#${link.id}`} onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>
-                                            {link.label}
-                                        </a>
-                                    </li>
-                                ))
-                            ) : (
-                                dashboardLinks[role]?.map((link) => (
-                                    <li key={link.path}>
-                                        <Link to={link.path} onClick={() => setIsMobileMenuOpen(false)}>
-                                            {link.label}
-                                        </Link>
-                                    </li>
-                                ))
-                            )}
+                            {publicLinks.map((link) => (
+                                <li key={link.id}>
+                                    <a href={`/#${link.id}`} onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>
+                                        {link.label}
+                                    </a>
+                                </li>
+                            ))}
 
                             {role !== 'public' && (
                                 <>

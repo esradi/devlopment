@@ -3,45 +3,52 @@ import { motion } from 'framer-motion';
 import { 
     ChevronLeft, Send, Sparkles, 
     Target, MapPin, Clock, 
-    Briefcase, Code, FileText, CheckCircle2
+    Briefcase, Code, FileText, CheckCircle2, Save
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { companyService } from '../../services/api';
-import './CreateOffer.css';
+import './CreateOffer.css'; // Reuse CreateOffer styles
 
-const CreateOffer = () => {
+const EditOffer = () => {
     const navigate = useNavigate();
+    const { offerId } = useParams();
     const [options, setOptions] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     
-    // Form State
+    // Form State (Pre-filled with dummy data for now)
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        wilaya: '',
-        salary: '',
-        requirements: '',
-        domain_ids: [],
-        location_ids: [],
-        offer_type_ids: [],
-        duration_ids: [],
-        skill_ids: []
+        title: 'Data Scientist Intern',
+        description: 'We are looking for a Data Science intern to help our team build predictive models for energy consumption...',
+        wilaya: 'Algiers',
+        salary: '30,000 DZD / month',
+        requirements: 'Knowledge of Python, SQL and basic ML libraries.',
+        domain_ids: [1],
+        location_ids: [1],
+        offer_type_ids: [1],
+        duration_ids: [1],
+        skill_ids: [1, 2]
     });
 
     useEffect(() => {
-        const fetchOptions = async () => {
+        const fetchData = async () => {
             try {
-                const data = await companyService.getOfferOptions();
-                setOptions(data);
+                // Fetch options
+                const opts = await companyService.getOfferOptions();
+                setOptions(opts);
+
+                // Mock fetching the specific offer data based on offerId
+                // In a real app: const offerData = await companyService.getOffer(offerId);
+                // setFormData(offerData);
+                
             } catch (err) {
-                console.error("Failed to fetch offer options:", err);
+                console.error("Failed to fetch data:", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchOptions();
-    }, []);
+        fetchData();
+    }, [offerId]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -63,11 +70,13 @@ const CreateOffer = () => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            await companyService.createOffer(formData);
+            // Mock Update
+            // await companyService.updateOffer(offerId, formData);
+            console.log("Updating offer:", offerId, formData);
             navigate('/dashboard/company/offers');
         } catch (err) {
-            console.error("Failed to create offer:", err);
-            alert("Error creating the offer. Please check the input fields.");
+            console.error("Failed to update offer:", err);
+            alert("Error updating the offer.");
         } finally {
             setSubmitting(false);
         }
@@ -81,11 +90,11 @@ const CreateOffer = () => {
         <div className="create-offer-modern">
             <header className="co-header">
                 <button className="co-back-btn" onClick={() => navigate('/dashboard/company/offers')}>
-                    <ChevronLeft size={18} /> Back to offers
+                    <ChevronLeft size={18} /> Back to dashboard
                 </button>
                 <div className="co-title-wrapper">
-                    <h1>Post an <span className="co-text-pink">Offer</span></h1>
-                    <p>Define the perfect criteria to find your future talent.</p>
+                    <h1>Edit <span className="co-text-pink">Offer</span></h1>
+                    <p>Modify the details for offer ID: #{offerId}</p>
                 </div>
             </header>
 
@@ -113,7 +122,7 @@ const CreateOffer = () => {
                             <label>Internship Description <span className="co-required">*</span></label>
                             <textarea 
                                 name="description"
-                                placeholder="Describe the main missions, responsibilities, and work environment..." 
+                                placeholder="Describe the main missions..." 
                                 rows="6"
                                 value={formData.description}
                                 onChange={handleInputChange}
@@ -124,7 +133,7 @@ const CreateOffer = () => {
                             <label>Conditions & Requirements</label>
                             <textarea 
                                 name="requirements"
-                                placeholder="Specific requirements, required equipment, perks..." 
+                                placeholder="Specific requirements..." 
                                 rows="3"
                                 value={formData.requirements}
                                 onChange={handleInputChange}
@@ -154,99 +163,32 @@ const CreateOffer = () => {
                             </div>
                         </div>
                         <div className="co-input-group">
-                            <label>Compensation (Optional)</label>
+                            <label>Compensation</label>
                             <div className="co-input-with-icon">
                                 <Sparkles size={18} className="co-input-icon" />
                                 <input 
                                     type="text" 
                                     name="salary"
-                                    placeholder="e.g., 30,000 DZD / month" 
+                                    placeholder="e.g., 30,000 DZD" 
                                     value={formData.salary}
                                     onChange={handleInputChange}
                                 />
                             </div>
                         </div>
-
-                        <div className="co-selector-group full-width">
-                            <label>Work Mode</label>
-                            <div className="co-chip-cloud">
-                                {options?.locations?.map(loc => (
-                                    <button 
-                                        type="button"
-                                        key={loc.id}
-                                        className={`co-chip ${formData.location_ids.includes(loc.id) ? 'active' : ''}`}
-                                        onClick={() => toggleSelection('location_ids', loc.id)}
-                                    >
-                                        <CheckCircle2 size={14} className="co-check-icon" />
-                                        {loc.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 </motion.div>
 
-                {/* Section 3: Critères de Matching */}
+                {/* Section 3: Criteria & Skills */}
                 <motion.div className="co-form-card" initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{delay: 0.3}}>
                     <div className="co-card-header">
                         <div className="co-icon-box teal"><Target size={20} /></div>
-                        <h2>Matching Criteria (Algorithm)</h2>
+                        <h2>Matching Criteria</h2>
                     </div>
                     <div className="co-card-body">
-                        
-                        <div className="co-grid-2">
-                            <div className="co-selector-group">
-                                <label>Activity Domains</label>
-                                <div className="co-chip-cloud">
-                                    {options?.domains?.map(domain => (
-                                        <button 
-                                            type="button"
-                                            key={domain.id}
-                                            className={`co-chip ${formData.domain_ids.includes(domain.id) ? 'active' : ''}`}
-                                            onClick={() => toggleSelection('domain_ids', domain.id)}
-                                        >
-                                            {domain.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="co-selector-group">
-                                <label>Internship Type</label>
-                                <div className="co-chip-cloud">
-                                    {options?.offer_types?.map(type => (
-                                        <button 
-                                            type="button"
-                                            key={type.id}
-                                            className={`co-chip ${formData.offer_type_ids.includes(type.id) ? 'active' : ''}`}
-                                            onClick={() => toggleSelection('offer_type_ids', type.id)}
-                                        >
-                                            {type.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="co-selector-group mt-4">
-                            <label>Desired Duration</label>
-                            <div className="co-chip-cloud">
-                                {options?.durations?.map(dur => (
-                                    <button 
-                                        type="button"
-                                        key={dur.id}
-                                        className={`co-chip ${formData.duration_ids.includes(dur.id) ? 'active' : ''}`}
-                                        onClick={() => toggleSelection('duration_ids', dur.id)}
-                                    >
-                                        {dur.months} Months
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="co-selector-group mt-4">
+                         <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>Select skills and domains to refine the matching algorithm.</p>
+                         <div className="co-selector-group">
                             <label className="co-pink-label"><Code size={16} /> Technical Skills</label>
-                            <div className="co-chip-cloud scrollable">
+                            <div className="co-chip-cloud">
                                 {options?.skills?.map(skill => (
                                     <button 
                                         type="button"
@@ -259,17 +201,16 @@ const CreateOffer = () => {
                                 ))}
                             </div>
                         </div>
-
                     </div>
                 </motion.div>
 
                 {/* Footer Actions */}
                 <div className="co-form-actions">
-                    <button type="button" className="co-btn-cancel" onClick={() => navigate('/dashboard/company/offers')}>
+                    <button type="button" className="co-btn-cancel" onClick={() => navigate('/dashboard/company')}>
                         Cancel
                     </button>
-                    <button type="submit" className="co-btn-submit" disabled={submitting}>
-                        {submitting ? 'Publishing...' : <><Send size={18} /> Publish New Offer</>}
+                    <button type="submit" className="co-btn-submit" disabled={submitting} style={{ background: 'linear-gradient(90deg, #10b981, #059669)' }}>
+                        {submitting ? 'Saving...' : <><Save size={18} /> Save Changes</>}
                     </button>
                 </div>
             </form>
@@ -277,4 +218,4 @@ const CreateOffer = () => {
     );
 };
 
-export default CreateOffer;
+export default EditOffer;

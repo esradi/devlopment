@@ -16,6 +16,21 @@ import ResetPassword from './pages/auth/resetpassword';
 import StudentDashboard from './pages/student/StudentDashboard';
 import OfferDetails from './pages/student/OfferDetails';
 import CompanyDashboard from './pages/company/CompanyDashboard';
+import CompanyCandidates from './pages/company/CompanyCandidates';
+import CompanyApplicationDetail from './pages/company/CompanyApplicationDetail';
+import CompanyCalendar from './pages/company/CompanyCalendar';
+import ScheduleInterview from './pages/company/ScheduleInterview';
+import CompanyInterviews from './pages/company/CompanyInterviews';
+import CompanyDocuments from './pages/company/CompanyDocuments';
+import CompanyMessages from './pages/company/CompanyMessages';
+import CompanyProfile from './pages/company/CompanyProfile';
+import EditCompanyProfile from './pages/company/EditCompanyProfile';
+import CompanyAnalytics from './pages/company/CompanyAnalytics';
+import CompanyBilling from './pages/company/CompanyBilling';
+import CompanySettings from './pages/company/CompanySettings';
+import CompanyCompleteProfile from './pages/company/CompanyCompleteProfile';
+import HelpCenter from './pages/help/HelpCenter';
+import EditOffer from './pages/company/EditOffer';
 import './App.css';
 
 const LandingPage = ({ userRole }) => {
@@ -146,8 +161,24 @@ function App() {
         <Route path="/signup" element={<SignUp setUserRole={setUserRole} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/help" element={<HelpCenter />} />
         <Route path="/dashboard/student/*" element={<StudentDashboard setUserRole={setUserRole} />} />
         <Route path="/dashboard/student/offer/:id" element={<OfferDetails setUserRole={setUserRole} />} />
+        <Route path="/dashboard/company/offer/:offerId/candidates" element={<CompanyCandidates />} />
+        <Route path="/dashboard/company/offer/:offerId/edit" element={<EditOffer />} />
+        <Route path="/dashboard/company/offer/:offerId/application/:applicationId" element={<CompanyApplicationDetail />} />
+        <Route path="/dashboard/company/interviews" element={<CompanyInterviews />} />
+        <Route path="/dashboard/company/interviews/calendar" element={<CompanyCalendar />} />
+        <Route path="/dashboard/company/interviews/schedule" element={<ScheduleInterview />} />
+        <Route path="/dashboard/company/interviews/:interviewId/reschedule" element={<ScheduleInterview />} />
+        <Route path="/dashboard/company/documents" element={<CompanyDocuments />} />
+        <Route path="/dashboard/company/messages" element={<CompanyMessages />} />
+        <Route path="/dashboard/company/profile" element={<CompanyProfile />} />
+        <Route path="/dashboard/company/profile/edit" element={<EditCompanyProfile />} />
+        <Route path="/dashboard/company/analytics" element={<CompanyAnalytics />} />
+        <Route path="/dashboard/company/billing" element={<CompanyBilling />} />
+        <Route path="/dashboard/company/settings" element={<CompanySettings />} />
+        <Route path="/dashboard/company/complete-profile" element={<CompanyCompleteProfile />} />
         <Route path="/dashboard/company/*" element={<CompanyDashboard setUserRole={setUserRole} />} />
       </Routes>
 

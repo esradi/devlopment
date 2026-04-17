@@ -618,13 +618,22 @@ function SignUp({ setUserRole }) {
                     </p>
                     <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
                         <p style={{ fontSize: '0.8rem', color: '#8892b0', marginBottom: '10px' }}>Testing Mode:</p>
-                        <button
-                            type="button"
-                            onClick={() => { setUserRole('student'); navigate('/dashboard/student'); }}
-                            style={{ background: 'rgba(158, 89, 255, 0.1)', color: '#9e59ff', border: '1px solid #9e59ff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-                        >
-                            Preview Student Dashboard
-                        </button>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <button
+                                type="button"
+                                onClick={() => { setUserRole('student'); navigate('/dashboard/student'); }}
+                                style={{ background: 'rgba(158, 89, 255, 0.1)', color: '#9e59ff', border: '1px solid #9e59ff', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
+                            >
+                                Preview Student
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setUserRole('company'); navigate('/dashboard/company'); }}
+                                style={{ background: 'rgba(255, 27, 144, 0.1)', color: '#ff1b90', border: '1px solid #ff1b90', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
+                            >
+                                Preview Company
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
