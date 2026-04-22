@@ -1,13 +1,12 @@
 from rest_framework import serializers
 from .models import ReferenceLetter
-from accounts.models import Student
+from apps.accounts.models import Student
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 
 class StudentReferenceSerializer(serializers.ModelSerializer):
-    """Minimal student info embedded in reference letter responses."""
     full_name = serializers.SerializerMethodField()
     email = serializers.EmailField(source='user.email', read_only=True)
 
@@ -21,7 +20,6 @@ class StudentReferenceSerializer(serializers.ModelSerializer):
 
 
 class GeneratedBySerializer(serializers.ModelSerializer):
-    """Who generated the letter (company user)."""
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name']
@@ -29,28 +27,19 @@ class GeneratedBySerializer(serializers.ModelSerializer):
 
 
 class ReferenceLetterCreateSerializer(serializers.ModelSerializer):
-    """
-    Used by POST /api/references/
-    Company generates a reference letter for a student.
-    Only requires student + subject + content.
-    pdf_file and generated_by are handled in the view.
-    """
+
+    verification_token = serializers.UUIDField(read_only=True)
     class Meta:
         model = ReferenceLetter
-        fields = ['student', 'subject', 'content']
+        fields = ['student', 'subject', 'content', 'verification_token']
 
     def validate_student(self, value):
-        # Ensure the student actually exists and has a completed profile
         if not hasattr(value, 'user'):
             raise serializers.ValidationError("Invalid student.")
         return value
 
 
 class ReferenceLetterDetailSerializer(serializers.ModelSerializer):
-    """
-    Used by GET /api/references/:id/
-    Full detail — accessible by the company who generated it or the student.
-    """
     student = StudentReferenceSerializer(read_only=True)
     generated_by = GeneratedBySerializer(read_only=True)
     pdf_url = serializers.SerializerMethodField()
@@ -87,9 +76,7 @@ class ReferenceLetterSignSerializer(serializers.ModelSerializer):
         fields = [] 
 
 class ReferenceLetterVerifySerializer(serializers.ModelSerializer):
-    """
-    Used by GET /api/references/verify/:token/
-    """
+
     student_name = serializers.SerializerMethodField()
     pdf_url = serializers.SerializerMethodField()
 
