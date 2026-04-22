@@ -1,0 +1,128 @@
+.global-company-sidebar {
+    width: var(--sidebar-width, 260px);
+    background: #0d0f14;
+    border-right: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+    display: flex;
+    flex-direction: column;
+    padding: 32px 20px 24px 20px; /* adjusted padding matching the image top padding */
+    height: calc(100vh - 80px); /* Assuming global layout has a navbar */
+    overflow-y: auto;
+    z-index: 100;
+}
+
+/* Scrollbar hide */
+.global-company-sidebar::-webkit-scrollbar {
+    display: none;
+}
+.global-company-sidebar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.sidebar-top-section {
+    flex: 1;
+}
+
+.sidebar-main-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* A bit more spacious like in the screenshot */
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    color: var(--text-secondary, #8b92a5);
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: #fff;
+}
+
+/* The active state matching the screenshot exactly */
+.nav-item.active {
+    background: #110e19; /* very dark purple tint */
+    color: #9e59ff;
+    border: 1px solid rgba(158, 89, 255, 0.3);
+}
+
+.nav-item svg {
+    transition: transform 0.3s ease;
+}
+
+.nav-item:hover svg {
+    transform: translateX(2px);
+}
+
+/* Premium Upgrade Card */
+.premium-upgrade-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.premium-badge {
+    font-size: 10px;
+    font-weight: 800;
+    color: #ff1b90;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.premium-upgrade-card p {
+    font-size: 12px;
+    color: var(--text-secondary, #8b92a5);
+    line-height: 1.5;
+    margin: 0 0 16px 0;
+}
+
+.btn-upgrade-plan {
+    width: 100%;
+    background: linear-gradient(90deg, #9e59ff, #ff1b90);
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+}
+
+/* Bottom Links (Help, Logout) */
+.sidebar-bottom-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bottom-link-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    color: var(--text-secondary, #8b92a5);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.2s;
+}
+
+.bottom-link-item:hover {
+    color: #fff;
+}

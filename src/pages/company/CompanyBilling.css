@@ -1,0 +1,426 @@
+.company-billing-dashboard {
+    display: flex;
+    background-color: #080a0c;
+    color: #ffffff;
+    font-family: 'Outfit', 'Inter', sans-serif;
+    padding-top: 80px; /* Navbar clearance */
+    height: 100vh;
+    overflow: hidden;
+}
+
+.billing-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 40px;
+    overflow-y: auto;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.billing-header {
+    margin-bottom: 32px;
+}
+
+.billing-header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0 0 8px 0;
+}
+
+.billing-header p {
+    color: #8b92a5;
+    font-size: 15px;
+    margin: 0;
+}
+
+/* Current Plan Banner */
+.current-plan-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(13, 15, 20, 0.6);
+    border: 1px solid rgba(158, 89, 255, 0.3);
+    border-radius: 16px;
+    padding: 24px 32px;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.border-glow {
+    box-shadow: 0 0 20px rgba(158, 89, 255, 0.05), inset 0 0 20px rgba(158, 89, 255, 0.02);
+}
+
+.banner-left h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.banner-left h2 .dot {
+    width: 6px;
+    height: 6px;
+    background-color: #ff1b90;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px rgba(255, 27, 144, 0.8);
+}
+
+.banner-left p {
+    color: #8b92a5;
+    margin: 0;
+    font-size: 14px;
+}
+
+.btn-recommend {
+    background: rgba(158, 89, 255, 0.1);
+    color: #e2e8f0;
+    border: 1px solid rgba(158, 89, 255, 0.2);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: default;
+}
+
+/* Billing Grid */
+.billing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr 1fr;
+    gap: 24px;
+    align-items: stretch;
+}
+
+/* Pricing Cards */
+.pricing-card {
+    background: #111318;
+    border-radius: 24px;
+    padding: 32px;
+    border: 1px solid rgba(158, 89, 255, 0.3); /* Premium border */
+    box-shadow: 0 0 30px rgba(158, 89, 255, 0.1); /* Premium glow */
+    display: flex;
+    flex-direction: column;
+    min-height: 520px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.pricing-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 40px rgba(158, 89, 255, 0.2);
+}
+
+.free-plan {
+    background: #111318;
+}
+
+.plan-level {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #8b92a5;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.plan-name {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0 0 20px 0;
+}
+
+.plan-price {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.price-val {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.price-period {
+    font-size: 14px;
+    color: #8b92a5;
+    font-weight: 500;
+}
+
+.btn-current-plan {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    margin-bottom: 32px;
+}
+
+.plan-features {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
+    flex: 1;
+}
+
+.feature {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #e2e8f0;
+}
+
+.text-gray {
+    color: #8b92a5;
+}
+
+.text-pink {
+    /* Using fill property in JS for Lucide, so just specific color tweaks if needed */
+}
+
+.btn-disabled {
+    background: rgba(255, 255, 255, 0.03);
+    color: #565d6d;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%;
+    cursor: not-allowed;
+    margin-top: auto;
+}
+
+/* Premium Card Specifics */
+.premium-plan {
+    background: #111318;
+}
+
+.premium-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.premium-header .plan-level {
+    margin-bottom: 0;
+}
+
+.most-popular-badge {
+    background: rgba(255, 27, 144, 0.2);
+    color: #ff1b90;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.price-and-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.price-and-toggle .plan-price {
+    margin-bottom: 0;
+}
+
+.billing-toggle {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 4px;
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: #8b92a5;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-btn.active {
+    background: #e2e8f0;
+    color: #080a0c;
+}
+
+.premium-features .feature {
+    font-weight: 500;
+}
+
+.btn-upgrade-premium {
+    background: linear-gradient(90deg, #9e59ff, #ff1b90);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 800;
+    width: 100%;
+    cursor: pointer;
+    margin-top: auto;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(158, 89, 255, 0.3);
+    transition: transform 0.2s;
+}
+
+.btn-upgrade-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(158, 89, 255, 0.4);
+}
+
+/* Billing Summary Card */
+.billing-summary-card {
+    background: #111318;
+    border-radius: 24px;
+    padding: 32px;
+    border: 1px solid rgba(158, 89, 255, 0.3); /* Premium border */
+    box-shadow: 0 0 30px rgba(158, 89, 255, 0.1); /* Premium glow */
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.billing-summary-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 40px rgba(158, 89, 255, 0.2);
+}
+
+.summary-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.summary-label {
+    color: #8b92a5;
+}
+
+.summary-value {
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.text-purple {
+    color: #9e59ff;
+}
+
+.summary-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summary-label.small {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.summary-bold {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.summary-bold span {
+    font-size: 14px;
+    color: #8b92a5;
+    font-weight: 400;
+}
+
+.payment-method-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 12px 16px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-icon {
+    width: 32px;
+    height: 24px;
+    background: #1a1e26;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6; /* Visa blue */
+}
+
+.card-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-number {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.card-expiry {
+    font-size: 11px;
+    color: #8b92a5;
+}
+
+.btn-view-invoice {
+    background: transparent;
+    color: #9e59ff;
+    border: none;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: auto;
+    text-align: center;
+    width: 100%;
+}
+
+.btn-view-invoice:hover {
+    text-decoration: underline;
+}
