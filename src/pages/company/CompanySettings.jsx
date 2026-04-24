@@ -1,16 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     User, Lock, Bell, Activity, Globe, Clock, Camera, Mail, Phone, 
-    AtSign, Shield, Smartphone, MailCheck, BellRing, MessageSquareMore
+    AtSign, Shield, Smartphone, MailCheck, BellRing, MessageSquareMore, CheckCircle
 } from 'lucide-react';
 import CompanySidebar from '../../components/CompanySidebar';
+import { authService, companyService } from '../../services/api';
 import './CompanySettings.css';
 
 const CompanySettings = () => {
     const [activeInternalTab, setActiveInternalTab] = useState('Profile');
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [loading, setLoading] = useState(true);
     
+    const [user, setUser] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: ''
+    });
+
+    const [company, setCompany] = useState({
+        company_name: '',
+        industry: '',
+        location: '',
+        website: ''
+    });
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [userData, companyData] = await Promise.all([
+                    authService.getMe(),
+                    companyService.getProfile()
+                ]);
+                setUser({
+                    first_name: userData.first_name || '',
+                    last_name: userData.last_name || '',
+                    email: userData.email || '',
+                    phone: userData.phone || ''
+                });
+                setCompany({
+                    company_name: companyData.company_name || '',
+                    industry: companyData.industry || '',
+                    location: companyData.location || '',
+                    website: companyData.website || ''
+                });
+            } catch (err) {
+                console.error("Failed to fetch settings data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const handleUserChange = (e) => {
+        const { name, value } = e.target;
+        setUser(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await authService.updateMe(user);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+        } catch (err) {
+            console.error("Failed to save settings:", err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (loading) return <div className="loading" style={{ height: '100vh', background: '#0A0C10' }}></div>;
+
     const [toggles, setToggles] = useState({
         '2fa': true,
         'email-app-updates': true,
@@ -30,15 +94,6 @@ const CompanySettings = () => {
 
     const handleToggle = (id) => {
         setToggles(prev => ({ ...prev, [id]: !prev[id] }));
-    };
-
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
-        }, 1200);
     };
 
     const Switch = ({ checked, onChange }) => (
@@ -92,35 +147,28 @@ const CompanySettings = () => {
                                 </div>
                                 <div className="form-grid">
                                     <div className="form-field">
-                                        <label>Full Name</label>
-                                        <input type="text" defaultValue="Alex Mercer" />
+                                        <label>First Name</label>
+                                        <input type="text" name="first_name" value={user.first_name} onChange={handleUserChange} />
                                     </div>
                                     <div className="form-field">
-                                        <label>Job Title</label>
-                                        <input type="text" defaultValue="Senior Recruiter" />
+                                        <label>Last Name</label>
+                                        <input type="text" name="last_name" value={user.last_name} onChange={handleUserChange} />
                                     </div>
                                     <div className="form-field">
                                         <label>Work Email</label>
-                                        <input type="email" defaultValue="alex.mercer@sonatrach.dz" />
+                                        <input type="email" name="email" value={user.email} readOnly />
                                     </div>
                                     <div className="form-field">
                                         <label>Phone</label>
-                                        <input type="text" defaultValue="+213 5XX XX XX XX" />
+                                        <input type="text" name="phone" value={user.phone} onChange={handleUserChange} />
                                     </div>
                                     <div className="form-field">
-                                        <label>Language</label>
-                                        <select defaultValue="English">
-                                            <option>English</option>
-                                            <option>French</option>
-                                            <option>Arabic</option>
-                                        </select>
+                                        <label>Company</label>
+                                        <input type="text" value={company.company_name} readOnly />
                                     </div>
                                     <div className="form-field">
-                                        <label>Timezone</label>
-                                        <select defaultValue="Algiers/GMT+1">
-                                            <option>Algiers/GMT+1</option>
-                                            <option>London/GMT+0</option>
-                                        </select>
+                                        <label>Industry</label>
+                                        <input type="text" value={company.industry} readOnly />
                                     </div>
                                 </div>
                             </div>
@@ -141,7 +189,7 @@ const CompanySettings = () => {
                                     <div className="email-display-box">
                                         <div>
                                             <span className="email-label">Active Email</span>
-                                            <span className="email-value">alex.mercer@sonatrach.dz</span>
+                                            <span className="email-value">{user.email}</span>
                                         </div>
                                         <div className="change-email-btn">Change</div>
                                     </div>

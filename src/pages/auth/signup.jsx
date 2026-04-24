@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, Upload, ArrowLeft, Briefcase, GraduationCap, ShieldCheck, Building2, Globe, Loader2, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
+import { authService } from '../../services/api';
 import './signup.css';
 
 function SignUp({ setUserRole }) {
@@ -138,22 +139,18 @@ function SignUp({ setUserRole }) {
 
         try {
             console.log('Attempting registration...');
-            const response = await fetch('http://127.0.0.1:8000/api/register/', {
-                method: 'POST',
-                body: data,
-            });
-
-            console.log('Registration response status:', response.status);
-            const result = await response.json();
-
-            if (response.ok) {
-                setStep(step + 1);
-            } else {
-                setErrors(result);
-            }
+            const result = await authService.signup(data);
+            setStep(step + 1);
         } catch (err) {
             console.error('Registration failed:', err);
-            setErrors({ general: 'Connection to server failed' });
+            let errorObj = { general: 'Registration failed or user already exists.' };
+            try {
+                if(err.message.includes(' - ')) {
+                   const errBody = JSON.parse(err.message.split(' - ')[1]);
+                   errorObj = errBody;
+                }
+            } catch(e) {}
+            setErrors(errorObj);
         } finally {
             setLoading(false);
         }
@@ -163,25 +160,31 @@ function SignUp({ setUserRole }) {
         setLoading(true);
         try {
             console.log('Attempting email verification...');
-            const response = await fetch('http://127.0.0.1:8000/api/verify-email/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: formData.email,
-                    code: formData.code
-                }),
+            const result = await authService.verifyEmail({
+                email: formData.email,
+                code: formData.code
             });
-
-            console.log('Verification response status:', response.status);
-            const result = await response.json();
-
-            if (response.ok) {
-                setStep(step + 1);
-            } else {
-                setErrors({ code: result.error || 'Invalid verification code' });
+            
+            // Auto login after verification if tokens are provided
+            const tokens = result.tokens || { access: result.access, refresh: result.refresh };
+            if (tokens && tokens.access) {
+                localStorage.setItem('access_token', tokens.access);
+                if (tokens.refresh) localStorage.setItem('refresh_token', tokens.refresh);
             }
+            if (result.user) {
+                localStorage.setItem('user', JSON.stringify(result.user));
+            }
+            
+            setStep(step + 1);
         } catch (err) {
-            setErrors({ code: 'Failed to verify. Try again.' });
+            let errMsg = 'Failed to verify. Try again.';
+            try {
+                if(err.message.includes(' - ')) {
+                   const errBody = JSON.parse(err.message.split(' - ')[1]);
+                   errMsg = errBody.error || errBody.detail || errMsg;
+                }
+            } catch(e) {}
+            setErrors({ code: errMsg });
         } finally {
             setLoading(false);
         }
@@ -605,6 +608,10 @@ function SignUp({ setUserRole }) {
                                     setUserRole(formData.role);
                                     if (formData.role === 'student') {
                                         navigate('/dashboard/student');
+                                    } else if (formData.role === 'company') {
+                                        navigate('/dashboard/company');
+                                    } else if (formData.role === 'admin') {
+                                        navigate('/dashboard/admin');
                                     } else {
                                         navigate('/');
                                     }
@@ -616,24 +623,7 @@ function SignUp({ setUserRole }) {
                     <p className="toggle-text">
                         Joined already? <Link to="/login" className="link">Sign In</Link>
                     </p>
-                    <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
-                        <p style={{ fontSize: '0.8rem', color: '#8892b0', marginBottom: '10px' }}>Testing Mode:</p>
-                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                            <button
-                                type="button"
-                                onClick={() => { setUserRole('student'); navigate('/dashboard/student'); }}
-                                style={{ background: 'rgba(158, 89, 255, 0.1)', color: '#9e59ff', border: '1px solid #9e59ff', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
-                            >
-                                Preview Student
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { setUserRole('company'); navigate('/dashboard/company'); }}
-                                style={{ background: 'rgba(255, 27, 144, 0.1)', color: '#ff1b90', border: '1px solid #ff1b90', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
-                            >
-                                Preview Company
-                            </button>
-                        </div>
+                    <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
                     </div>
                 </div>
             </div>

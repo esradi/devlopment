@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
+import { authService } from '../../services/api';
 import './auth.css';
 
 const Login = ({ setUserRole }) => {
@@ -19,34 +20,46 @@ const Login = ({ setUserRole }) => {
 
         try {
             console.log('Attempting login for:', email);
-            const response = await fetch('http://127.0.0.1:8000/api/login/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
+            const data = await authService.login({ email, password });
 
-            console.log('Response status:', response.status);
-            const data = await response.json();
-
-            if (response.ok) {
-                // Store tokens
-                localStorage.setItem('access_token', data.tokens.access);
-                localStorage.setItem('refresh_token', data.tokens.refresh);
+            // Store tokens - Note: the API returns access_token/refresh_token in data or data.tokens depending on backend
+            // Let's assume data has tokens and user based on previous code. If the response structure differs, we'll need to adapt it. 
+            // In typical Django REST it might be in data.access or data.tokens.access.
+            const tokens = data.tokens || { access: data.access, refresh: data.refresh };
+            
+            if (tokens && tokens.access) {
+                localStorage.setItem('access_token', tokens.access);
+                if (tokens.refresh) localStorage.setItem('refresh_token', tokens.refresh);
+            }
+            if (data.user) {
                 localStorage.setItem('user', JSON.stringify(data.user));
-
                 setUserRole(data.user.role || 'student');
                 if (data.user.role === 'student') {
                     navigate('/dashboard/student');
                 } else if (data.user.role === 'company') {
                     navigate('/dashboard/company');
+                } else if (data.user.role === 'admin') {
+                    navigate('/dashboard/admin');
                 } else {
                     navigate('/');
                 }
             } else {
-                setError(data.non_field_errors?.[0] || data.error || data.detail || 'Invalid email or password');
+                
+                // Fetch user info via getMe() if not included in login response
+                try {
+                    const userData = await authService.getMe();
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    setUserRole(userData.role || 'student');
+                    if (userData.role === 'student') navigate('/dashboard/student');
+                    else if (userData.role === 'company') navigate('/dashboard/company');
+                    else if (userData.role === 'admin') navigate('/dashboard/admin');
+                    else navigate('/');
+                } catch (meErr) {
+                     navigate('/');
+                }
             }
         } catch (err) {
-            setError('Failed to connect to the server. Please check if the backend is running.');
+            setError(err.message || 'Failed to connect to the server. Please check your credentials.');
         } finally {
             setLoading(false);
         }
@@ -112,24 +125,7 @@ const Login = ({ setUserRole }) => {
                     <p className="toggle-text">
                         Don't have an account? <Link to="/signup" className="link">Register here</Link>
                     </p>
-                    <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
-                        <p style={{ fontSize: '0.8rem', color: '#8892b0', marginBottom: '10px' }}>Testing Mode:</p>
-                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                            <button
-                                type="button"
-                                onClick={() => { setUserRole('student'); navigate('/dashboard/student'); }}
-                                style={{ background: 'rgba(158, 89, 255, 0.1)', color: '#9e59ff', border: '1px solid #9e59ff', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
-                            >
-                                Preview Student
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { setUserRole('company'); navigate('/dashboard/company'); }}
-                                style={{ background: 'rgba(255, 27, 144, 0.1)', color: '#ff1b90', border: '1px solid #ff1b90', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
-                            >
-                                Preview Company
-                            </button>
-                        </div>
+                    <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
                     </div>
                 </div>
 

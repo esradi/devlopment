@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
-import { companyService } from '../../services/api';
+import { companyService, offerService } from '../../services/api';
 import './CompanyCandidates.css';
 
 const MatchScoreRing = ({ score }) => {
@@ -53,42 +53,53 @@ const CompanyCandidates = () => {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
+    const [offerDetails, setOfferDetails] = useState(null);
+    const [pipelineCounts, setPipelineCounts] = useState({
+        applied: 0,
+        inReview: 0,
+        interview: 0,
+        offer: 0,
+        refused: 0,
+        accepted: 0,
+    });
 
     useEffect(() => {
-        const fetchApplicants = async () => {
+        const fetchData = async () => {
             try {
-                // Determine if we have a real offer ID or just navigating via mock link
+                setLoading(true);
+                
                 let apps = [];
                 if (offerId) {
+                    const offerData = await offerService.getDetails(offerId);
+                    setOfferDetails(offerData);
+                    
                     const data = await companyService.getOfferApplicants(offerId);
+                    apps = data?.results || data || [];
+                } else {
+                    const data = await companyService.getApplications();
                     apps = data?.results || data || [];
                 }
                 
-                // For demo purposes and to match screenshot exactly, we add mock data if empty
-                if (apps.length === 0) {
-                    apps = [
-                        { id: 1, student: { first_name: 'Amira', last_name: 'Benali', university: 'Sétif 1 University', profile_picture: 'https://ui-avatars.com/api/?name=Amira+Benali&background=4f46e5&color=fff' }, created_at: new Date(Date.now() - 2 * 86400000).toISOString(), skills: ['React', 'JS'], match_score: 92, status: 'In Review' },
-                        { id: 2, student: { first_name: 'Yacine', last_name: 'Meziane', university: 'USTHB Alger', profile_picture: 'https://ui-avatars.com/api/?name=Yacine+Meziane&background=ea580c&color=fff' }, created_at: new Date(Date.now() - 5 * 86400000).toISOString(), skills: ['Python', 'Django'], match_score: 85, status: 'Applied' },
-                        { id: 3, student: { first_name: 'Sara', last_name: 'Ould Ali', university: 'ESI Alger', profile_picture: 'https://ui-avatars.com/api/?name=Sara+Ould+Ali&background=0284c7&color=fff' }, created_at: new Date(Date.now() - 7 * 86400000).toISOString(), skills: ['Node.js', 'React'], match_score: 94, status: 'Interview' },
-                        { id: 4, student: { first_name: 'Karim', last_name: 'Boudali', university: 'Oran University', profile_picture: 'https://ui-avatars.com/api/?name=Karim+Boudali&background=16a34a&color=fff' }, created_at: new Date(Date.now() - 3 * 86400000).toISOString(), skills: ['Java', 'MySQL'], match_score: 72, status: 'Applied' },
-                    ];
-                }
-
                 setApplicants(apps);
+
+                // Calculate Pipeline Counts
+                const counts = {
+                    applied: apps.filter(a => ['applied', 'pending'].includes(a.status?.toLowerCase())).length,
+                    inReview: apps.filter(a => ['in review', 'under review', 'viewed'].includes(a.status?.toLowerCase())).length,
+                    interview: apps.filter(a => a.status?.toLowerCase() === 'interview').length,
+                    offer: apps.filter(a => a.status?.toLowerCase() === 'offer').length,
+                    refused: apps.filter(a => ['refused', 'rejected'].includes(a.status?.toLowerCase())).length,
+                    accepted: apps.filter(a => a.status?.toLowerCase() === 'accepted').length,
+                };
+                setPipelineCounts(counts);
+
             } catch (err) {
-                console.error("Failed to fetch applicants:", err);
-                // For demo purposes and to match screenshot exactly, we add mock data if error
-                setApplicants([
-                    { id: 1, student: { first_name: 'Amira', last_name: 'Benali', university: 'Sétif 1 University', profile_picture: 'https://ui-avatars.com/api/?name=Amira+Benali&background=4f46e5&color=fff' }, created_at: new Date(Date.now() - 2 * 86400000).toISOString(), skills: ['React', 'JS'], match_score: 92, status: 'In Review' },
-                    { id: 2, student: { first_name: 'Yacine', last_name: 'Meziane', university: 'USTHB Alger', profile_picture: 'https://ui-avatars.com/api/?name=Yacine+Meziane&background=ea580c&color=fff' }, created_at: new Date(Date.now() - 5 * 86400000).toISOString(), skills: ['Python', 'Django'], match_score: 85, status: 'Applied' },
-                    { id: 3, student: { first_name: 'Sara', last_name: 'Ould Ali', university: 'ESI Alger', profile_picture: 'https://ui-avatars.com/api/?name=Sara+Ould+Ali&background=0284c7&color=fff' }, created_at: new Date(Date.now() - 7 * 86400000).toISOString(), skills: ['Node.js', 'React'], match_score: 94, status: 'Interview' },
-                    { id: 4, student: { first_name: 'Karim', last_name: 'Boudali', university: 'Oran University', profile_picture: 'https://ui-avatars.com/api/?name=Karim+Boudali&background=16a34a&color=fff' }, created_at: new Date(Date.now() - 3 * 86400000).toISOString(), skills: ['Java', 'MySQL'], match_score: 72, status: 'Applied' },
-                ]);
+                console.error("Failed to fetch data:", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchApplicants();
+        fetchData();
     }, [offerId]);
 
     const getDaysAgo = (dateStr) => {
@@ -100,16 +111,6 @@ const CompanyCandidates = () => {
         if (days > 30) return `${Math.floor(days/30)} months ago`;
         if (days > 7) return `${Math.floor(days/7)} weeks ago`;
         return `${days} days ago`;
-    };
-
-    // Derived pipeline stats matching the screenshot exactly
-    const pipelineCounts = {
-        applied: 23,
-        inReview: 10,
-        interview: 4,
-        offer: 2,
-        refused: 2,
-        accepted: 1,
     };
     
     // Filtering
@@ -138,20 +139,20 @@ const CompanyCandidates = () => {
             <main className="candidates-main">
                 <div className="candidates-header-container">
                     <div className="breadcrumbs">
-                        <span>MY OFFERS</span>
+                        <Link to="/dashboard/company/offers">MY OFFERS</Link>
                         <ChevronRight size={14} />
-                        <span>DATA SCIENTIST INTERN</span>
+                        <span style={{ textTransform: 'uppercase' }}>{offerDetails?.title || 'GENERAL'}</span>
                         <ChevronRight size={14} />
                         <span className="current">APPLICATIONS</span>
                     </div>
                     
                     <div className="header-flex">
                         <div>
-                            <h1>Applications – Data Scientist Intern</h1>
+                            <h1>Applications – {offerDetails?.title || 'All Opportunities'}</h1>
                             <p>Review all candidates for this position.</p>
                         </div>
                         <div className="header-actions">
-                            <span className="status-badge-active"><div className="dot"></div> ACTIVE</span>
+                            <span className="status-badge-active"><div className="dot"></div> {offerDetails?.status?.toUpperCase() || 'ACTIVE'}</span>
                             <button 
                                 className="btn-view-offer"
                                 onClick={() => navigate(`/dashboard/company/offer/${offerId || 1}/edit`)}
@@ -165,23 +166,25 @@ const CompanyCandidates = () => {
                     <div className="stats-bar">
                         <div className="stat-block bordered">
                             <span className="stat-label">POSITION</span>
-                            <h3>Data Scientist Intern</h3>
+                            <h3>{offerDetails?.title || 'All Positions'}</h3>
                             <div className="stat-pills">
-                                <span className="pill-type">PFE / Internship</span>
-                                <span className="pill-location"><MapPin size={12}/> Algiers</span>
+                                <span className="pill-type">{offerDetails?.offer_types?.map(t => t.name).join(', ') || 'Various'}</span>
+                                <span className="pill-location"><MapPin size={12}/> {offerDetails?.wilaya || 'Algeria'}</span>
                             </div>
                         </div>
                         <div className="stat-block bordered center">
-                            <div className="stat-value">42</div>
+                            <div className="stat-value">{applicants.length}</div>
                             <span className="stat-label">TOTAL CANDIDATES</span>
                         </div>
                         <div className="stat-block bordered center">
-                            <div className="stat-value text-green">88%</div>
+                            <div className="stat-value text-green">
+                                {applicants.length > 0 ? (applicants.reduce((acc, a) => acc + (a.match_score || 0), 0) / applicants.length).toFixed(0) : 0}%
+                            </div>
                             <span className="stat-label">AVG MATCH SCORE</span>
                         </div>
                         <div className="stat-block center">
                             <div className="stat-value text-pink flex-center">
-                                5 <ArrowUpRight size={24} style={{marginLeft: '4px'}}/>
+                                {applicants.filter(a => new Date(a.created_at) > new Date(Date.now() - 7 * 86400000)).length} <ArrowUpRight size={20} style={{marginLeft: '4px'}}/>
                             </div>
                             <span className="stat-label">NEW THIS WEEK</span>
                         </div>
@@ -286,7 +289,7 @@ const CompanyCandidates = () => {
                         </table>
                         
                         <div className="table-footer">
-                            <span className="showing-text">Showing {filteredApplicants.length} of 42 candidates</span>
+                            <span className="showing-text">Showing {filteredApplicants.length} of {applicants.length} candidates</span>
                             <div className="pagination">
                                 <button className="btn-page">Previous</button>
                                 <button className="btn-page active">Next Page</button>

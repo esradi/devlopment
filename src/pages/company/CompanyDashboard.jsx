@@ -57,25 +57,18 @@ const CompanyDashboard = ({ setUserRole }) => {
         setActiveTab(getTabFromPath(location.pathname));
     }, [location.pathname]);
 
+    const [error, setError] = useState(null);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                let res = {};
-                try {
-                    res = await companyService.getDashboard();
-                } catch(e) {
-                    console.warn("Using mock data for layout");
-                    res = {
-                        first_name: 'Sonatrach',
-                        company_name: 'Sonatrach',
-                        industry: 'Energy & Oil',
-                        location: 'Algiers'
-                    };
-                }
+                setError(null);
+                const res = await companyService.getDashboard();
                 setUserData(res || {});
             } catch (err) {
                 console.error("Failed to fetch dashboard data:", err);
+                setError(err.message || String(err));
             } finally {
                 setLoading(false);
             }
@@ -93,11 +86,108 @@ const CompanyDashboard = ({ setUserRole }) => {
 
     if (loading) {
         return (
-            <div className="company-dashboard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100vw' }}>
-                <div className="custom-loader"></div>
+            <div className="company-dashboard" style={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                width: '100vw', 
+                height: '100vh',
+                backgroundColor: '#080a0c',
+                color: '#fff',
+                zIndex: 9999,
+                position: 'fixed',
+                top: 0,
+                left: 0
+            }}>
+                <div className="custom-loader" style={{
+                    width: '50px',
+                    height: '50px',
+                    border: '4px solid rgba(158, 89, 255, 0.1)',
+                    borderTop: '4px solid #9e59ff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                }}></div>
+                <h3 style={{ marginTop: '24px', color: '#fff', fontSize: '18px', fontWeight: '600' }}>Loading Dashboard...</h3>
+                <p style={{ marginTop: '8px', color: '#8b92a5', fontSize: '14px' }}>Connecting to secure server at localhost:8000</p>
             </div>
         );
     }
+
+    if (error) {
+        return (
+            <div className="company-dashboard" style={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                width: '100vw', 
+                height: '100vh',
+                backgroundColor: '#080a0c',
+                color: '#fff',
+                textAlign: 'center',
+                padding: '40px',
+                zIndex: 9999,
+                position: 'fixed',
+                top: 0,
+                left: 0
+            }}>
+                <div style={{ fontSize: '64px', marginBottom: '24px' }}>🔌</div>
+                <h2 style={{ color: '#ff1b90', marginBottom: '16px', fontSize: '28px' }}>Connectivity Issue</h2>
+                <p style={{ color: '#8b92a5', marginBottom: '12px', maxWidth: '450px', lineHeight: '1.6' }}>
+                    We encountered an issue connecting to the server.
+                </p>
+                <div style={{ 
+                    background: 'rgba(255,27,144,0.1)', 
+                    padding: '12px 20px', 
+                    borderRadius: '8px', 
+                    color: '#ff1b90', 
+                    fontSize: '13px', 
+                    fontFamily: 'monospace',
+                    marginBottom: '32px',
+                    border: '1px solid rgba(255,27,144,0.2)'
+                }}>
+                    Error Code: {error}
+                </div>
+                <p style={{ color: '#8b92a5', marginBottom: '32px', fontSize: '14px' }}>
+                    Ensure backend is running at <strong>http://localhost:8000</strong>
+                </p>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        style={{
+                            padding: '14px 32px',
+                            background: 'linear-gradient(90deg, #9e59ff, #ff1b90)',
+                            border: 'none',
+                            borderRadius: '30px',
+                            color: '#fff',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            boxShadow: '0 10px 20px rgba(255, 27, 144, 0.3)'
+                        }}
+                    >
+                        Retry Connection
+                    </button>
+                    <button 
+                        onClick={() => navigate('/')}
+                        style={{
+                            padding: '14px 32px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '30px',
+                            color: '#fff',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Return Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    const dashboardStats = userData?.stats || {};
 
     return (
         <div className="company-dashboard">
@@ -113,7 +203,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                             <header className="dashboard-summary-header">
                                 <div className="welcome-section">
                                     <h2>Welcome back, {userData?.company_name || 'Partner'}! 👋</h2>
-                                    <p>You have <strong>3 new applications</strong> today.</p>
+                                    <p>You have <strong>{dashboardStats.new_applications_today || 0} new applications</strong> today.</p>
                                 </div>
                                 <button className="post-offer-btn" onClick={() => navigate('/dashboard/company/offer/create')}>
                                     <Plus size={20} />
@@ -128,40 +218,40 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <div className="icon-box" style={{ background: 'rgba(158, 89, 255, 0.15)', color: '#9e59ff' }}>
                                             <Briefcase size={24} />
                                         </div>
-                                        <span className="trend-badge">+1 this week</span>
+                                        <span className="trend-badge">Active</span>
                                     </div>
                                     <span className="stat-label">Active Offers</span>
-                                    <span className="stat-value">4</span>
+                                    <span className="stat-value">{dashboardStats.active_offers || 0}</span>
                                 </div>
                                 <div className="stat-pille">
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(255, 27, 144, 0.15)', color: '#ff1b90' }}>
                                             <Users size={24} />
                                         </div>
-                                        <span className="trend-badge" style={{ color: '#ff1b90', background: 'rgba(255, 27, 144, 0.1)' }}>Across all offers</span>
+                                        <span className="trend-badge" style={{ color: '#ff1b90', background: 'rgba(255, 27, 144, 0.1)' }}>Total</span>
                                     </div>
                                     <span className="stat-label">Total Applications</span>
-                                    <span className="stat-value">23</span>
+                                    <span className="stat-value">{dashboardStats.total_applications || 0}</span>
                                 </div>
                                 <div className="stat-pille">
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
                                             <FileText size={24} />
                                         </div>
-                                        <span className="trend-badge" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>To process</span>
+                                        <span className="trend-badge" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>Pending</span>
                                     </div>
                                     <span className="stat-label">Pending Review</span>
-                                    <span className="stat-value">12</span>
+                                    <span className="stat-value">{dashboardStats.pending_review || 0}</span>
                                 </div>
                                 <div className="stat-pille">
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
                                             <CheckCircle2 size={24} />
                                         </div>
-                                        <span className="trend-badge" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' }}>This month</span>
+                                        <span className="trend-badge" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' }}>Hired</span>
                                     </div>
                                     <span className="stat-label">Accepted</span>
-                                    <span className="stat-value">5</span>
+                                    <span className="stat-value">{dashboardStats.accepted_applications || 0}</span>
                                 </div>
                             </div>
 
@@ -174,49 +264,32 @@ const CompanyDashboard = ({ setUserRole }) => {
                                     </Link>
                                 </div>
                                 <div className="offers-list-vertical">
-                                    <div className="offer-wide-card">
-                                        <div className="offer-main-info">
-                                            <div className="offer-title-row">
-                                                <h4>Data Scientist Intern</h4>
-                                                <span className="status-badge active">Active</span>
+                                    {userData?.recent_offers?.length > 0 ? (
+                                        userData.recent_offers.map((offer) => (
+                                            <div key={offer.id} className="offer-wide-card">
+                                                <div className="offer-main-info">
+                                                    <div className="offer-title-row">
+                                                        <h4>{offer.title}</h4>
+                                                        <span className={`status-badge ${offer.status?.toLowerCase()}`}>{offer.status}</span>
+                                                    </div>
+                                                    <div className="offer-tags">
+                                                        {offer.offer_types?.map((t, idx) => <span key={idx} className="tag-pill">{t.name}</span>)}
+                                                        {offer.durations?.map((d, idx) => <span key={idx} className="tag-pill">{d.months} Months</span>)}
+                                                    </div>
+                                                    <div className="offer-stats-row">
+                                                        <span><Users size={12} /> {offer.applicants_count || 0} candidates</span>
+                                                        <span><TrendingUp size={12} /> Posted {new Date(offer.created_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="offer-actions">
+                                                    <button className="btn-secondary-outline" onClick={() => navigate(`/dashboard/company/offer/${offer.id}/candidates`)}>View Candidates</button>
+                                                    <button className="btn-secondary-outline" onClick={() => navigate(`/dashboard/company/offer/${offer.id}/edit`)}>Edit</button>
+                                                </div>
                                             </div>
-                                            <div className="offer-tags">
-                                                <span className="tag-pill">PFE</span>
-                                                <span className="tag-pill">4 Months</span>
-                                                <span className="tag-pill">Python, SQL</span>
-                                            </div>
-                                            <div className="offer-stats-row">
-                                                <span><Users size={12} /> 12 candidates</span>
-                                                <span><TrendingUp size={12} /> Posted 2d ago</span>
-                                            </div>
-                                        </div>
-                                        <div className="offer-actions">
-                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/1/candidates')}>View Candidates</button>
-                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/1/edit')}>Edit</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="offer-wide-card">
-                                        <div className="offer-main-info">
-                                            <div className="offer-title-row">
-                                                <h4>Full Stack Dev (MERN)</h4>
-                                                <span className="status-badge closed">Closed</span>
-                                            </div>
-                                            <div className="offer-tags">
-                                                <span className="tag-pill">PFE</span>
-                                                <span className="tag-pill">6 Months</span>
-                                                <span className="tag-pill">React, Node.js</span>
-                                            </div>
-                                            <div className="offer-stats-row">
-                                                <span><Users size={12} /> 45 candidates</span>
-                                                <span><TrendingUp size={12} /> Expired 1w ago</span>
-                                            </div>
-                                        </div>
-                                        <div className="offer-actions">
-                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/2/candidates')}>View Talent</button>
-                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/2/edit')}>Edit</button>
-                                        </div>
-                                    </div>
+                                        ))
+                                    ) : (
+                                        <div className="empty-state-small">No recent offers.</div>
+                                    )}
                                 </div>
                             </section>
 
@@ -224,7 +297,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                             <section className="recent-applications-section">
                                 <div className="section-header">
                                     <h3>Recent Applications</h3>
-                                    <Link to="/dashboard/company/offer/1/candidates" className="view-all-link">
+                                    <Link to="/dashboard/company/candidates" className="view-all-link">
                                         View all <ChevronRight size={16} />
                                     </Link>
                                 </div>
@@ -233,52 +306,54 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <thead>
                                             <tr>
                                                 <th>Candidate</th>
-                                                <th>University</th>
-                                                <th>Skills</th>
+                                                <th>Offer</th>
+                                                <th>Match Score</th>
                                                 <th>Status</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {[
-                                                { name: 'Amira Benali', univ: 'ESI Alger', skills: ['React', 'Tailwind'], status: 'Pending', time: '2h ago' },
-                                                { name: 'Yacine Meziane', univ: 'USTHB Alger', skills: ['Python', 'Django'], status: 'Pending', time: '5h ago' },
-                                                { name: 'Sara Ould Ali', univ: 'University of Tlemcen', skills: ['UI/UX', 'Figma'], status: 'Accepted', time: 'Yesterday' }
-                                            ].map((cand, i) => (
-                                                <tr key={i}>
-                                                    <td>
-                                                        <div className="candidate-cell">
-                                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, #333, #555)' }}></div>
-                                                            <div className="candidate-name-wrap">
-                                                                <h5>{cand.name}</h5>
-                                                                <p>Applied {cand.time}</p>
+                                            {userData?.recent_applications?.length > 0 ? (
+                                                userData.recent_applications.map((app) => (
+                                                    <tr key={app.id}>
+                                                        <td>
+                                                            <div className="candidate-cell">
+                                                                <img 
+                                                                    src={app.student?.profile_picture || `https://ui-avatars.com/api/?name=${app.student?.first_name}+${app.student?.last_name}&background=9e59ff&color=fff`} 
+                                                                    alt="avatar" 
+                                                                    style={{ width: '40px', height: '40px', borderRadius: '50%' }}
+                                                                />
+                                                                <div className="candidate-name-wrap">
+                                                                    <h5>{app.student?.first_name} {app.student?.last_name}</h5>
+                                                                    <p>{app.student?.university || 'University'}</p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{cand.univ}</td>
-                                                    <td>
-                                                        <div className="skill-list">
-                                                            {cand.skills.map((s, j) => <span key={j} className="skill-tag">{s}</span>)}
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span className={`status-text ${cand.status.toLowerCase()}`}>{cand.status}</span>
-                                                    </td>
-                                                    <td>
-                                                        <div className="action-circles">
-                                                            <button 
-                                                                className="btn-view-app" 
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    navigate(`/dashboard/company/offer/1/application/${i + 1}`);
-                                                                }}
-                                                            >
-                                                                View
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                        <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{app.offer_title}</td>
+                                                        <td>
+                                                            <span className="match-score text-pink" style={{ fontWeight: 'bold' }}>{app.match_score}%</span>
+                                                        </td>
+                                                        <td>
+                                                            <span className={`status-text ${app.status?.toLowerCase()}`}>{app.status}</span>
+                                                        </td>
+                                                        <td>
+                                                            <div className="action-circles">
+                                                                <button 
+                                                                    className="btn-view-app" 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        navigate(`/dashboard/company/offer/${app.offer}/application/${app.id}`);
+                                                                    }}
+                                                                >
+                                                                    View
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>No recent applications.</td></tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

@@ -4,34 +4,77 @@ import {
     Calendar as CalendarIcon, Clock, User, Briefcase, Video, 
     MapPin, ChevronLeft, Send, CheckCircle2, AlertCircle
 } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
-import './CompanyInterviews.css'; // Reusing some base styles
+import { interviewService } from '../../services/api';
+import './CompanyInterviews.css'; 
 
 const ScheduleInterview = () => {
-    const navigate = useNavigate();
     const { interviewId } = useParams();
+    const navigate = useNavigate();
+    const location = useLocation();
     const isEdit = !!interviewId;
 
     const [formData, setFormData] = useState({
-        candidate: isEdit ? 'Amira Benali' : '',
-        offer: isEdit ? 'Data Scientist Intern' : '',
-        date: isEdit ? '2026-04-15' : '',
-        time: isEdit ? '14:30' : '',
+        student: location.state?.studentId || '',
+        studentName: location.state?.studentName || '',
+        offer: location.state?.offerId || '',
+        offerTitle: location.state?.offerTitle || '',
+        application: location.state?.applicationId || '',
+        date: '',
+        time: '',
         duration: '45',
-        type: 'video',
+        method: 'video',
         location: '',
         notes: ''
     });
 
+    const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
 
-    const handleSubmit = (e) => {
+    useEffect(() => {
+        if (isEdit) {
+            const fetchInterview = async () => {
+                try {
+                    const data = await interviewService.getDetails(interviewId);
+                    setFormData({
+                        student: data.student || '',
+                        offer: data.offer || '',
+                        application: data.application || '',
+                        date: data.date || '',
+                        time: data.time || '',
+                        duration: data.duration || '45',
+                        method: data.method || 'video',
+                        location: data.location || '',
+                        notes: data.notes || ''
+                    });
+                } catch (err) {
+                    console.error("Failed to fetch interview details:", err);
+                }
+            };
+            fetchInterview();
+        }
+    }, [isEdit, interviewId]);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setSubmitted(true);
-        setTimeout(() => {
-            navigate('/dashboard/company/interviews');
-        }, 2000);
+        setSubmitting(true);
+        try {
+            if (isEdit) {
+                await interviewService.update(interviewId, formData);
+            } else {
+                await interviewService.create(formData);
+            }
+            setSubmitted(true);
+            setTimeout(() => {
+                navigate('/dashboard/company/interviews');
+            }, 2000);
+        } catch (err) {
+            console.error("Failed to schedule interview:", err);
+            alert("Error scheduling interview.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (submitted) {
@@ -81,23 +124,25 @@ const ScheduleInterview = () => {
                                     <h3>Candidate Details</h3>
                                 </div>
                                 <div className="input-group-modern">
-                                    <label>Candidate Name</label>
+                                    <label>Candidate</label>
                                     <input 
                                         type="text" 
-                                        placeholder="Search or enter candidate name"
-                                        value={formData.candidate}
-                                        onChange={(e) => setFormData({...formData, candidate: e.target.value})}
+                                        placeholder="Candidate Name / ID"
+                                        value={formData.studentName || formData.student}
+                                        onChange={(e) => setFormData({...formData, student: e.target.value})}
                                         required
+                                        readOnly={!!location.state?.studentId}
                                     />
                                 </div>
                                 <div className="input-group-modern">
-                                    <label>Related Offer</label>
+                                    <label>Applied for Offer</label>
                                     <input 
                                         type="text" 
-                                        placeholder="Select the job position"
-                                        value={formData.offer}
+                                        placeholder="Offer Title / ID"
+                                        value={formData.offerTitle || formData.offer}
                                         onChange={(e) => setFormData({...formData, offer: e.target.value})}
                                         required
+                                        readOnly={!!location.state?.offerId}
                                     />
                                 </div>
                             </div>

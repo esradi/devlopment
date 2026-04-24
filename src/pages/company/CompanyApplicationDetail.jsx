@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
     ChevronRight, MapPin, Search, MessageSquare, 
     Settings, LayoutDashboard, Briefcase, Send, 
     Calendar, CheckCircle2, ChevronDown, Download,
     Github, Code, Link as LinkIcon, RefreshCcw, FileText, Clock,
-    Folder, User, LogOut
+    Folder, User, LogOut, Check, X
 } from 'lucide-react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
+import { companyService, offerService } from '../../services/api';
 import './CompanyApplicationDetail.css';
 
 const MatchScoreRing = ({ score }) => {
@@ -39,8 +40,50 @@ const CompanyApplicationDetail = () => {
     const { offerId, applicationId } = useParams();
     const navigate = useNavigate();
     
-    // Static state based on Figma design for demonstration
-    const [status, setStatus] = useState('In Review');
+    const [application, setApplication] = useState(null);
+    const [offer, setOffer] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState('');
+    const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const appData = await companyService.getApplicationDetails(applicationId);
+                setApplication(appData);
+                setStatus(appData.status);
+
+                if (offerId || appData.offer) {
+                    const offerData = await offerService.getDetails(offerId || appData.offer);
+                    setOffer(offerData);
+                }
+            } catch (err) {
+                console.error("Failed to fetch application details:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [applicationId, offerId]);
+
+    const handleStatusUpdate = async (newStatus) => {
+        try {
+            await companyService.updateApplicationStatus(applicationId, newStatus);
+            setStatus(newStatus);
+            setShowStatusDropdown(false);
+        } catch (err) {
+            console.error("Failed to update status:", err);
+        }
+    };
+
+    if (loading) {
+        return <div className="loading-container" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0C10' }}><div className="custom-loader" /></div>;
+    }
+
+    if (!application) {
+        return <div className="error-container">Application not found.</div>;
+    }
 
     return (
         <div className="company-app-detail-layout">
@@ -55,25 +98,25 @@ const CompanyApplicationDetail = () => {
                     <div className="ap-breadcrumbs">
                         <span className="link" onClick={() => navigate('/dashboard/company/offers')}>MY OFFERS</span>
                         <ChevronRight size={14} />
-                        <span className="link" onClick={() => navigate(`/dashboard/company/offer/${offerId || 1}/candidates`)}>DATA SCIENTIST INTERN</span>
+                        <span className="link" onClick={() => navigate(`/dashboard/company/offer/${offerId || 1}/candidates`)}>{offer?.title || 'OFFER'}</span>
                         <ChevronRight size={14} />
                         <span className="link" onClick={() => navigate(`/dashboard/company/offer/${offerId || 1}/candidates`)}>APPLICATIONS</span>
                         <ChevronRight size={14} />
-                        <span className="current">AMIRA BENALI</span>
+                        <span className="current">{application.student?.first_name} {application.student?.last_name}</span>
                     </div>
 
                     {/* TOP HEADER CARD */}
                     <div className="ap-header-card">
                         <div className="ap-header-left">
                             <div className="ap-avatar-wrapper">
-                                <img src="https://ui-avatars.com/api/?name=Amira+Benali&background=0d1117&color=ff1b90&size=120" alt="Amira Benali" className="ap-avatar" />
-                                <div className="ap-match-badge">87% MATCH</div>
+                                <img src={application.student?.profile_picture || `https://ui-avatars.com/api/?name=${application.student?.first_name}+${application.student?.last_name}&background=0d1117&color=ff1b90&size=120`} alt="Avatar" className="ap-avatar" />
+                                <div className="ap-match-badge">{application.match_score}% MATCH</div>
                             </div>
                             <div className="ap-header-info">
-                                <h1>Amira Benali</h1>
-                                <p>Applied to <strong>Data Scientist Intern</strong> - 2 days ago</p>
+                                <h1>{application.student?.first_name} {application.student?.last_name}</h1>
+                                <p>Applied to <strong>{offer?.title || application.offer_title}</strong> - {new Date(application.created_at).toLocaleDateString()}</p>
                                 <div className="ap-status-row">
-                                    <span className="ap-status-pill in-review">IN REVIEW</span>
+                                    <span className={`ap-status-pill ${status?.toLowerCase().replace(' ', '-')}`}>{status?.toUpperCase()}</span>
                                     <div className="ap-avatars-overlap">
                                         <img src="https://ui-avatars.com/api/?name=J+D&background=4f46e5&color=fff&size=24" alt="JD" />
                                         <img src="https://ui-avatars.com/api/?name=S+K&background=ea580c&color=fff&size=24" alt="SK" />
@@ -105,27 +148,27 @@ const CompanyApplicationDetail = () => {
                                 <div className="ap-info-grid">
                                     <div className="ap-info-item">
                                         <label>EMAIL ADDRESS</label>
-                                        <span>amira.benali@esi.dz</span>
+                                        <span>{application.student?.email}</span>
                                     </div>
                                     <div className="ap-info-item">
                                         <label>PHONE NUMBER</label>
-                                        <span>+213 (0) 550 12 34 56</span>
+                                        <span>{application.student?.phone || 'N/A'}</span>
                                     </div>
                                     <div className="ap-info-item">
                                         <label>LOCATION</label>
-                                        <span><MapPin size={14} style={{display:'inline', color:'#ff1b90', verticalAlign:'text-bottom', marginRight:'4px'}}/>Algiers, Algeria</span>
+                                        <span><MapPin size={14} style={{display:'inline', color:'#ff1b90', verticalAlign:'text-bottom', marginRight:'4px'}}/>{application.student?.location || 'Algeria'}</span>
                                     </div>
                                     <div className="ap-info-item">
                                         <label>UNIVERSITY</label>
-                                        <span>ESI Alger (Ecole Supérieure d'Informatique)</span>
+                                        <span>{application.student?.university || 'University'}</span>
                                     </div>
                                     <div className="ap-info-item">
                                         <label>ACADEMIC PROGRAM</label>
-                                        <span>L3 Informatique (Data Science focus)</span>
+                                        <span>{application.student?.major || 'Student'}</span>
                                     </div>
                                     <div className="ap-info-item">
                                         <label>CURRENT GPA</label>
-                                        <span>16.42 / 20.00</span>
+                                        <span>{application.student?.gpa || 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -134,22 +177,16 @@ const CompanyApplicationDetail = () => {
                             <div className="ap-card">
                                 <div className="ap-section-title"><div className="ap-title-bar"></div> Skills & Match</div>
                                 <div className="ap-skills-layout">
-                                    <MatchScoreRing score={87} />
+                                    <MatchScoreRing score={application.match_score} />
                                     
                                     <div className="ap-skills-lists">
                                         <div className="ap-skill-row">
-                                            <div className="ap-skill-pill">React <div className="ap-dots"><span className="ap-dot lit"></span><span className="ap-dot lit"></span><span className="ap-dot"></span></div></div>
-                                            <div className="ap-skill-pill">Python <div className="ap-dots"><span className="ap-dot lit"></span><span className="ap-dot lit"></span><span className="ap-dot lit"></span></div></div>
-                                            <div className="ap-skill-pill">Figma <div className="ap-dots"><span className="ap-dot lit"></span><span className="ap-dot lit"></span><span className="ap-dot lit"></span></div></div>
-                                        </div>
-                                        <div className="ap-skill-row">
-                                            <div className="ap-skill-pill">SQL <div className="ap-dots"><span className="ap-dot lit"></span><span className="ap-dot lit"></span><span className="ap-dot"></span></div></div>
-                                            <div className="ap-skill-pill">Pandas <div className="ap-dots"><span className="ap-dot lit"></span><span className="ap-dot lit"></span><span className="ap-dot lit"></span></div></div>
+                                            {application.student?.skills?.slice(0, 5).map((skill, idx) => (
+                                                <div key={idx} className="ap-skill-pill">{skill.name || skill} <div className="ap-dots"><span className="ap-dot lit"></span><span className="ap-dot lit"></span><span className="ap-dot lit"></span></div></div>
+                                            ))}
                                         </div>
                                         <div className="ap-match-breakdown">
-                                            <span>SKILL MATCH <strong>80%</strong></span>
-                                            <span className="ap-divider">•</span>
-                                            <span className="ap-red-text">CHALLENGE SCORE <strong>92%</strong></span>
+                                            <span>SKILL MATCH <strong>{application.match_score}%</strong></span>
                                         </div>
                                     </div>
                                 </div>
@@ -161,25 +198,25 @@ const CompanyApplicationDetail = () => {
                                 <div className="ap-grey-box ap-flex-between">
                                     <div className="ap-info-item">
                                         <label>OFFER TITLE</label>
-                                        <span>Data Scientist Intern</span>
+                                        <span>{offer?.title || application.offer_title}</span>
                                     </div>
                                     <div className="ap-info-item">
                                         <label>TYPE</label>
-                                        <span>PFE / Graduation</span>
+                                        <span>{offer?.offer_types?.[0]?.name || 'Internship'}</span>
                                     </div>
                                     <div className="ap-info-item">
                                         <label>DATE APPLIED</label>
-                                        <span>Oct 24, 2023</span>
+                                        <span>{new Date(application.created_at).toLocaleDateString()}</span>
                                     </div>
                                     <div className="ap-info-item">
                                         <label>STATUS</label>
-                                        <span className="ap-status-text pink">IN REVIEW</span>
+                                        <span className="ap-status-text pink">{status?.toUpperCase()}</span>
                                     </div>
                                 </div>
                                 <div className="ap-mt-24">
-                                    <label className="ap-section-label">MOTIVATION MESSAGE</label>
+                                    <label className="ap-section-label">COVER LETTER</label>
                                     <div className="ap-quote-box">
-                                        "Having spent the last two years exploring machine learning through personal projects and academic rigor at ESI, I am eager to apply my Python and data modeling skills to real-world challenges at Stag.io. I follow your platform's growth closely and admire the way you've bridged the gap for Algerian students. I believe my background in statistical analysis and my passion for UX-driven data products make me a strong candidate for this internship."
+                                        {application.cover_letter || "No cover letter provided."}
                                     </div>
                                 </div>
                             </div>
@@ -225,12 +262,34 @@ const CompanyApplicationDetail = () => {
                             {/* Status & Actions */}
                             <div className="ap-card">
                                 <label className="ap-section-label">STATUS & ACTIONS</label>
-                                <div className="ap-dropdown-box mt-10">
-                                    <span>In Review</span>
+                                <div className="ap-dropdown-box mt-10" onClick={() => setShowStatusDropdown(!showStatusDropdown)}>
+                                    <span>{status?.toUpperCase()}</span>
                                     <ChevronDown size={16} color="#8892b0"/>
                                 </div>
-                                <button className="ap-btn-full purple mt-16" onClick={() => navigate('/dashboard/company/interviews')}><Calendar size={16}/> Schedule Interview</button>
-                                <button className="ap-btn-full outline mt-12">Reject with reason</button>
+                                {showStatusDropdown && (
+                                    <div className="ap-status-dropdown-menu">
+                                        <div className="ap-dropdown-item" onClick={() => handleStatusUpdate('viewed')}>Mark as Viewed</div>
+                                        <div className="ap-dropdown-item" onClick={() => handleStatusUpdate('under review')}>Mark as Under Review</div>
+                                        <div className="ap-dropdown-item" onClick={() => handleStatusUpdate('interview')}>Schedule Interview</div>
+                                        <div className="ap-dropdown-item text-green" onClick={() => handleStatusUpdate('accepted')}>Accept Candidate</div>
+                                        <div className="ap-dropdown-item text-red" onClick={() => handleStatusUpdate('rejected')}>Refuse Candidate</div>
+                                    </div>
+                                )}
+                                <button 
+                                    className="ap-btn-full purple mt-16" 
+                                    onClick={() => navigate('/dashboard/company/interviews/schedule', { 
+                                        state: { 
+                                            studentId: application.student?.id || application.student,
+                                            studentName: `${application.student?.first_name} ${application.student?.last_name}`,
+                                            offerId: application.offer?.id || application.offer,
+                                            offerTitle: application.offer?.title || application.offer_title,
+                                            applicationId: application.id
+                                        } 
+                                    })}
+                                >
+                                    <Calendar size={16}/> Schedule Interview
+                                </button>
+                                <button className="ap-btn-full outline mt-12" onClick={() => handleStatusUpdate('rejected')}>Reject Candidate</button>
                             </div>
 
                             {/* Interview */}
@@ -282,23 +341,23 @@ const CompanyApplicationDetail = () => {
                             <div className="ap-card">
                                 <label className="ap-section-label mb-16">OFFER SUMMARY</label>
                                 <div className="ap-offer-summary-box">
-                                    <strong>Data Scientist Intern</strong>
+                                    <strong>{offer?.title || application.offer_title}</strong>
                                     <div className="ap-offer-meta-small">
-                                        <span><Briefcase size={12}/> PFE</span>
-                                        <span><Clock size={12}/> 6 Months</span>
+                                        <span><Briefcase size={12}/> {offer?.offer_types?.[0]?.name || 'Internship'}</span>
+                                        <span><Clock size={12}/> {offer?.durations?.[0]?.months || 'N/A'} Months</span>
                                     </div>
                                 </div>
                                 <div className="ap-offer-info-row mt-16">
                                     <div>
                                         <label className="ap-tiny-label">LOCATION</label>
-                                        <div className="ap-tiny-val">Algiers / Remote</div>
+                                        <div className="ap-tiny-val">{offer?.wilaya || 'Various'}</div>
                                     </div>
                                     <div>
                                         <label className="ap-tiny-label">STATUS</label>
                                         <div className="ap-tiny-val purple">ACTIVE</div>
                                     </div>
                                 </div>
-                                <div className="ap-link-row mt-16">
+                                <div className="ap-link-row mt-16" onClick={() => navigate(`/dashboard/company/offer/${offer?.id || application.offer}/candidates`)}>
                                     <span>View full offer</span>
                                     <ChevronRight size={14}/>
                                 </div>

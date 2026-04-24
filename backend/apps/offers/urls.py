@@ -8,14 +8,20 @@ from .views import (
     OfferStatusUpdateView,
     OfferMineListView,
     OfferMetadataView,
-    ApplicationViewSet
+    CompanyDashboardView,
+    ApplicationViewSet,
+    InterviewViewSet,
+    MessageViewSet
 )
 
 router = DefaultRouter()
 router.register(r'applications', ApplicationViewSet, basename='application')
+router.register(r'interviews', InterviewViewSet, basename='interview')
+router.register(r'messages', MessageViewSet, basename='message')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('company/dashboard/', CompanyDashboardView.as_view(), name='company_dashboard'),
     path('offers/', OfferListCreateView.as_view(), name='offer-list-create'),
     path('offers/<int:pk>/', OfferDetailView.as_view(), name='offer_detail'),
     path('favorites/', FavoriteOffersListView.as_view(), name='favorite_list'),

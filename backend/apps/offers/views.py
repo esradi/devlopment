@@ -1,12 +1,51 @@
-from rest_framework import status, permissions
+from rest_framework import status, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from .models import Offer, FavoriteOffer, Location, OfferType, DurationOption
+from django.utils import timezone
+from .models import Offer, FavoriteOffer, Location, OfferType, DurationOption, Application, Interview, Message
 from apps.specialities.models import Domain, Skill
-from .serializers import OfferSerializer, OfferStatusUpdateSerializer
+from .serializers import (
+    OfferSerializer, OfferStatusUpdateSerializer, 
+    ApplicationSerializer, ApplicationNotesSerializer, 
+    InterviewSerializer, MessageSerializer
+)
 from apps.api.permissions import IsCompany, IsStudent, IsOwnerOrAdmin
+
+class MessageViewSet(viewsets.ModelViewSet):
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Message.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)
+
+class InterviewViewSet(viewsets.ModelViewSet):
+    queryset = Interview.objects.all()
+    serializer_class = InterviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'company' and hasattr(user, 'company_profile'):
+            return Interview.objects.filter(company=user.company_profile)
+        elif user.role == 'student' and hasattr(user, 'student_profile'):
+            return Interview.objects.filter(student=user.student_profile)
+        return Interview.objects.none()
+
+    def perform_create(self, serializer):
+        application = serializer.validated_data['application']
+        serializer.save(
+            company=application.company,
+            student=application.student
+        )
+        
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_interview_proposed(serializer.instance)
 
 class OfferListCreateView(APIView):
     def get_permissions(self):
@@ -176,6 +215,44 @@ class OfferMetadataView(APIView):
             "skills": SkillSerializer(Skill.objects.all(), many=True).data,
         }
         return Response(data)
+
+class CompanyDashboardView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
+            return Response({'error': 'Only companies can access this dashboard.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        company_profile = request.user.company_profile
+        offers = Offer.objects.filter(company=company_profile)
+        total_offers = offers.count()
+        active_offers = offers.filter(status='active').count()
+        
+        from .models import Application
+        applications = Application.objects.filter(company=company_profile)
+        total_applications = applications.count()
+        pending_applications = applications.filter(status='pending').count()
+        accepted_applications = applications.filter(status='accepted').count()
+        
+        recent_apps = applications.order_by('-created_at')[:5]
+        recent_applications = ApplicationSerializer(recent_apps, many=True, context={'request': request}).data
+        
+        recent_offers_qs = offers.order_by('-created_at')[:5]
+        recent_offers = OfferSerializer(recent_offers_qs, many=True, context={'request': request}).data
+
+        return Response({
+            "stats": {
+                "active_offers": active_offers,
+                "total_applications": total_applications,
+                "pending_review": pending_applications,
+                "accepted_applications": accepted_applications,
+                "interviews_scheduled": 0,
+                "unread_messages": 0,
+                "new_applications_today": applications.filter(created_at__date=timezone.now().date()).count()
+            },
+            "recent_offers": recent_offers,
+            "recent_applications": recent_applications
+        })
 
 from rest_framework import viewsets
 from rest_framework.decorators import action

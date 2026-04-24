@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     LayoutDashboard, Briefcase, User, MessageSquare, Settings, Calendar,
     Building2, Globe, Users, MapPin, Sparkles, CheckCircle2, Image as ImageIcon,
@@ -6,11 +6,76 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
+import { companyService } from '../../services/api';
 import './CompanyCompleteProfile.css';
 
 const CompanyCompleteProfile = () => {
     const navigate = useNavigate();
-    const [strength, setStrength] = useState(75);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [profile, setProfile] = useState({
+        company_name: '',
+        industry: '',
+        location: '',
+        website: '',
+        description: '',
+        mission: '',
+        values: ''
+    });
+    const [strength, setStrength] = useState(0);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const data = await companyService.getProfile();
+                setProfile({
+                    company_name: data.company_name || '',
+                    industry: data.industry || '',
+                    location: data.location || '',
+                    website: data.website || '',
+                    description: data.description || '',
+                    mission: data.mission || '',
+                    values: data.values || ''
+                });
+                
+                // Simple strength calculation
+                let count = 0;
+                if (data.company_name) count += 15;
+                if (data.industry) count += 15;
+                if (data.location) count += 15;
+                if (data.website) count += 15;
+                if (data.description) count += 20;
+                if (data.logo) count += 20;
+                setStrength(count);
+            } catch (err) {
+                console.error("Failed to fetch profile:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setProfile(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await companyService.updateProfile(profile);
+            navigate('/dashboard/company/profile');
+        } catch (err) {
+            console.error("Failed to save profile:", err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return <div className="loading-container" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0C10' }}><div className="custom-loader" /></div>;
+    }
 
     return (
         <div className="company-complete-profile">
@@ -51,34 +116,19 @@ const CompanyCompleteProfile = () => {
                         <div className="form-grid">
                             <div className="form-group">
                                 <label>Company Name</label>
-                                <input type="text" defaultValue="Neon Tech Inc." placeholder="e.g. Acme Corp" />
+                                <input type="text" name="company_name" value={profile.company_name} onChange={handleChange} placeholder="e.g. Acme Corp" />
                             </div>
                             <div className="form-group">
                                 <label>Industry</label>
-                                <select defaultValue="Artificial Intelligence">
-                                    <option>Artificial Intelligence</option>
-                                    <option>Software Development</option>
-                                    <option>Energy & Petroleum</option>
-                                    <option>Banking & Finance</option>
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label>Size</label>
-                                <select defaultValue="50 - 200 Employees">
-                                    <option>1 - 10 Employees</option>
-                                    <option>11 - 50 Employees</option>
-                                    <option>50 - 200 Employees</option>
-                                    <option>200 - 1000 Employees</option>
-                                    <option>1000+ Employees</option>
-                                </select>
+                                <input type="text" name="industry" value={profile.industry} onChange={handleChange} placeholder="e.g. Software Development" />
                             </div>
                             <div className="form-group">
                                 <label>Location</label>
-                                <input type="text" defaultValue="San Francisco, CA" placeholder="e.g. Algiers, DZ" />
+                                <input type="text" name="location" value={profile.location} onChange={handleChange} placeholder="e.g. Algiers, DZ" />
                             </div>
                             <div className="form-group full-width">
                                 <label>Website URL</label>
-                                <input type="text" defaultValue="https://neontech.io" placeholder="https://example.com" />
+                                <input type="text" name="website" value={profile.website} onChange={handleChange} placeholder="https://example.com" />
                             </div>
                         </div>
                     </section>
@@ -92,20 +142,19 @@ const CompanyCompleteProfile = () => {
                         
                         <div className="form-group full-width" style={{ marginBottom: '24px' }}>
                             <label>Description</label>
-                            <textarea defaultValue="At Neon Tech, we are building the future of decentralized computing. Our team is a mix of visionaries, hackers, and builders dedicated to making the digital void accessible to everyone. We believe in rapid iteration, radical transparency, and the power of neon lights."></textarea>
+                            <textarea name="description" value={profile.description} onChange={handleChange} placeholder="Tell students about your company..."></textarea>
                         </div>
 
                         <div className="form-grid">
                             <div className="form-group">
                                 <label>Mission</label>
-                                <input type="text" defaultValue="Empowering the decentralize" placeholder="Our mission is..." />
+                                <input type="text" name="mission" value={profile.mission} onChange={handleChange} placeholder="Our mission is..." />
                             </div>
                             <div className="form-group">
                                 <label>Values</label>
-                                <input type="text" defaultValue="Speed, Integrity, Innovation" placeholder="Separated by commas" />
+                                <input type="text" name="values" value={profile.values} onChange={handleChange} placeholder="Separated by commas" />
                             </div>
                         </div>
-
                         <div className="form-group full-width" style={{ marginTop: '24px' }}>
                             <label>Culture Highlights</label>
                             <input type="text" placeholder="Add highlights separated by commas (e.g., Friday socials, Remote-friendly)" />
@@ -183,11 +232,11 @@ const CompanyCompleteProfile = () => {
                         <h3>Profile Preview</h3>
                         <div className="preview-box">
                             <div className="preview-banner">
-                                <div className="preview-avatar">N</div>
+                                <div className="preview-avatar">{profile.company_name ? profile.company_name[0] : 'C'}</div>
                             </div>
                             <div className="preview-body">
-                                <div className="preview-name">Neon Tech Inc.</div>
-                                <div className="preview-subtext">Building the decentralized void...</div>
+                                <div className="preview-name">{profile.company_name || 'Company Name'}</div>
+                                <div className="preview-subtext">{profile.description?.substring(0, 50)}...</div>
                             </div>
                         </div>
                         <button className="btn-view-public">VIEW PUBLIC PROFILE</button>
@@ -200,7 +249,9 @@ const CompanyCompleteProfile = () => {
             {/* 3. STICKY FOOTER */}
             <div className="cp-sticky-footer">
                 <button className="btn-cancel" onClick={() => navigate('/dashboard/company/profile')}>Cancel</button>
-                <button className="btn-save-changes" onClick={() => navigate('/dashboard/company/profile')}>Save changes</button>
+                <button className="btn-save-changes" onClick={handleSave} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save changes'}
+                </button>
             </div>
 
         </div>

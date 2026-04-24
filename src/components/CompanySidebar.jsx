@@ -17,18 +17,19 @@ const CompanySidebar = ({ activePath }) => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        // Implement logout logic securely or via context based on your apps requirement
-        // For visual, just redirect
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
         navigate('/login');
     };
 
     const navItems = [
         { path: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, route: '/dashboard/company' },
         { path: 'offers', label: 'My Offers', icon: Briefcase, route: '/dashboard/company/offers' },
-        { path: 'candidates', label: 'Applications', icon: User, route: '/dashboard/company/offer/1/candidates' },
+        { path: 'candidates', label: 'Candidates', icon: User, route: '/dashboard/company/dashboard' },
         { path: 'interviews', label: 'Interviews', icon: Calendar, route: '/dashboard/company/interviews' },
         { path: 'messages', label: 'Messages', icon: MessageSquare, route: '/dashboard/company/messages' },
-        { path: 'profile', label: 'Company Profile', icon: Folder, route: '/dashboard/company/profile' },
+        { path: 'documents', label: 'Documents', icon: Folder, route: '/dashboard/company/documents' },
+        { path: 'profile', label: 'Company Profile', icon: User, route: '/dashboard/company/profile' },
         { path: 'billing', label: 'Billing', icon: CreditCard, route: '/dashboard/company/billing' },
         { path: 'settings', label: 'Settings', icon: Settings, route: '/dashboard/company/settings' }
     ];

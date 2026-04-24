@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { dashboardService } from '../../services/api';
+import { authService, studentService, offerService, applicationService } from '../../services/api';
 import { motion } from 'framer-motion';
 import {
     MapPin,
@@ -36,10 +36,10 @@ const OfferDetails = ({ setUserRole }) => {
             try {
                 setLoading(true);
                 const [details, me, recs, apps] = await Promise.all([
-                    dashboardService.getOfferDetails(id),
-                    dashboardService.getMe(),
-                    dashboardService.getRecommendations(),
-                    dashboardService.getRecentApplications()
+                    offerService.getDetails(id),
+                    authService.getMe(),
+                    studentService.getRecommendations(),
+                    applicationService.getMine()
                 ]);
                 setOffer(details);
                 setIsFavorite(details.is_favorite);
@@ -61,10 +61,7 @@ const OfferDetails = ({ setUserRole }) => {
     const handleApply = async () => {
         setIsApplying(true);
         try {
-            await dashboardService.applyToOffer({
-                offer: id,
-                cover_letter: coverLetter
-            });
+            await applicationService.apply(id, coverLetter);
             navigate('/dashboard/student');
         } catch (error) {
             console.error("Failed to apply:", error);

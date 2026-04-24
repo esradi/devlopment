@@ -25,6 +25,19 @@
   overflow: hidden;
 }
 
+.custom-loader {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(158, 89, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #9e59ff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Sidebar Styling */
 .company-sidebar {
   width: var(--sidebar-width);

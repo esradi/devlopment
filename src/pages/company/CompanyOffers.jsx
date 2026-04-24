@@ -15,38 +15,12 @@ const CompanyOffers = ({ userData }) => {
     useEffect(() => {
         const fetchOffers = async () => {
             try {
-                const data = await companyService.getMineOffers();
+                const data = await companyService.getOffers();
                 let fetchedOffers = data?.results || data || [];
 
                 // Mock data to match the screenshot if the API is empty
                 if (fetchedOffers.length === 0) {
-                    fetchedOffers = [
-                        {
-                            id: 1,
-                            title: 'Data Scientist Intern',
-                            status: 'ACTIVE',
-                            tags: ['PFE', '4 Months', 'Python', 'TensorFlow'],
-                            candidates: 24,
-                            avg_match: 88,
-                            posted: '2d ago'
-                        },
-                        {
-                            id: 2,
-                            title: 'Frontend UX Engineer',
-                            status: 'ACTIVE',
-                            tags: ['Internship', '3 Months', 'React', 'Tailwind CSS'],
-                            candidates: 12,
-                            avg_match: 94,
-                            posted: '5h ago'
-                        },
-                        {
-                            id: 3,
-                            title: 'Backend Security Intern',
-                            status: 'DRAFT',
-                            tags: ['Summer Program', '2 Months'],
-                            last_edited: '1 week ago'
-                        }
-                    ];
+                    fetchedOffers = [];
                 }
 
                 setOffers(fetchedOffers);
@@ -60,7 +34,7 @@ const CompanyOffers = ({ userData }) => {
     }, []);
 
     const filteredOffers = offers.filter(offer => 
-        offer.title.toLowerCase().includes(searchTerm.toLowerCase())
+        offer.title?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const containerVariants = {
@@ -74,7 +48,25 @@ const CompanyOffers = ({ userData }) => {
     };
 
     if (loading) {
-        return <div className="company-offers-loading" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="custom-loader" /></div>;
+        return (
+            <div className="company-offers-loading" style={{ 
+                height: '60vh', 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center' 
+            }}>
+                <div className="custom-loader" style={{
+                    width: '40px',
+                    height: '40px',
+                    border: '3px solid rgba(158, 89, 255, 0.1)',
+                    borderTop: '3px solid #9e59ff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                }}></div>
+                <p style={{ marginTop: '15px', color: '#8b92a5', fontSize: '14px' }}>Fetching offers...</p>
+            </div>
+        );
     }
 
     return (
@@ -119,40 +111,45 @@ const CompanyOffers = ({ userData }) => {
             </div>
 
             <motion.div className="offers-list-modern" variants={containerVariants} initial="hidden" animate="visible">
-                {filteredOffers.map(offer => (
+                {filteredOffers.length > 0 ? filteredOffers.map(offer => (
                     <motion.div key={offer.id} className="offer-card-horizontal" variants={itemVariants}>
                         <div className="offer-card-left">
                             <div className="offer-title-row">
                                 <h3>{offer.title}</h3>
-                                <span className={`status-badge-modern ${offer.status.toLowerCase()}`}>
-                                    {offer.status === 'ACTIVE' && <span className="dot-active"></span>}
-                                    {offer.status}
+                                <span className={`status-badge-modern ${offer.status?.toLowerCase()}`}>
+                                    {offer.status === 'active' && <span className="dot-active"></span>}
+                                    {offer.status?.toUpperCase()}
                                 </span>
                             </div>
                             
                             <div className="offer-tags-modern">
-                                {offer.tags && offer.tags.map((tag, idx) => (
-                                    <span key={idx} className={`tag-pill ${['Python', 'TensorFlow', 'React', 'Tailwind CSS'].includes(tag) ? 'tag-pink' : ''}`}>
-                                        {tag}
+                                {offer.offer_types?.map((t, idx) => (
+                                    <span key={`type-${idx}`} className="tag-pill tag-pink">
+                                        {t.name}
+                                    </span>
+                                ))}
+                                {offer.durations?.map((d, idx) => (
+                                    <span key={`dur-${idx}`} className="tag-pill">
+                                        {d.months} Months
                                     </span>
                                 ))}
                             </div>
 
-                            {offer.status === 'DRAFT' ? (
-                                <p className="draft-meta">Last edited {offer.last_edited}</p>
+                            {offer.status === 'draft' ? (
+                                <p className="draft-meta">Last edited {new Date(offer.updated_at).toLocaleDateString()}</p>
                             ) : (
                                 <div className="offer-stats-grid">
                                     <div className="stat-item">
                                         <span className="stat-label">CANDIDATES</span>
-                                        <span className="stat-value">{offer.candidates}</span>
+                                        <span className="stat-value">{offer.applicants_count || 0}</span>
                                     </div>
                                     <div className="stat-item">
                                         <span className="stat-label">AVG. MATCH</span>
-                                        <span className="stat-value text-pink">{offer.avg_match}%</span>
+                                        <span className="stat-value text-pink">{offer.avg_match_score || 0}%</span>
                                     </div>
                                     <div className="stat-item">
                                         <span className="stat-label">POSTED</span>
-                                        <span className="stat-value">{offer.posted}</span>
+                                        <span className="stat-value">{new Date(offer.created_at).toLocaleDateString()}</span>
                                     </div>
                                 </div>
                             )}
@@ -163,7 +160,7 @@ const CompanyOffers = ({ userData }) => {
                                 className="btn-view-candidates"
                                 onClick={() => navigate(`/dashboard/company/offer/${offer.id}/candidates`)}
                             >
-                                {offer.status === 'DRAFT' ? 'Publish Offer' : 'View Candidates'}
+                                {offer.status === 'draft' ? 'Publish Offer' : 'View Candidates'}
                             </button>
                             <div className="icon-actions">
                                 <button className="icon-btn"><Edit2 size={16} /></button>
@@ -173,18 +170,24 @@ const CompanyOffers = ({ userData }) => {
                             </div>
                         </div>
                     </motion.div>
-                ))}
+                )) : (
+                    <div className="empty-state-large">
+                        <p>No offers found. Start by creating your first listing!</p>
+                    </div>
+                )}
             </motion.div>
 
             <div className="pagination-footer">
-                <span className="showing-text">Showing <strong>3 of 12</strong> offers</span>
-                <div className="pagination-controls">
-                    <button className="page-btn">{'<'}</button>
-                    <button className="page-btn active">1</button>
-                    <button className="page-btn">2</button>
-                    <button className="page-btn">3</button>
-                    <button className="page-btn">{'>'}</button>
-                </div>
+                <span className="showing-text">
+                    Showing <strong>{filteredOffers.length}</strong> of <strong>{offers.length}</strong> offers
+                </span>
+                {offers.length > 0 && (
+                    <div className="pagination-controls">
+                        <button className="page-btn">{'<'}</button>
+                        <button className="page-btn active">1</button>
+                        <button className="page-btn">{'>'}</button>
+                    </div>
+                )}
             </div>
         </div>
     );

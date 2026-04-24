@@ -11,22 +11,49 @@ import './CompanyProfile.css';
 const CompanyProfile = () => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
-    const [companyLogo, setCompanyLogo] = useState(null);
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const data = await companyService.getProfile();
+                setProfile(data);
+            } catch (err) {
+                console.error("Failed to fetch profile:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     const handleLogoClick = () => {
         fileInputRef.current.click();
     };
 
-    const handleLogoChange = (e) => {
+    const handleLogoChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setCompanyLogo(reader.result);
-            };
-            reader.readAsDataURL(file);
+            const formData = new FormData();
+            formData.append('logo', file);
+            try {
+                // Assuming updateProfile handles FormData if logo is present
+                // Or you might have a specific uploadLogo service
+                await companyService.updateProfile(formData);
+                const updated = await companyService.getProfile();
+                setProfile(updated);
+            } catch (err) {
+                console.error("Failed to upload logo:", err);
+            }
         }
     };
+
+    if (loading) {
+        return <div className="loading-container" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0C10' }}><div className="custom-loader" /></div>;
+    }
+
+    if (!profile) return <div>Failed to load profile.</div>;
 
     return (
         <div className="company-profile-dashboard">
@@ -45,7 +72,7 @@ const CompanyProfile = () => {
                         </div>
                         <button 
                             className="btn-edit-profile"
-                            onClick={() => navigate('/dashboard/company/profile/edit')}
+                            onClick={() => navigate('/dashboard/company/complete-profile')}
                         >
                             <Edit3 size={16} /> Edit Profile
                         </button>
@@ -53,12 +80,12 @@ const CompanyProfile = () => {
 
                     <div className="profile-card company-hero-card">
                         <div className="company-logo-large">
-                            {companyLogo ? (
-                                <img src={companyLogo} alt="Company Logo" style={{ width: '100%', height: '100%', borderRadius: '20px', objectFit: 'cover' }} />
+                            {profile.logo ? (
+                                <img src={profile.logo} alt="Company Logo" style={{ width: '100%', height: '100%', borderRadius: '20px', objectFit: 'cover' }} />
                             ) : (
-                                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                </svg>
+                                <div className="logo-placeholder">
+                                    {profile.company_name?.[0] || 'C'}
+                                </div>
                             )}
                             <input 
                                 type="file" 
@@ -72,9 +99,9 @@ const CompanyProfile = () => {
                             </button>
                         </div>
                         <div className="company-basic-info">
-                            <h2>Sonatrach</h2>
+                            <h2>{profile.company_name || 'My Company'}</h2>
                             <div className="industry-label">
-                                <CheckCircle2 size={14} /> ENERGY & PETROLEUM
+                                <CheckCircle2 size={14} /> {profile.industry?.toUpperCase() || 'GENERAL'}
                             </div>
                             
                             <div className="info-grid">
@@ -82,28 +109,28 @@ const CompanyProfile = () => {
                                     <MapPin className="info-icon" size={18} />
                                     <div className="info-text">
                                         <span>Location</span>
-                                        <strong>Algiers, Algeria</strong>
+                                        <strong>{profile.location || 'Algeria'}</strong>
                                     </div>
                                 </div>
                                 <div className="info-item">
                                     <Globe className="info-icon" size={18} />
                                     <div className="info-text">
                                         <span>Website</span>
-                                        <a href="#" className="info-link">sonatrach.com</a>
+                                        <a href={profile.website} target="_blank" rel="noopener noreferrer" className="info-link">{profile.website || 'Add website'}</a>
                                     </div>
                                 </div>
                                 <div className="info-item">
                                     <svg className="info-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                                     <div className="info-text">
                                         <span>Email</span>
-                                        <strong>hr@sonatrach.dz</strong>
+                                        <strong>{profile.contact_email || 'Add contact email'}</strong>
                                     </div>
                                 </div>
                                 <div className="info-item">
                                     <Users className="info-icon" size={18} />
                                     <div className="info-text">
                                         <span>Company Size</span>
-                                        <strong>5000+ employees</strong>
+                                        <strong>{profile.size_range || 'N/A'}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -118,15 +145,21 @@ const CompanyProfile = () => {
                             <h3>About & Culture</h3>
                         </div>
                         <p>
-                            Sonatrach is the national state-owned oil company of Algeria. It is the largest company in Africa and one of the largest gas and oil producers in the world. Our mission is to explore, produce, transport, refine, and market hydrocarbons while fostering the next generation of Algerian engineers and leaders. We pride ourselves on a culture of technical excellence, sustainability, and national commitment.
+                            {profile.description || "No description provided yet. Complete your profile to tell students about your company culture and missions."}
                         </p>
                         
+                        {profile.mission && (
+                            <>
+                                <div className="card-subtitle">Our Mission</div>
+                                <p>{profile.mission}</p>
+                            </>
+                        )}
+
                         <div className="card-subtitle">What we offer interns</div>
                         <div className="tag-cloud">
-                            <div className="dark-tag"><PlayCircle size={14} /> Mentorship</div>
-                            <div className="dark-tag"><PlayCircle size={14} /> Real-world projects</div>
-                            <div className="dark-tag"><PlayCircle size={14} /> Career path</div>
-                            <div className="dark-tag"><PlayCircle size={14} /> Certified Training</div>
+                            {profile.values?.split(',').map((val, idx) => (
+                                <div key={idx} className="dark-tag"><PlayCircle size={14} /> {val.trim()}</div>
+                            )) || <div className="dark-tag">Real-world projects</div>}
                         </div>
                     </div>
 
@@ -142,23 +175,15 @@ const CompanyProfile = () => {
                             <div className="pref-col">
                                 <h4>Domains</h4>
                                 <div className="tag-cloud">
-                                    <span className="purple-outline-tag">Data Science</span>
-                                    <span className="purple-outline-tag">Backend</span>
-                                    <span className="purple-outline-tag">Engineering</span>
+                                    {profile.preferred_domains?.map((d, idx) => (
+                                        <span key={idx} className="purple-outline-tag">{d.name}</span>
+                                    )) || <span className="purple-outline-tag">General</span>}
                                 </div>
                             </div>
                             <div className="pref-col">
                                 <h4>Locations</h4>
                                 <div className="tag-cloud">
-                                    <span className="white-outline-tag">Algiers</span>
-                                    <span className="white-outline-tag">Remote</span>
-                                </div>
-                            </div>
-                            <div className="pref-col">
-                                <h4>Type</h4>
-                                <div className="tag-cloud">
-                                    <span className="pink-outline-tag">PFE</span>
-                                    <span className="pink-outline-tag">Summer Internship</span>
+                                    <span className="white-outline-tag">{profile.location || 'Various'}</span>
                                 </div>
                             </div>
                         </div>
@@ -173,8 +198,8 @@ const CompanyProfile = () => {
                         <div className="strength-gauge-wrap">
                             <div className="gauge-circle">
                                 <div className="gauge-content">
-                                    <span className="gauge-pct">90%</span>
-                                    <span className="gauge-label">Excellent</span>
+                                    <span className="gauge-pct">{profile.strength || 0}%</span>
+                                    <span className="gauge-label">{profile.strength >= 80 ? 'Excellent' : 'Good'}</span>
                                 </div>
                             </div>
                         </div>
@@ -182,38 +207,25 @@ const CompanyProfile = () => {
                         <div className="checklist">
                             <div className="check-item">
                                 <div className="check-left">
-                                    <CheckCircle className="check-icon" size={16} />
+                                    <CheckCircle className={`check-icon ${profile.logo ? '' : 'pending'}`} size={16} />
                                     <span>Company Logo</span>
                                 </div>
                             </div>
                             <div className="check-item">
                                 <div className="check-left">
-                                    <CheckCircle className="check-icon" size={16} />
+                                    <CheckCircle className={`check-icon ${profile.description ? '' : 'pending'}`} size={16} />
                                     <span>Detailed Description</span>
                                 </div>
                             </div>
-                            <div className="check-item">
-                                <div className="check-left">
-                                    <CheckCircle className="check-icon" size={16} />
-                                    <span>Website Link</span>
-                                </div>
-                            </div>
-                            <div className="check-item">
-                                <div className="check-left">
-                                <CheckCircle className="check-icon pending" size={16} />
-                                <span style={{ color: '#565d6d' }}>Active Offer</span>
-                            </div>
-                            <a href="#">Add Now</a>
                         </div>
+                        <button 
+                            className="btn-view-analytics" 
+                            style={{ width: '100%', marginTop: '20px' }}
+                            onClick={() => navigate('/dashboard/company/complete-profile')}
+                        >
+                            Complete Profile
+                        </button>
                     </div>
-                    <button 
-                        className="btn-view-analytics" 
-                        style={{ width: '100%', marginTop: '20px' }}
-                        onClick={() => navigate('/dashboard/company/complete-profile')}
-                    >
-                        Complete Profile
-                    </button>
-                </div>
 
                     <div className="side-card verification-badge">
                         <div className="verif-left">
@@ -222,7 +234,7 @@ const CompanyProfile = () => {
                             </div>
                             <div className="verif-text">
                                 <h4>Verification Status</h4>
-                                <p>Verified Company</p>
+                                <p>{profile.is_verified ? 'Verified Company' : 'Pending Verification'}</p>
                             </div>
                         </div>
                         <Info className="info-circle-icon" size={18} />
@@ -236,21 +248,14 @@ const CompanyProfile = () => {
                                     <Activity className="a-icon purple" size={18} />
                                     <span>Offers posted</span>
                                 </div>
-                                <div className="activity-right">12</div>
+                                <div className="activity-right">{profile.stats?.offers_count || 0}</div>
                             </div>
                             <div className="activity-row">
                                 <div className="activity-left">
                                     <Users className="a-icon pink" size={18} />
                                     <span>Applications</span>
                                 </div>
-                                <div className="activity-right">428</div>
-                            </div>
-                            <div className="activity-row">
-                                <div className="activity-left">
-                                    <User className="a-icon green" size={18} />
-                                    <span>Interns hired</span>
-                                </div>
-                                <div className="activity-right">24</div>
+                                <div className="activity-right">{profile.stats?.applications_count || 0}</div>
                             </div>
                         </div>
                         <button 
