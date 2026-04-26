@@ -15,8 +15,8 @@ from .serializers import (
     InternshipValidationRejectSerializer,
     ConventionSerializer,
     AdminUserListSerializer,
-    AdminUserListSerializer,
     AdminUserStatusSerializer,
+    AdminUserVerifyIdSerializer,
     AdminCompanyListSerializer,
     AdminCompanyVerifySerializer,
     AdminDomainTreeSerializer,
@@ -178,6 +178,12 @@ class AdminUserStatusView(generics.UpdateAPIView):
     #PATCH /api/admin/users/:id/status/
     permission_classes = [permissions.IsAdminUser]
     serializer_class = AdminUserStatusSerializer
+    queryset = User.objects.all()
+
+class AdminUserVerifyIdView(generics.UpdateAPIView):
+    #PATCH /api/admin/users/:id/verify-id/
+    permission_classes = [permissions.IsAdminUser]
+    serializer_class = AdminUserVerifyIdSerializer
     queryset = User.objects.all()
 
 

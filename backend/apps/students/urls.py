@@ -18,4 +18,9 @@ urlpatterns = [
     path('student/skills/stats/',             views.StudentSkillsStatsView.as_view(),     name='student_skills_stats'),
     path('student/skills/<int:skill_id>/',    views.StudentSkillDetailView.as_view(),     name='student_skill_detail'),
     path('student/applications/stats/',views.StudentApplicationStatsView.as_view(),name='student_application_stats'),
+    path('student/interviews/',views.StudentInterviewListView.as_view(),name='student_interview_list'),
+    path('student/interviews/<int:pk>/select-spot/',views.StudentInterviewSelectSpotView.as_view(),name='student_interview_select_spot'),
+    path('student/conventions/',views.StudentConventionListView.as_view(),name='student_convention_list'),
+    path('student/conventions/<int:pk>/',views.StudentConventionDetailView.as_view(),name='student_convention_detail'),
+    path('student/conventions/<int:pk>/sign/',views.StudentConventionSignView.as_view(),name='student_convention_sign'),
 ]

@@ -179,6 +179,12 @@ class AdminUserStatusSerializer(serializers.ModelSerializer):
         model = User
         fields = ['is_active']
 
+class AdminUserVerifyIdSerializer(serializers.ModelSerializer):
+    #used by PATCH /api/admin/users/:id/verify-id/
+    class Meta:
+        model = User
+        fields = ['id_verified']
+
 
 class AdminCompanyListSerializer(serializers.ModelSerializer):
     #used by GET /api/admin/companies/

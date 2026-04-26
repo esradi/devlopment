@@ -814,3 +814,157 @@ class StudentApplicationStatsView(APIView):
             'pending':         pending,
             'acceptance_rate': acceptance_rate,
         })
+
+from apps.companyapp.models import Interview
+from apps.companyapp.serializers import InterviewSerializer
+
+class StudentInterviewListView(APIView):
+    #GET /api/student/interviews/
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({'error': 'Student profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        interviews = Interview.objects.filter(application__student=student).order_by('id')
+        
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            interviews = interviews.filter(status=status_filter)
+
+        serializer = InterviewSerializer(interviews, many=True)
+        return Response(serializer.data)
+
+class StudentInterviewSelectSpotView(APIView):
+    #POST /api/student/interviews/<pk>/select-spot/
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def post(self, request, pk):
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({'error': 'Student profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            interview = Interview.objects.get(pk=pk, application__student=student)
+        except Interview.DoesNotExist:
+            return Response({'error': 'Interview not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if interview.status != 'pending_student_selection':
+            return Response({'error': 'This interview is no longer pending selection'}, status=status.HTTP_400_BAD_REQUEST)
+
+        selected_spot = request.data.get('selected_spot')
+        if selected_spot not in [1, 2, 3]:
+            return Response({'error': 'selected_spot must be 1, 2, or 3'}, status=status.HTTP_400_BAD_REQUEST)
+
+        spot_map = {
+            1: interview.proposed_spot_1,
+            2: interview.proposed_spot_2,
+            3: interview.proposed_spot_3
+        }
+
+        chosen_datetime = spot_map[selected_spot]
+        if not chosen_datetime:
+            return Response({'error': f'Spot {selected_spot} was not proposed by the company'}, status=status.HTTP_400_BAD_REQUEST)
+
+        interview.scheduled_at = chosen_datetime
+        interview.status = 'scheduled'
+        interview.save()
+
+        # Notify company
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_interview_scheduled(interview)
+
+        return Response({
+            'message': 'Interview slot selected successfully',
+            'interview': InterviewSerializer(interview).data
+        })
+
+from apps.conventions.models import Convention
+from apps.conventions.serializers import ConventionSerializer
+
+class StudentConventionListView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({'error': 'Student profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        conventions = Convention.objects.filter(student=student).order_by('-created_at')
+        
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            conventions = conventions.filter(status=status_filter)
+
+        serializer = ConventionSerializer(conventions, many=True)
+        return Response(serializer.data)
+
+class StudentConventionDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request, pk):
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({'error': 'Student profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        convention = get_object_or_404(Convention, pk=pk, student=student)
+        serializer = ConventionSerializer(convention)
+        return Response(serializer.data)
+
+from apps.conventions.views import verify_webauthn_for_user, get_client_ip
+from django.utils import timezone
+
+class StudentConventionSignView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def patch(self, request, pk):
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({'error': 'Student profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        convention = get_object_or_404(Convention, pk=pk, student=student)
+        
+        if convention.status != 'pending_student_signature':
+            return Response({
+                "error": f"Cannot sign convention in '{convention.get_status_display()}' state. Must be 'Pending Student'."
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        if not request.data.get('confirmed'):
+            return Response({'error': 'You must confirm the terms before signing'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        webauthn_response = request.data.get('webauthn_response')
+        if not webauthn_response:
+            return Response({'error': 'Fingerprint authentication data is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        is_valid, result_or_error = verify_webauthn_for_user(request, request.user, webauthn_response)
+        if not is_valid:
+            return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        from apps.conventions.services.convention_service import ConventionService
+        from apps.notifications.services import NotificationService
+
+        convention.student_signed = True
+        convention.student_signed_at = timezone.now()
+        convention.student_fingerprint_authenticated = True
+        convention.student_authentication_timestamp = str(timezone.now().timestamp())
+        convention.student_credential_id = result_or_error
+        convention.student_ip_address = get_client_ip(request)
+        convention.student_user_agent = request.META.get('HTTP_USER_AGENT', '')
+        
+        # Advance to company signature
+        convention.status = 'pending_company_signature'
+        convention.save()
+        
+        ConventionService.regenerate_pdf(convention)
+        NotificationService.notify_convention_student_signed(convention)
+        
+        return Response({
+            "message": "Convention signed successfully with Fingerprint",
+            "convention": ConventionSerializer(convention).data
+        }, status=status.HTTP_200_OK)

@@ -9,6 +9,10 @@ from .views import (
     OfferMineListView,
     OfferMetadataView,
     CompanyDashboardView,
+    CompanyOfferStatsView,
+    CompanyOfferDuplicateView,
+    CompanyOfferExtendDeadlineView,
+    CompanyOfferApplicantsSummaryView,
     ApplicationViewSet,
     InterviewViewSet,
     MessageViewSet
@@ -30,4 +34,8 @@ urlpatterns = [
     path('offers/mine/', OfferMineListView.as_view(), name='offers_mine'),
     path('offers/options/', OfferMetadataView.as_view(), name='offer_options'),
     path('offers/<int:pk>/', OfferDetailView.as_view(), name='offer-detail'),
+    path('offers/<int:pk>/stats/', CompanyOfferStatsView.as_view(), name='offer_stats'),
+    path('offers/<int:pk>/duplicate/', CompanyOfferDuplicateView.as_view(), name='offer_duplicate'),
+    path('offers/<int:pk>/extend-deadline/', CompanyOfferExtendDeadlineView.as_view(), name='offer_extend_deadline'),
+    path('offers/<int:pk>/applicants-summary/', CompanyOfferApplicantsSummaryView.as_view(), name='offer_applicants_summary'),
 ]
