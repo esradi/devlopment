@@ -11,7 +11,8 @@ from .views import (
     AdminCompanyListView,
     AdminCompanyVerifyView,
     AdminSpecialitiesListView,
-    PortfolioSubmissionReviewView
+    PortfolioSubmissionReviewView,
+    AdminUserVerifyIdView
 )
 
 urlpatterns = [

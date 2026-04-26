@@ -1,4 +1,5 @@
 from rest_framework import status, permissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
@@ -178,7 +179,7 @@ class OfferMetadataView(APIView):
         return Response(data)
 
 class CompanyOfferStatsView(APIView):
-    permission_classes = [IsAuthenticated, IsCompany]
+    permission_classes = [permissions.IsAuthenticated, IsCompany]
 
     def get(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk, company=request.user.company_profile)
