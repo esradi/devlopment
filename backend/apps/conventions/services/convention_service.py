@@ -139,6 +139,8 @@ class ConventionService:
             p.drawString(2.5*cm, y, "✓ Signé électroniquement")
             y -= 0.4*cm
             p.setFillColorRGB(0, 0, 0)
+            p.drawString(2.5*cm, y, f"Par: {convention.student.user.get_full_name()}")
+            y -= 0.4*cm
             p.drawString(2.5*cm, y, f"Date: {convention.student_signed_at.strftime('%d/%m/%Y à %H:%M')}")
             y -= 0.4*cm
             if getattr(convention, 'student_fingerprint_authenticated', False):
@@ -164,6 +166,8 @@ class ConventionService:
             p.drawString(2.5*cm, y, "✓ Signé électroniquement")
             y -= 0.4*cm
             p.setFillColorRGB(0, 0, 0)
+            p.drawString(2.5*cm, y, f"Par: {convention.company.user.get_full_name()}")
+            y -= 0.4*cm
             p.drawString(2.5*cm, y, f"Date: {convention.company_signed_at.strftime('%d/%m/%Y à %H:%M')}")
             y -= 0.4*cm
             if getattr(convention, 'company_fingerprint_authenticated', False):

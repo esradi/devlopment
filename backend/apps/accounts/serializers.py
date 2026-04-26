@@ -8,7 +8,7 @@ from apps.api.utils import generate_verification_code, send_verification_email
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'phone', 'role', 'first_name', 'last_name', 'created_at', 'email_verified']
+        fields = ['id', 'email', 'phone', 'role', 'first_name', 'last_name', 'created_at', 'email_verified', 'id_verified']
 
 class StudentSkillSerializer(serializers.ModelSerializer):
     skill_name = serializers.ReadOnlyField(source='skill.name')
@@ -47,7 +47,7 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'role', 'first_name', 'last_name', 'phone', 'email_verified', 'profile']
+        fields = ['id', 'email', 'role', 'first_name', 'last_name', 'phone', 'email_verified', 'id_verified', 'profile']
 
     def get_profile(self, obj):
         if obj.role == 'student':
@@ -69,6 +69,7 @@ class RegisterSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=[('student', 'student'), ('company', 'company'), ('admin', 'admin')], required=True)
     fullName = serializers.CharField(required=True)
     phone = serializers.CharField(required=True)
+    national_id_card = serializers.FileField(required=True)
 
     # Student Specific
     interest = serializers.CharField(required=False, allow_blank=True) 
@@ -126,6 +127,7 @@ class RegisterSerializer(serializers.Serializer):
         conf_password = validated_data.pop('confirmPassword')
         full_name = validated_data.pop('fullName')
         phone = validated_data.pop('phone')
+        national_id_card = validated_data.pop('national_id_card')
 
         # Pop role-specific fields
         interest = validated_data.pop('interest', '')
@@ -167,6 +169,7 @@ class RegisterSerializer(serializers.Serializer):
             role=role,
             first_name=first_name,
             last_name=last_name,
+            national_id_card=national_id_card,
             verification_code=generate_verification_code()
         )
         

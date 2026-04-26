@@ -23,6 +23,7 @@ urlpatterns = [
     path('validations/<int:pk>/reject/', ValidationRejectView.as_view(), name='admin-validation-reject'),
     path('users/', AdminUserListView.as_view(), name='admin-users-list'),
     path('users/<int:pk>/status/', AdminUserStatusView.as_view(), name='admin-user-status'),
+    path('users/<int:pk>/verify-id/', AdminUserVerifyIdView.as_view(), name='admin-user-verify-id'),
     path('companies/', AdminCompanyListView.as_view(), name='admin-companies-list'),
     path('companies/<int:pk>/verify/', AdminCompanyVerifyView.as_view(), name='admin-company-verify'),
     path('specialities/', AdminSpecialitiesListView.as_view(), name='admin-specialities-list'),

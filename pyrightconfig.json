@@ -1,7 +1,21 @@
 {
     "venvPath": ".",
     "venv": "venv",
+    "include": [
+        "backend"
+    ],
+    "exclude": [
+        "src",
+        "node_modules",
+        "public",
+        ".git"
+    ],
     "extraPaths": [
-        "./backend"
+        "backend"
+    ],
+    "executionEnvironments": [
+        {
+            "root": "backend"
+        }
     ]
 }

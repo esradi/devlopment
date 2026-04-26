@@ -17,8 +17,8 @@ urlpatterns = [
     path('', include('apps.groups.urls')),
     path('', include('apps.references.urls')),
     path('admin/', include('apps.admin_panel.urls')),
-    path('', include('challenges.urls')), 
-
+    path('company/', include('apps.companyapp.urls')),
+    path('', include('challenges.urls')),
     path('matching/', MatchingView.as_view(), name='matching'),
     path('matching/my-scores/', StudentMatchScoresView.as_view(), name='matching-my-scores'),
     path('matching/offer/<int:offer_id>/scores/', OfferMatchScoresView.as_view(), name='matching-offer-scores'),

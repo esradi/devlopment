@@ -177,6 +177,85 @@ class OfferMetadataView(APIView):
         }
         return Response(data)
 
+class CompanyOfferStatsView(APIView):
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def get(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk, company=request.user.company_profile)
+        applications = Application.objects.filter(offer=offer)
+        
+        return Response({
+            "offer": {
+                "id": offer.id,
+                "title": offer.title,
+                "status": offer.status,
+                "created_at": offer.created_at,
+                "deadline": offer.deadline
+            },
+            "applications": {
+                "total": applications.count(),
+                "pending": applications.filter(status='pending').count(),
+                "accepted": applications.filter(status='accepted').count(),
+                "refused": applications.filter(status='rejected').count(),
+            }
+        })
+
+class CompanyOfferDuplicateView(APIView):
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def post(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk, company=request.user.company_profile)
+        new_title = request.data.get('new_title', f"{offer.title} (Copy)")
+        
+        offer.pk = None
+        offer.title = new_title
+        offer.status = 'draft' # Or whatever default
+        if 'modify_fields' in request.data:
+            for field, value in request.data['modify_fields'].items():
+                setattr(offer, field, value)
+        offer.save()
+        return Response({
+            "message": "Offer duplicated successfully",
+            "new_offer_id": offer.pk,
+            "new_offer_title": offer.title
+        }, status=status.HTTP_201_CREATED)
+
+class CompanyOfferExtendDeadlineView(APIView):
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def post(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk, company=request.user.company_profile)
+        new_deadline = request.data.get('new_deadline')
+        
+        if not new_deadline:
+            return Response({"error": "new_deadline is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        old_deadline = offer.deadline
+        offer.deadline = new_deadline
+        offer.save()
+        
+        return Response({
+            "message": "Deadline extended",
+            "old_deadline": old_deadline,
+            "new_deadline": offer.deadline
+        })
+
+class CompanyOfferApplicantsSummaryView(APIView):
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def get(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk, company=request.user.company_profile)
+        applications = Application.objects.filter(offer=offer)
+        
+        return Response({
+            "total_applicants": applications.count(),
+            "by_status": {
+                "pending": applications.filter(status='pending').count(),
+                "accepted": applications.filter(status='accepted').count(),
+                "refused": applications.filter(status='rejected').count()
+            }
+        })
+
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination

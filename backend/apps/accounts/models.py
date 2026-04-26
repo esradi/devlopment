@@ -17,6 +17,9 @@ class User(AbstractUser):
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
+    national_id_card = models.FileField(upload_to='id_cards/', null=True, blank=True)
+    id_verified = models.BooleanField(default=False)
+    
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'role']
     
@@ -25,7 +28,13 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.email} ({self.role})"
-
+        
+    def get_company(self):
+        if hasattr(self, 'company_profile'):
+            return self.company_profile
+        elif hasattr(self, 'team_membership'):
+            return self.team_membership.company
+        return None
 
 class Student(models.Model):
     #student profile
@@ -81,6 +90,9 @@ class Company(models.Model):
     referral_source = models.CharField(max_length=100, null=True, blank=True)
     logo = models.ImageField(upload_to='company_logos/', null=True, blank=True)
     verification_status = models.CharField(max_length=20, default='pending')
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.CharField(max_length=100, null=True, blank=True)
+    rejection_reason = models.TextField(null=True, blank=True)
     
     class Meta:
         db_table = 'api_company'

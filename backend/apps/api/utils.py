@@ -35,3 +35,21 @@ def send_password_reset_email(email, token):
         print(f"Error sending password reset email: {e}")
         return False
 
+def send_team_invite_email(email, company_name, temp_password):
+    """Send an invitation email to a new team member with their temporary password."""
+    subject = f'You have been invited to join {company_name} on Stage-IO!'
+    message = (
+        f"You have been invited to manage recruitment for {company_name} on Stage-IO!\n\n"
+        f"Your login email: {email}\n"
+        f"Your temporary password: {temp_password}\n\n"
+        "Please log in to the platform and change your password immediately."
+    )
+    email_from = settings.EMAIL_HOST_USER
+    recipient_list = [email]
+    
+    try:
+        send_mail(subject, message, email_from, recipient_list, fail_silently=False)
+        return True
+    except Exception as e:
+        print(f"Error sending team invite email: {e}")
+        return False
