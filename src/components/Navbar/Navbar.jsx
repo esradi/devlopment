@@ -4,6 +4,7 @@ import { Menu, X, LayoutDashboard, MessageSquare, Bell, User } from 'lucide-reac
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './Navbar.css';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
+import NotificationCenter from '../NotificationCenter/NotificationCenter';
 
 const Navbar = ({ role, setUserRole }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -154,13 +155,19 @@ const Navbar = ({ role, setUserRole }) => {
                 {/* RIGHT ACTIONS */}
                 <div className="actions-section">
                     {role !== 'public' ? (
-                        <div className="auth-actions">
-                            <Link to="/notifications" className="action-icon icon-btn" title="Notifications" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', color: '#fff', marginRight: '16px' }}>
-                                <Bell size={20} />
-                                <span className="notification-dot" style={{ position: 'absolute', top: '10px', right: '10px', width: '6px', height: '6px', backgroundColor: '#ff1b90', borderRadius: '50%' }}></span>
+                        <div className="auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Link 
+                                to={role === 'student' ? '/dashboard/student/messages' : role === 'company' ? '/dashboard/company/messages' : '/dashboard/admin/messages'} 
+                                className="nav-action-btn"
+                                title="Messages"
+                            >
+                                <MessageSquare size={20} />
+                                <span className="action-badge">2</span>
                             </Link>
 
-                            <div className="profile-container">
+                            <NotificationCenter role={role} />
+
+                            <div className="profile-container" style={{ marginLeft: '8px' }}>
                                 <div className="profile-trigger" onClick={() => setIsProfileOpen(!isProfileOpen)} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 12px 4px 4px', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                                     <div className="profile-avatar" style={{ backgroundColor: '#9e59ff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
                                         {getProfileName()}

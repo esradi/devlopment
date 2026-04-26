@@ -7,8 +7,10 @@ import {
     CheckSquare, 
     BarChart2, 
     Settings,
-    Handshake
+    Handshake,
+    Award
 } from 'lucide-react';
+import logo from '../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import './AdminSidebar.css';
 
 const AdminSidebar = ({ activePath }) => {
@@ -20,6 +22,7 @@ const AdminSidebar = ({ activePath }) => {
         { path: 'companies', label: 'Companies/Partners', icon: Handshake, route: '/dashboard/admin/companies' },
         { path: 'internships', label: 'Internships', icon: Briefcase, route: '/dashboard/admin/internships' },
         { path: 'validation', label: 'Validation', icon: CheckSquare, route: '/dashboard/admin/validation' },
+        { path: 'skills', label: 'Skill Verification', icon: Award, route: '/dashboard/admin/skills' },
         { path: 'reports', label: 'Reports', icon: BarChart2, route: '/dashboard/admin/reports' },
         { path: 'settings', label: 'Settings', icon: Settings, route: '/dashboard/admin/settings' }
     ];
@@ -27,9 +30,8 @@ const AdminSidebar = ({ activePath }) => {
     return (
         <aside className="global-admin-sidebar">
             <div className="sidebar-top-section">
-                <div className="admin-logo">
-                    <h2>Stag.io</h2>
-                    <span>UNIVERSITY ADMIN</span>
+                <div className="admin-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+                    <img src={logo} alt="Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
                 </div>
                 
                 <nav className="sidebar-main-nav">

@@ -1,12 +1,23 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --primary: #9e59ff;
+  --secondary: #ff1b90;
+  --bg-darker: #050505;
+  --bg-dark: #0f0f13;
+  --bg-light: #1a1a2e;
+  --text-primary: #ffffff;
+  --text-secondary: #8892b0;
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --shadow-premium: 0 20px 40px rgba(0, 0, 0, 0.4);
+  --glow-purple: 0 0 20px rgba(158, 89, 255, 0.3);
+
+  font-family: 'Outfit', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0f0f13;
-  /* Deep dark background matching Navbar theme */
+  color-scheme: dark;
+  color: var(--text-primary);
+  background-color: var(--bg-darker);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -22,18 +33,13 @@ body,
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  background-color: #050505;
+  background-color: var(--bg-darker);
 }
 
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
-}
-
-body {
-  min-height: 100vh;
-  display: block;
-  /* Standard flow */
+  -webkit-overflow-scrolling: touch;
 }
 
 h1 {
@@ -41,20 +47,46 @@ h1 {
   line-height: 1.1;
 }
 
-/* Scrollbar styling */
+/* --- Premium Signature Scrollbar --- */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f0f13;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2d2d3a;
-  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(5px);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f50;
+  background: linear-gradient(180deg, var(--primary), var(--secondary));
+  box-shadow: 0 0 15px rgba(158, 89, 255, 0.4);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(158, 89, 255, 0.2) transparent;
+}
+
+/* Premium Utilities */
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #9e59ff, #ff1b90);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

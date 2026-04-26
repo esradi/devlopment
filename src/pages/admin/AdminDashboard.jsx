@@ -12,6 +12,7 @@ import AdminStudents from './AdminStudents';
 import AdminCompanies from './AdminCompanies';
 import AdminInternships from './AdminInternships';
 import AdminValidation from './AdminValidation';
+import AdminSkills from './AdminSkills';
 import AdminReports from './AdminReports';
 import AdminSettings from './AdminSettings';
 import './AdminDashboard.css';
@@ -34,29 +35,18 @@ const AdminDashboard = () => {
                         <Search size={18} color="#9ca3af" />
                         <input type="text" placeholder="Search student, company or internship..." />
                     </div>
-                    <div className="header-actions">
-                        <div className="icon-btn position-relative">
-                            <Bell size={20} color="#9ca3af" />
-                            <span className="notification-dot"></span>
-                        </div>
-                        <div className="icon-btn">
-                            <Mail size={20} color="#9ca3af" />
-                        </div>
-                        <div className="profile-dropdown">
-                            <User size={20} color="#9ca3af" />
-                            <span>My Profile</span>
-                        </div>
-                    </div>
+                    {/* Activity indicators are now handled by the global Navbar */}
                 </header>
 
                 {/* Main Content Router */}
-                <div className="admin-page-content" style={{ flex: 1, overflowY: 'auto' }}>
+                <div className="admin-page-content">
                     <Routes>
                         <Route path="/" element={<AdminOverview />} />
                         <Route path="/students" element={<AdminStudents />} />
                         <Route path="/companies" element={<AdminCompanies />} />
                         <Route path="/internships" element={<AdminInternships />} />
                         <Route path="/validation" element={<AdminValidation />} />
+                        <Route path="/skills" element={<AdminSkills />} />
                         <Route path="/reports" element={<AdminReports />} />
                         <Route path="/settings" element={<AdminSettings />} />
                     </Routes>

@@ -163,7 +163,12 @@ const CompanyOffers = ({ userData }) => {
                                 {offer.status === 'draft' ? 'Publish Offer' : 'View Candidates'}
                             </button>
                             <div className="icon-actions">
-                                <button className="icon-btn"><Edit2 size={16} /></button>
+                                <button 
+                                    className="icon-btn" 
+                                    onClick={() => navigate(`/dashboard/company/offer/${offer.id}/edit`)}
+                                >
+                                    <Edit2 size={16} />
+                                </button>
                                 <button className="icon-btn">
                                     {offer.status === 'DRAFT' ? <Trash2 size={16} /> : <MoreVertical size={16} />}
                                 </button>

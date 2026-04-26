@@ -188,6 +188,23 @@ const EditOffer = () => {
                                 />
                             </div>
                         </div>
+
+                        <div className="co-selector-group full-width">
+                            <label>Work Mode</label>
+                            <div className="co-chip-cloud">
+                                {options?.locations?.map(loc => (
+                                    <button 
+                                        type="button"
+                                        key={loc.id}
+                                        className={`co-chip ${formData.location_ids.includes(loc.id) ? 'active' : ''}`}
+                                        onClick={() => toggleSelection('location_ids', loc.id)}
+                                    >
+                                        <CheckCircle2 size={14} className="co-check-icon" />
+                                        {loc.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </motion.div>
 
@@ -199,7 +216,58 @@ const EditOffer = () => {
                     </div>
                     <div className="co-card-body">
                          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>Select skills and domains to refine the matching algorithm.</p>
-                         <div className="co-selector-group">
+                         
+                         <div className="co-grid-2">
+                            <div className="co-selector-group">
+                                <label>Activity Domains</label>
+                                <div className="co-chip-cloud">
+                                    {options?.domains?.map(domain => (
+                                        <button 
+                                            type="button"
+                                            key={domain.id}
+                                            className={`co-chip ${formData.domain_ids.includes(domain.id) ? 'active' : ''}`}
+                                            onClick={() => toggleSelection('domain_ids', domain.id)}
+                                        >
+                                            {domain.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="co-selector-group">
+                                <label>Internship Type</label>
+                                <div className="co-chip-cloud">
+                                    {options?.offer_types?.map(type => (
+                                        <button 
+                                            type="button"
+                                            key={type.id}
+                                            className={`co-chip ${formData.offer_type_ids.includes(type.id) ? 'active' : ''}`}
+                                            onClick={() => toggleSelection('offer_type_ids', type.id)}
+                                        >
+                                            {type.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="co-selector-group mt-4">
+                            <label>Desired Duration</label>
+                            <div className="co-chip-cloud">
+                                {options?.durations?.map(dur => (
+                                    <button 
+                                        type="button"
+                                        key={dur.id}
+                                        className={`co-chip ${formData.duration_ids.includes(dur.id) ? 'active' : ''}`}
+                                        onClick={() => toggleSelection('duration_ids', dur.id)}
+                                    >
+                                        {dur.months} Months
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                         <div className="co-selector-group mt-4">
                             <label className="co-pink-label"><Code size={16} /> Technical Skills</label>
                             <div className="co-chip-cloud">
                                 {options?.skills?.map(skill => (

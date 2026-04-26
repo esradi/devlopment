@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
     Users, 
     Briefcase, 
@@ -7,11 +8,43 @@ import {
     ArrowRight,
     CheckSquare,
     FileText,
-    Zap
+    Zap,
+    Loader2,
+    ChevronRight,
+    Award,
+    BarChart2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { adminService } from '../../services/api';
 import './AdminDashboard.css';
 
 const AdminOverview = () => {
+    const navigate = useNavigate();
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await adminService.getDashboard();
+                setStats(res);
+            } catch (err) {
+                console.error("Failed to fetch admin stats:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="admin-loading-state" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Loader2 className="animate-spin" size={40} color="#9e59ff" />
+            </div>
+        );
+    }
+
     return (
         <div className="admin-dashboard-grid">
             <div className="dashboard-main-col">
@@ -21,21 +54,26 @@ const AdminOverview = () => {
                 </div>
 
                 {/* Stat Cards */}
-                <div className="admin-stats-grid">
-                    <div className="admin-stat-card">
+                <motion.div 
+                    className="admin-stats-grid"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    <motion.div className="admin-stat-card" whileHover={{ translateY: -5 }}>
                         <div className="stat-header">
                             <div className="stat-icon-wrapper purple-bg">
                                 <Users size={18} color="#9e59ff" />
                             </div>
-                            <span className="stat-badge green">+5% Year</span>
+                            <span className="stat-badge green">Total User</span>
                         </div>
                         <div className="stat-body">
                             <span className="stat-label">TOTAL STUDENTS</span>
-                            <h3>1,240</h3>
+                            <h3>{stats?.users?.students || 0}</h3>
                         </div>
-                    </div>
+                    </motion.div>
                     
-                    <div className="admin-stat-card">
+                    <motion.div className="admin-stat-card" whileHover={{ translateY: -5 }}>
                         <div className="stat-header">
                             <div className="stat-icon-wrapper pink-bg">
                                 <Briefcase size={18} color="#ff1b90" />
@@ -43,34 +81,34 @@ const AdminOverview = () => {
                         </div>
                         <div className="stat-body">
                             <span className="stat-label">ACTIVE OFFERS</span>
-                            <h3>86</h3>
+                            <h3>{stats?.offers?.active || 0}</h3>
                         </div>
-                    </div>
-
-                    <div className="admin-stat-card">
+                    </motion.div>
+​
+                    <motion.div className="admin-stat-card" whileHover={{ translateY: -5 }}>
                         <div className="stat-header">
                             <div className="stat-icon-wrapper orange-bg">
                                 <ClipboardList size={18} color="#f59e0b" />
                             </div>
                         </div>
                         <div className="stat-body">
-                            <span className="stat-label">PENDING APPLICATIONS</span>
-                            <h3>215</h3>
+                            <span className="stat-label">PENDING VALIDATIONS</span>
+                            <h3>{stats?.validations?.pending || 0}</h3>
                         </div>
-                    </div>
-
-                    <div className="admin-stat-card">
+                    </motion.div>
+​
+                    <motion.div className="admin-stat-card" whileHover={{ translateY: -5 }}>
                         <div className="stat-header">
                             <div className="stat-icon-wrapper green-bg">
                                 <CheckCircle size={18} color="#10b981" />
                             </div>
                         </div>
                         <div className="stat-body">
-                            <span className="stat-label">VALIDATED</span>
-                            <h3>42 <span className="stat-subtext">this semester</span></h3>
+                            <span className="stat-label">HIRED STUDENTS</span>
+                            <h3>{stats?.applications?.accepted || 0} <span className="stat-subtext">total</span></h3>
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
 
                 {/* Top Partner Companies */}
                 <div className="dashboard-section">
@@ -146,24 +184,39 @@ const AdminOverview = () => {
             <div className="dashboard-right-col">
                 {/* Quick Actions */}
                 <div className="right-panel-section widget-card">
-                    <h3 className="widget-title"><Zap size={18} /> Quick Actions</h3>
+                    <h3 className="widget-title"><Zap size={18} color="#9e59ff" fill="#9e59ff" fillOpacity="0.2" /> Quick Actions</h3>
                     <div className="quick-action-buttons">
-                        <button className="action-btn primary-action">
-                            <CheckSquare size={18} />
-                            <div className="action-text">
-                                <span>Validate Offers</span>
-                                <span className="new-badge">12 new</span>
+                        <button className="action-btn primary-action" onClick={() => navigate('/dashboard/admin/validation')}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div className="action-icon-box">
+                                    <CheckSquare size={18} />
+                                </div>
+                                <div className="action-text">
+                                    <span>Validate Offers</span>
+                                    {stats?.validations?.pending > 0 && <span className="new-badge">{stats.validations.pending} new</span>}
+                                </div>
                             </div>
+                            <ChevronRight size={16} className="action-arrow" />
                         </button>
                         
-                        <button className="action-btn secondary-action">
-                            <CheckCircle size={18} />
-                            <span>Validate Internships</span>
+                        <button className="action-btn secondary-action skills" onClick={() => navigate('/dashboard/admin/skills')}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div className="action-icon-box">
+                                    <Award size={18} />
+                                </div>
+                                <span>Validate Skills</span>
+                            </div>
+                            <ChevronRight size={16} className="action-arrow" />
                         </button>
 
-                        <button className="action-btn secondary-action">
-                            <FileText size={18} color="#f59e0b" />
-                            <span>Internship Reports</span>
+                        <button className="action-btn secondary-action reports" onClick={() => navigate('/dashboard/admin/reports')}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div className="action-icon-box">
+                                    <BarChart2 size={18} />
+                                </div>
+                                <span>Internship Reports</span>
+                            </div>
+                            <ChevronRight size={16} className="action-arrow" />
                         </button>
                     </div>
                 </div>

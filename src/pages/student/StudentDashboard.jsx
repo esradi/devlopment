@@ -50,7 +50,7 @@ const formatDate = (dateString) => {
 const StudentDashboard = ({ setUserRole }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    
+
     // Sync activeTab with URL
     const getTabFromPath = (path) => {
         const parts = path.split('/');
@@ -113,10 +113,10 @@ const StudentDashboard = ({ setUserRole }) => {
                     studentService.getDashboard(),
                     applicationService.getMine()
                 ]);
-                
+
                 // Combine into a usable userData state unifying the stats
                 setUserData({
-                    ...profileRes, 
+                    ...profileRes,
                     dashboardStats: dashboardRes?.stats || {},
                     recentActivity: dashboardRes?.recent_activity || [],
                     completeness: dashboardRes?.profile_completeness || 0
@@ -142,7 +142,7 @@ const StudentDashboard = ({ setUserRole }) => {
         if (recommendation && recommendation.score_breakdown) {
             setMatchBreakdown(recommendation.score_breakdown);
         } else {
-             setMatchBreakdown(null);
+            setMatchBreakdown(null);
         }
     };
 
@@ -317,12 +317,12 @@ const StudentDashboard = ({ setUserRole }) => {
                             animate="visible"
                         >
                             {stats.map((stat, index) => (
-                                <motion.div key={index} className="stat-card" variants={itemVariants}>
+                                <motion.div key={index} className={`stat-card ${stat.label === 'MATCH SCORE' ? 'highlight' : ''}`} variants={itemVariants}>
                                     <div className="stat-header">
                                         <span>{stat.label}</span>
                                         {stat.icon}
                                     </div>
-                                    <div className="stat-value">{stat.value}</div>
+                                    <div className={`stat-value ${stat.label === 'MATCH SCORE' ? 'text-glow' : ''}`}>{stat.value}</div>
                                     <div className={`stat-change ${stat.positive ? 'positive' : 'negative'}`}>
                                         {stat.change}
                                     </div>
@@ -455,7 +455,7 @@ const StudentDashboard = ({ setUserRole }) => {
                                         <Link to="/dashboard/student/applications" className="view-all">View all</Link>
                                     </div>
                                     <div className="pipeline-container">
-                                        {(recentApps || []).slice(0,4).map((app) => {
+                                        {(recentApps || []).slice(0, 4).map((app) => {
                                             const states = ['Applied', 'Review', 'Interview', 'Offer'];
                                             let currentIndex = 0;
                                             if (app.status === 'under review') currentIndex = 1;
@@ -519,20 +519,20 @@ const StudentDashboard = ({ setUserRole }) => {
                         userData={userData}
                     />
                 ) : activeTab === 'challenges' ? (
-                    <StudentChallenges 
-                        userData={userData} 
+                    <StudentChallenges
+                        userData={userData}
                     />
                 ) : activeTab === 'analytics' ? (
-                    <StudentAnalytics 
-                        userData={userData} 
+                    <StudentAnalytics
+                        userData={userData}
                     />
                 ) : activeTab === 'settings' ? (
                     <StudentSettings
                         userData={userData}
                     />
                 ) : activeTab === 'complete-profile' ? (
-                    <CompleteProfile 
-                        userData={userData} 
+                    <CompleteProfile
+                        userData={userData}
                         onSave={() => navigate('/dashboard/student')}
                     />
                 ) : (

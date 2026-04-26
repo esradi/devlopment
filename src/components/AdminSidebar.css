@@ -1,16 +1,25 @@
 .global-admin-sidebar {
-    width: 260px;
-    background-color: #1a1a1a;
+    width: 280px;
+    background-color: #08080c;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    padding: 100px 20px 24px 20px;
+    padding: 110px 20px 24px 20px;
     height: 100vh;
-    position: sticky;
+    position: fixed;
     top: 0;
-    transition: all 0.3s ease;
+    left: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-sizing: border-box;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    z-index: 1000;
+}
+
+.global-admin-sidebar::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
 }
 
 .admin-logo {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Search, 
     Download, 
@@ -8,64 +8,50 @@ import {
     ChevronLeft,
     ChevronRight,
     UserPlus,
-    ClipboardList
+    ClipboardList,
+    Loader2
 } from 'lucide-react';
+import { adminService } from '../../services/api';
 import './AdminStudents.css';
 
 const AdminStudents = () => {
+    const [students, setStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
-    const [levelFilter, setLevelFilter] = useState('M1');
+    const [levelFilter, setLevelFilter] = useState('All');
 
-    // Mock data based on design
-    const studentsData = [
-        {
-            id: '#250102',
-            name: 'Julianne D. Morel',
-            avatar: 'https://i.pravatar.cc/150?u=julianne',
-            program: 'Computer Science',
-            level: 'MASTER 1',
-            email: 'j.morel@university.edu',
-            status: 'SEARCHING',
-            company: '—',
-            apps: 12
-        },
-        {
-            id: '#250103',
-            name: 'Alex Kendrick',
-            avatar: 'https://i.pravatar.cc/150?u=alex',
-            program: 'UX/UI Design',
-            level: 'LICENSE 3',
-            email: 'a.kendrick@university.edu',
-            status: 'IN INTERNSHIP',
-            company: 'Stag.io Inc.',
-            apps: 4
-        },
-        {
-            id: '#250104',
-            name: 'Riley Watson',
-            avatar: 'https://i.pravatar.cc/150?u=riley',
-            program: 'Data Science',
-            level: 'MASTER 2',
-            email: 'r.watson@university.edu',
-            status: 'COMPLETED',
-            company: 'CyberCore Solutions',
-            apps: 1
-        }
-    ];
+    useEffect(() => {
+        const fetchStudents = async () => {
+            try {
+                const res = await adminService.getUsers();
+                setStudents(res || []);
+            } catch (err) {
+                console.error("Failed to fetch students:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStudents();
+    }, []);
 
-    const getStatusStyle = (status) => {
-        switch(status) {
-            case 'SEARCHING':
-                return 'status-searching';
-            case 'IN INTERNSHIP':
-                return 'status-internship';
-            case 'COMPLETED':
-                return 'status-completed';
-            default:
-                return '';
-        }
+    const getStatusStyle = (isActive) => {
+        return isActive ? 'status-internship' : 'status-completed';
     };
+
+    const filteredStudents = students.filter(student => {
+        const matchesSearch = (student.first_name + ' ' + student.last_name).toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'All' || (statusFilter === 'Active' && student.is_active) || (statusFilter === 'Inactive' && !student.is_active);
+        return matchesSearch && matchesStatus;
+    });
+
+    if (loading) {
+        return (
+            <div className="admin-loading-state" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Loader2 className="animate-spin" size={40} color="#9e59ff" />
+            </div>
+        );
+    }
 
     return (
         <div className="admin-students-page">
@@ -73,23 +59,7 @@ const AdminStudents = () => {
             <div className="students-header">
                 <div className="students-title-area">
                     <h1>Students</h1>
-                    <p>Manage your university's students and their internship status.</p>
-                </div>
-                <div className="students-header-controls">
-                    <div className="control-group">
-                        <label>ACADEMIC YEAR</label>
-                        <select className="dark-select">
-                            <option>2025 / 2026</option>
-                            <option>2024 / 2025</option>
-                        </select>
-                    </div>
-                    <div className="control-group">
-                        <label>DEPARTMENT</label>
-                        <select className="dark-select">
-                            <option>All Programs</option>
-                            <option>Computer Science</option>
-                        </select>
-                    </div>
+                    <p>Manage your university's students and their account status.</p>
                 </div>
             </div>
 
@@ -101,7 +71,7 @@ const AdminStudents = () => {
                     </div>
                     <div className="stat-info">
                         <span className="stat-label">Total Students</span>
-                        <h2>1,240</h2>
+                        <h2>{students.length}</h2>
                     </div>
                 </div>
 
@@ -110,26 +80,8 @@ const AdminStudents = () => {
                         <UserSearch size={20} />
                     </div>
                     <div className="stat-info">
-                        <span className="stat-label">Searching</span>
-                        <h2>520</h2>
-                    </div>
-                </div>
-
-                <div className="students-stat-card pipeline-card">
-                    <div className="pipeline-header">
-                        <span className="stat-label">Internship Pipeline</span>
-                        <TrendingUp size={16} color="#9e59ff" />
-                    </div>
-                    <div className="pipeline-numbers">
-                        <div className="pipeline-stat">
-                            <h3>430</h3>
-                            <span>IN PROGRESS</span>
-                        </div>
-                        <div className="pipeline-divider"></div>
-                        <div className="pipeline-stat completed">
-                            <h3>290</h3>
-                            <span>COMPLETED</span>
-                        </div>
+                        <span className="stat-label">Active Accounts</span>
+                        <h2>{students.filter(s => s.is_active).length}</h2>
                     </div>
                 </div>
             </div>
@@ -147,25 +99,13 @@ const AdminStudents = () => {
                 </div>
 
                 <div className="segmented-control status-filters">
-                    {['All', 'Searching', 'In Internship', 'Completed'].map(status => (
+                    {['All', 'Active', 'Inactive'].map(status => (
                         <button 
                             key={status}
                             className={`segment-btn ${statusFilter === status ? 'active' : ''}`}
                             onClick={() => setStatusFilter(status)}
                         >
                             {status}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="segmented-control level-filters">
-                    {['L3', 'M1', 'M2'].map(level => (
-                        <button 
-                            key={level}
-                            className={`segment-btn ${levelFilter === level ? 'active' : ''}`}
-                            onClick={() => setLevelFilter(level)}
-                        >
-                            {level}
                         </button>
                     ))}
                 </div>
@@ -182,45 +122,41 @@ const AdminStudents = () => {
                     <thead>
                         <tr>
                             <th>STUDENT</th>
-                            <th>PROGRAM/LEVEL</th>
+                            <th>DOMAIN/SPECIALITY</th>
                             <th>EMAIL</th>
                             <th>STATUS</th>
-                            <th>COMPANY</th>
-                            <th>APPS</th>
+                            <th>JOINED</th>
                             <th>ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {studentsData.map((student, idx) => (
-                            <tr key={idx}>
+                        {filteredStudents.map((student) => (
+                            <tr key={student.id}>
                                 <td>
                                     <div className="student-cell">
-                                        <img src={student.avatar} alt={student.name} className="student-avatar" />
+                                        <div className="logo-placeholder" style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                            {student.first_name?.[0]}{student.last_name?.[0]}
+                                        </div>
                                         <div className="student-ident">
-                                            <strong>{student.name}</strong>
-                                            <span>ID: {student.id}</span>
+                                            <strong>{student.first_name} {student.last_name}</strong>
+                                            <span>ID: #{student.id}</span>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
                                     <div className="program-cell">
-                                        <strong>{student.program}</strong>
-                                        <span>{student.level}</span>
+                                        <strong>{student.domain || 'N/A'}</strong>
+                                        <span>{student.speciality || 'N/A'}</span>
                                     </div>
                                 </td>
                                 <td className="email-cell">{student.email}</td>
                                 <td>
-                                    <span className={`status-pill ${getStatusStyle(student.status)}`}>
+                                    <span className={`status-pill ${getStatusStyle(student.is_active)}`}>
                                         <span className="status-dot"></span>
-                                        {student.status}
+                                        {student.is_active ? 'ACTIVE' : 'INACTIVE'}
                                     </span>
                                 </td>
-                                <td className="company-cell">{student.company}</td>
-                                <td>
-                                    <div className="apps-cell">
-                                        {student.apps} <ClipboardList size={14} className="app-icon" />
-                                    </div>
-                                </td>
+                                <td className="company-cell">{new Date(student.date_joined).toLocaleDateString()}</td>
                                 <td>
                                     <button className="action-view-btn">
                                         View profile
@@ -230,26 +166,7 @@ const AdminStudents = () => {
                         ))}
                     </tbody>
                 </table>
-
-                {/* Footer Pagination */}
-                <div className="table-footer">
-                    <span className="showing-text">Showing 1-10 of 1,240 students</span>
-                    <div className="pagination">
-                        <button className="page-btn"><ChevronLeft size={16} /></button>
-                        <button className="page-btn active">1</button>
-                        <button className="page-btn">2</button>
-                        <button className="page-btn">3</button>
-                        <span className="page-ellipsis">...</span>
-                        <button className="page-btn">124</button>
-                        <button className="page-btn"><ChevronRight size={16} /></button>
-                    </div>
-                </div>
             </div>
-
-            {/* Floating Action Button */}
-            <button className="fab-btn">
-                <UserPlus size={24} />
-            </button>
         </div>
     );
 };

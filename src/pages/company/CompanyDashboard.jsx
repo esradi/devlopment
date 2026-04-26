@@ -212,8 +212,13 @@ const CompanyDashboard = ({ setUserRole }) => {
                             </header>
 
                             {/* Stat Cards */}
-                            <div className="stats-row">
-                                <div className="stat-pille">
+                            <motion.div 
+                                className="stats-row"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.1 }}
+                            >
+                                <motion.div className="stat-pille" whileHover={{ translateY: -5 }}>
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(158, 89, 255, 0.15)', color: '#9e59ff' }}>
                                             <Briefcase size={24} />
@@ -222,8 +227,8 @@ const CompanyDashboard = ({ setUserRole }) => {
                                     </div>
                                     <span className="stat-label">Active Offers</span>
                                     <span className="stat-value">{dashboardStats.active_offers || 0}</span>
-                                </div>
-                                <div className="stat-pille">
+                                </motion.div>
+                                <motion.div className="stat-pille" whileHover={{ translateY: -5 }}>
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(255, 27, 144, 0.15)', color: '#ff1b90' }}>
                                             <Users size={24} />
@@ -232,8 +237,8 @@ const CompanyDashboard = ({ setUserRole }) => {
                                     </div>
                                     <span className="stat-label">Total Applications</span>
                                     <span className="stat-value">{dashboardStats.total_applications || 0}</span>
-                                </div>
-                                <div className="stat-pille">
+                                </motion.div>
+                                <motion.div className="stat-pille" whileHover={{ translateY: -5 }}>
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
                                             <FileText size={24} />
@@ -242,8 +247,8 @@ const CompanyDashboard = ({ setUserRole }) => {
                                     </div>
                                     <span className="stat-label">Pending Review</span>
                                     <span className="stat-value">{dashboardStats.pending_review || 0}</span>
-                                </div>
-                                <div className="stat-pille">
+                                </motion.div>
+                                <motion.div className="stat-pille highlight-success" whileHover={{ translateY: -5 }}>
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
                                             <CheckCircle2 size={24} />
@@ -252,8 +257,8 @@ const CompanyDashboard = ({ setUserRole }) => {
                                     </div>
                                     <span className="stat-label">Accepted</span>
                                     <span className="stat-value">{dashboardStats.accepted_applications || 0}</span>
-                                </div>
-                            </div>
+                                </motion.div>
+                            </motion.div>
 
                             {/* Recent Offers */}
                             <section className="recent-offers-section">

@@ -11,7 +11,8 @@ from .views import (
     AdminCompanyListView,
     AdminCompanyVerifyView,
     AdminSpecialitiesListView,
-    PortfolioSubmissionReviewView
+    PortfolioSubmissionReviewView,
+    AdminPortfolioSubmissionListView
 )
 
 urlpatterns = [
@@ -25,6 +26,7 @@ urlpatterns = [
     path('users/<int:pk>/status/', AdminUserStatusView.as_view(), name='admin-user-status'),
     path('companies/', AdminCompanyListView.as_view(), name='admin-companies-list'),
     path('companies/<int:pk>/verify/', AdminCompanyVerifyView.as_view(), name='admin-company-verify'),
+    path('portfolios/', AdminPortfolioSubmissionListView.as_view(), name='admin-portfolios'),
     path('specialities/', AdminSpecialitiesListView.as_view(), name='admin-specialities-list'),
     path('portfolio/<int:pk>/review/', PortfolioSubmissionReviewView.as_view(), name='admin-portfolio-review'),
 ]

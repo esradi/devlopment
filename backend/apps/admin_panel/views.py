@@ -20,7 +20,8 @@ from .serializers import (
     AdminCompanyListSerializer,
     AdminCompanyVerifySerializer,
     AdminDomainTreeSerializer,
-    PortfolioSubmissionReviewSerializer
+    PortfolioSubmissionReviewSerializer,
+    AdminPortfolioSubmissionListSerializer
 )
 from apps.specialities.models import Domain, PortfolioSubmission
 
@@ -229,3 +230,9 @@ class PortfolioSubmissionReviewView(APIView):
         submission.save()
             
         return Response({"message": f"Portfolio submission {status_val} successfully."})
+
+class AdminPortfolioSubmissionListView(generics.ListAPIView):
+    #GET /api/admin/portfolios/ List all skill verification portfolio submissions
+    permission_classes = [permissions.IsAdminUser]
+    serializer_class = AdminPortfolioSubmissionListSerializer
+    queryset = PortfolioSubmission.objects.all().select_related('student__user', 'skill')

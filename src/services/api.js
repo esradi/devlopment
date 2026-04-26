@@ -20,7 +20,6 @@ export const api = {
         if (!response.ok) {
             if (response.status === 401) {
                 console.warn('Unauthorized access - redirecting to login');
-                // Optional: handle redirection or token refresh here
             }
             throw new Error(`API Error: ${response.status}`);
         }
@@ -93,7 +92,7 @@ export const studentService = {
     getDashboard: () => api.get('/student/dashboard/'),
     getAnalytics: () => api.get('/student/analytics/'),
     getRecommendations: () => api.get('/student/recommendations/'),
-    getCompetencies: () => api.get('/student/competencies/'),
+    getCompetencies: () => api.get('/student/skills/'),
     uploadCV: (formData) => {
         const token = localStorage.getItem('access_token');
         return fetch(`${API_BASE_URL}/student/profile/upload-cv/`, {
@@ -120,9 +119,9 @@ export const companyService = {
     getDashboard: () => api.get('/company/dashboard/'),
     getOffers: () => api.get('/offers/mine/'),
     createOffer: (data) => api.post('/offers/', data),
-    getOfferOptions: () => api.get('/offers/metadata/'),
+    getOfferOptions: () => api.get('/offers/options/'),
     getOfferDetails: (id) => api.get(`/offers/${id}/`),
-    updateOffer: (id, data) => api.put(`/offers/${id}/`, data),
+    updateOffer: (id, data) => api.put(`/offers/${id}/`),
     deleteOffer: (id) => api.delete(`/offers/${id}/`),
     getOfferApplicants: (offerId) => api.get(`/applications/offer/${offerId}/`),
     getApplications: (params = {}) => api.get('/applications/company/list/', params),
@@ -130,10 +129,10 @@ export const companyService = {
     updateApplicationStatus: (id, status) => {
         if (status === 'accepted') return api.post(`/applications/${id}/accept/`);
         if (status === 'rejected') return api.post(`/applications/${id}/refuse/`);
-        return api.post(`/applications/${id}/view/`); // Example of other action
+        return api.post(`/applications/${id}/view/`);
     },
-    getProfile: () => api.get('/company/profile/'),
-    updateProfile: (data) => api.patch('/company/profile/', data),
+    getProfile: () => api.get('/profile/'),
+    updateProfile: (data) => api.patch('/profile/update/', data),
     generateConvention: (id) => api.post(`/applications/${id}/generate-convention/`),
 };
 
@@ -150,7 +149,7 @@ export const conventionService = {
 export const offerService = {
     getAll: () => api.get('/offers/'),
     getDetails: (id) => api.get(`/offers/${id}/`),
-    toggleFavorite: (id) => api.post(`/offers/${id}/toggle-favorite/`),
+    toggleFavorite: (id) => api.post(`/offers/${id}/favorite/`),
 };
 
 export const applicationService = {
@@ -177,5 +176,26 @@ export const interviewService = {
     delete: (id) => api.delete(`/interviews/${id}/`),
 };
 
-// Alias for backwards compatibility if needed
+export const notificationService = {
+    getAll: () => api.get('/notifications/'),
+    getUnreadCount: () => api.get('/notifications/unread_count/'),
+    markRead: (id) => api.post(`/notifications/${id}/mark_read/`),
+    markAllRead: () => api.post('/notifications/mark_all_read/'),
+};
+
+export const adminService = {
+    getDashboard: () => api.get('/admin/dashboard/'),
+    getUsers: () => api.get('/admin/users/'),
+    updateUserStatus: (id, data) => api.patch(`/admin/users/${id}/status/`, data),
+    getCompanies: () => api.get('/admin/companies/'),
+    verifyCompany: (id, data) => api.patch(`/admin/companies/${id}/verify/`, data),
+    getValidations: () => api.get('/admin/validations/'),
+    getValidationDetails: (id) => api.get(`/admin/validations/${id}/`),
+    approveValidation: (id, data) => api.post(`/admin/validations/${id}/approve/`, data),
+    rejectValidation: (id, data) => api.post(`/admin/validations/${id}/reject/`),
+    getPortfolios: () => api.get('/admin/portfolios/'),
+    reviewPortfolio: (id, data) => api.post(`/admin/portfolio/${id}/review/`, data),
+    getSpecialities: () => api.get('/admin/specialities/'),
+};
+
 export const dashboardService = studentService;

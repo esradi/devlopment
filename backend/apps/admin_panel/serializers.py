@@ -223,3 +223,16 @@ class PortfolioSubmissionReviewSerializer(serializers.ModelSerializer):
         if value not in ['approved', 'rejected']:
             raise serializers.ValidationError("Status must be 'approved' or 'rejected'.")
         return value
+
+class AdminPortfolioSubmissionListSerializer(serializers.ModelSerializer):
+    #used by GET /api/admin/portfolios/
+    student_name = serializers.SerializerMethodField()
+    skill_name = serializers.CharField(source='skill.name', read_only=True)
+
+    class Meta:
+        model = PortfolioSubmission
+        fields = ['id', 'student_name', 'skill_name', 'portfolio_url', 'status', 'submitted_at']
+        read_only_fields = fields
+
+    def get_student_name(self, obj):
+        return f"{obj.student.user.first_name} {obj.student.user.last_name}"
