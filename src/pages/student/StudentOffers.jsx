@@ -39,7 +39,7 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
     useEffect(() => {
         const fetchAllOffers = async () => {
             try {
-                const data = await offerService.getOffers();
+                const data = await offerService.getAll();
                 setAllOffers(data?.results || data || []);
             } catch (error) {
                 console.error("Failed to fetch all offers:", error);

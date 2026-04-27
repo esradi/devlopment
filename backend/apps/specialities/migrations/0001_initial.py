@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
+        ('accounts', '0001_initial'),
     ]
 
     operations = [
@@ -47,54 +48,6 @@ class Migration(migrations.Migration):
             options={
                 'db_table': 'specialities_competency',
                 'unique_together': {('name', 'speciality')},
-            },
-        ),
-         migrations.CreateModel(
-            name='CompetencyQuiz',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=255)),
-                ('instructions', models.TextField(blank=True, null=True)),
-                ('time_limit_minutes', models.IntegerField(default=15)),
-                ('difficulty', models.CharField(choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('advanced', 'Advanced'), ('expert', 'Expert')], default='intermediate', max_length=20)),
-                ('competency', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='quiz', to='specialities.competency')),
-            ],
-            options={
-                'db_table': 'specialities_competencyquiz',
-            },
-        ),
-        migrations.CreateModel(
-            name='QuizQuestion',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('question_text', models.TextField()),
-                ('option_a', models.CharField(max_length=255)),
-                ('option_b', models.CharField(max_length=255)),
-                ('option_c', models.CharField(max_length=255)),
-                ('option_d', models.CharField(max_length=255)),
-                ('correct', models.CharField(choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')], max_length=1)),
-                ('explanation', models.TextField(blank=True, null=True)),
-                ('order', models.IntegerField(default=0)),
-                ('quiz', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='questions', to='specialities.competencyquiz')),
-            ],
-            options={
-                'db_table': 'specialities_quizquestion',
-                'ordering': ['order'],
-            },
-        ),
-        migrations.CreateModel(
-            name='QuizSubmission',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('answers', models.JSONField(default=dict)),
-                ('score', models.FloatField(default=0.0)),
-                ('passed', models.BooleanField(default=False)),
-                ('submitted_at', models.DateTimeField(auto_now_add=True)),
-                ('quiz', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='submissions', to='specialities.competencyquiz')),
-                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='quiz_submissions', to='accounts.student')),
-            ],
-            options={
-                'db_table': 'specialities_quizsubmission',
             },
         ),
     ]

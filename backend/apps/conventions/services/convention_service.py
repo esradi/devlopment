@@ -11,7 +11,7 @@ class ConventionService:
         """
         Génère une convention à partir d'une candidature acceptée
         """
-        from ..models import Convention
+        from apps.conventions.models import Convention
         
         # Determine compensation from offer
         has_salary = bool(application.offer.salary and application.offer.salary.strip() and application.offer.salary.lower() != 'unpaid')
