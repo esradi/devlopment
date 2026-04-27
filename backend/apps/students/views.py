@@ -815,8 +815,8 @@ class StudentApplicationStatsView(APIView):
             'acceptance_rate': acceptance_rate,
         })
 
-from apps.companyapp.models import Interview
-from apps.companyapp.serializers import InterviewSerializer
+from apps.company.models import Interview
+from apps.company.serializers import InterviewSerializer
 
 class StudentInterviewListView(APIView):
     #GET /api/student/interviews/

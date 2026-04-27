@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from apps.companyapp.models import Interview, InterviewReminder
+from apps.company.models import Interview, InterviewReminder
 
 class ApplicationCompanySerializer(serializers.Serializer):
     id = serializers.IntegerField(source='offer.company.id')

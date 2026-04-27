@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from apps.companyapp.models import Interview, StudentInterviewFeedback
+from apps.company.models import Interview, StudentInterviewFeedback
 from django.db.models import Count, Avg
 from django.http import HttpResponse
 
