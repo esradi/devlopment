@@ -3,11 +3,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.utils import timezone
 from .models import Offer, FavoriteOffer, Location, OfferType, DurationOption
 from apps.specialities.models import Domain, Skill
 from .serializers import OfferSerializer, OfferStatusUpdateSerializer
 from apps.api.permissions import IsCompany, IsStudent, IsOwnerOrAdmin
+from apps.matching.services import MatchingService
 
 class OfferListCreateView(APIView):
     def get_permissions(self):
@@ -670,4 +672,154 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             'acceptance_rate': round(accepted / total * 100, 1) if total > 0 else 0.0,
             'top_offers':      list(top_offers),
         })
+
+
+class OfferSearchView(APIView):
+    """
+    Advanced Offer Search with deep filtering and sorting
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        qs = Offer.objects.filter(status='active').distinct()
+        
+        # 1. Text Query
+        query = request.query_params.get('query')
+        if query:
+            qs = qs.filter(
+                Q(title__icontains=query) | 
+                Q(description__icontains=query) |
+                Q(company__company_name__icontains=query)
+            )
+
+        # 2. Category Filters
+        domain = request.query_params.get('domain')
+        if domain:
+            qs = qs.filter(domains__name__iexact=domain)
+            
+        location = request.query_params.get('location')
+        if location:
+            qs = qs.filter(Q(wilaya__icontains=location) | Q(locations__name__icontains=location))
+
+        # 3. Attributes
+        remote = request.query_params.get('remote')
+        if remote:
+            qs = qs.filter(offer_types__name__iexact='Remote')
+            
+        compensation = request.query_params.get('compensation')
+        if compensation == 'true':
+            qs = qs.filter(is_paid=True)
+
+        # 4. Duration
+        dur_min = request.query_params.get('duration_min')
+        dur_max = request.query_params.get('duration_max')
+        if dur_min:
+            qs = qs.filter(durations__months__gte=dur_min)
+        if dur_max:
+            qs = qs.filter(durations__months__lte=dur_max)
+
+        # 5. Skills
+        skills = request.query_params.get('skills')
+        if skills:
+            skill_list = skills.split(',')
+            qs = qs.filter(skills__name__in=skill_list)
+
+        # Sorting
+        sort_by = request.query_params.get('sort_by', 'created_at')
+        if sort_by == 'deadline':
+            qs = qs.order_by('deadline')
+        elif sort_by == 'created_at':
+            qs = qs.order_by('-created_at')
+        
+        serializer = OfferSerializer(qs, many=True, context={'request': request})
+        data = serializer.data
+
+        # Custom Sorting for Match Score
+        if sort_by == 'match_score' and request.user.role == 'student':
+            data = sorted(data, key=lambda x: x.get('match_score', 0), reverse=True)
+
+        return Response({'count': len(data), 'results': data})
+
+class OfferRecommendedView(APIView):
+    """
+    Personalized recommendations for the logged-in student
+    """
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        # We use the pre-calculated match scores if they exist
+        from apps.matching.models import MatchScore
+        
+        student = request.user.student_profile
+        recommendations = MatchScore.objects.filter(
+            student=student, 
+            offer__status='active'
+        ).select_related('offer', 'offer__company').order_by('-total_score')[:15]
+
+        # If no scores exist, return the 15 most recent active offers
+        if not recommendations.exists():
+            recent = Offer.objects.filter(status='active').order_by('-created_at')[:15]
+            serializer = OfferSerializer(recent, many=True, context={'request': request})
+            return Response({'personalized_recommendations': [{'offer': o} for o in serializer.data]})
+
+        results = []
+        for ms in recommendations:
+            offer_data = OfferSerializer(ms.offer, context={'request': request}).data
+            results.append({
+                'offer': offer_data,
+                'match_score': ms.total_score,
+                'match_reasons': self._generate_reasons(ms.breakdown)
+            })
+            
+        return Response({'personalized_recommendations': results})
+
+    def _generate_reasons(self, breakdown):
+        reasons = []
+        if breakdown.get('skills', 0) > 70:
+            reasons.append("Excellente correspondance de compétences")
+        if breakdown.get('speciality', 0) > 50:
+            reasons.append("Correspond à votre domaine d'étude")
+        if breakdown.get('location', 0) == 100:
+            reasons.append("Proche de votre localisation")
+        return reasons
+
+class OfferSimilarView(APIView):
+    """
+    Offers similar to a specific one
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        base_offer = get_object_or_404(Offer, pk=pk)
+        
+        # Criteria: same domains or same company, excluding itself
+        similar = Offer.objects.filter(status='active').filter(
+            Q(domains__in=base_offer.domains.all()) |
+            Q(company=base_offer.company)
+        ).exclude(id=base_offer.id).distinct()[:5]
+        
+        serializer = OfferSerializer(similar, many=True, context={'request': request})
+        return Response({'similar_offers': serializer.data})
+
+class OfferTrendingView(APIView):
+    """
+    Popular offers based on application count
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Trending = Active offers with most applications
+        trending = Offer.objects.filter(status='active')\
+            .annotate(app_count=Count('applications'))\
+            .order_by('-app_count')[:10]
+            
+        serializer = OfferSerializer(trending, many=True, context={'request': request})
+        results = []
+        for i, o in enumerate(serializer.data):
+            results.append({
+                **o,
+                'trending_score': 100 - (i * 5) # Placeholder score
+            })
+            
+        return Response({'trending': results})
 
