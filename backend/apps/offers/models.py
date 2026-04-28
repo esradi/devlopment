@@ -24,6 +24,7 @@ class Offer(models.Model):
         ('closed', 'Closed'),
         ('draft', 'Draft'),
         ('filled', 'Filled'),
+        ('archived', 'Archived'),
     ]
     
     company = models.ForeignKey('accounts.Company', on_delete=models.CASCADE, related_name='offers')
@@ -128,6 +129,7 @@ class Application(models.Model):
         ('pending', 'Pending'),
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
+        ('withdrawn', 'Withdrawn'),
     ]
     student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE, related_name='applications')
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='applications')
@@ -144,3 +146,16 @@ class Application(models.Model):
 
     def __str__(self):
         return f"{self.student} -> {self.offer.title} ({self.get_status_display()})"
+
+
+class ApplicationEvent(models.Model):
+    # Tracks the lifecycle of a specific application
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='timeline')
+    event_type = models.CharField(max_length=50) # submitted, viewed, accepted, refused, withdrawn
+    description = models.TextField()
+    data = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_applicationevent'
+        ordering = ['-created_at']

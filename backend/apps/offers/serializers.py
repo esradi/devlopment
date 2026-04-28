@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Offer, Location, OfferType, DurationOption,
-    FavoriteOffer, Application, OfferEvent, OfferReport
+    FavoriteOffer, Application, OfferEvent, OfferReport, ApplicationEvent
 )
 from apps.specialities.models import Domain, Skill
 from apps.specialities.serializers import DomainSerializer, SkillSerializer
@@ -68,6 +68,11 @@ class OfferReportSerializer(serializers.ModelSerializer):
         fields = ['id', 'offer', 'reason', 'description', 'created_at']
         read_only_fields = ['reporter']
         read_only_fields = ['company', 'created_at', 'updated_at']
+
+class ApplicationEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicationEvent
+        fields = ['id', 'event_type', 'description', 'data', 'created_at']
 
     def get_is_favorite(self, obj):
         user = self.context.get('request').user if self.context.get('request') else None

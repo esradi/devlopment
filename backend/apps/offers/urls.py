@@ -22,7 +22,15 @@ from .views import (
     OfferBoostView,
     OfferMatchPreviewView,
     OfferReportView,
-    AdminFlaggedOfferView
+    AdminFlaggedOfferView,
+    OfferCloseView,
+    OfferReopenView,
+    OfferArchiveView,
+    ApplicationMineView,
+    ApplicationPendingView,
+    ApplicationAcceptedView,
+    ApplicationWithdrawView,
+    ApplicationTimelineView,
 )
 
 router = DefaultRouter()
@@ -55,4 +63,16 @@ urlpatterns = [
     path('offers/<int:pk>/report/', OfferReportView.as_view(), name='offer_report'),
     path('admin/offers/flagged/', AdminFlaggedOfferView.as_view(), name='admin_flagged_offers'),
     path('admin/offers/flagged/<int:pk>/', AdminFlaggedOfferView.as_view(), name='admin_flagged_offer_action'),
+
+    # Offer Lifecycle
+    path('offers/<int:pk>/close/', OfferCloseView.as_view(), name='offer_close'),
+    path('offers/<int:pk>/reopen/', OfferReopenView.as_view(), name='offer_reopen'),
+    path('offers/<int:pk>/archive/', OfferArchiveView.as_view(), name='offer_archive'),
+
+    # Student Application Dashboard
+    path('applications/mine/', ApplicationMineView.as_view(), name='applications_mine'),
+    path('applications/pending/', ApplicationPendingView.as_view(), name='applications_pending'),
+    path('applications/accepted/', ApplicationAcceptedView.as_view(), name='applications_accepted'),
+    path('applications/<int:pk>/withdraw/', ApplicationWithdrawView.as_view(), name='application_withdraw'),
+    path('applications/<int:pk>/timeline/', ApplicationTimelineView.as_view(), name='application_timeline'),
 ]

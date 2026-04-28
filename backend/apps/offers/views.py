@@ -7,10 +7,13 @@ from django.db.models import Q, Count
 from django.utils import timezone
 from .models import Offer, FavoriteOffer, Location, OfferType, DurationOption
 from apps.specialities.models import Domain, Skill
-from .serializers import OfferSerializer, OfferStatusUpdateSerializer
+from .serializers import (
+    OfferSerializer, OfferStatusUpdateSerializer, 
+    ApplicationEventSerializer
+)
 from apps.api.permissions import IsCompany, IsStudent, IsOwnerOrAdmin
 from apps.matching.services import MatchingService
-from .models import OfferEvent, OfferView, OfferReport
+from .models import OfferEvent, OfferView, OfferReport, ApplicationEvent
 from .utils import log_offer_event
 
 class OfferListCreateView(APIView):
@@ -969,6 +972,116 @@ class OfferMatchPreviewView(APIView):
             'top_candidate_previews': top_serializers,
             'ai_recommendations': suggestions
         })
+
+
+class OfferCloseView(APIView):
+    """
+    Close an offer (recruitment finished)
+    """
+    permission_classes = [IsOwnerOrAdmin]
+
+    def post(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        self.check_object_permissions(request, offer)
+        
+        reason = request.data.get('reason', 'Recruitment finished')
+        offer.status = 'closed'
+        offer.save()
+        
+        log_offer_event(offer, 'status_change', f"Offer closed: {reason}")
+        return Response({"message": "Offer closed successfully."})
+
+class OfferReopenView(APIView):
+    """
+    Reopen a closed offer
+    """
+    permission_classes = [IsOwnerOrAdmin]
+
+    def post(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        self.check_object_permissions(request, offer)
+        
+        new_deadline = request.data.get('new_deadline')
+        if not new_deadline:
+            return Response({"error": "new_deadline is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        offer.status = 'active'
+        offer.deadline = new_deadline
+        offer.save()
+        
+        log_offer_event(offer, 'status_change', "Offer reopened with a new deadline.")
+        return Response({"message": "Offer reopened successfully."})
+
+class OfferArchiveView(APIView):
+    """
+    Archive an offer (hidden from search)
+    """
+    permission_classes = [IsOwnerOrAdmin]
+
+    def post(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        self.check_object_permissions(request, offer)
+        
+        offer.status = 'archived'
+        offer.save()
+        
+        log_offer_event(offer, 'status_change', "Offer archived.")
+        return Response({"message": "Offer archived successfully."})
+
+
+def log_application_event(application, event_type, description, data=None):
+    from .models import ApplicationEvent
+    return ApplicationEvent.objects.create(
+        application=application,
+        event_type=event_type,
+        description=description,
+        data=data
+    )
+
+class ApplicationMineView(APIView):
+    permission_classes = [IsStudent]
+    def get(self, request):
+        apps = Application.objects.filter(student=request.user.student_profile)
+        serializer = ApplicationSerializer(apps, many=True, context={'request': request})
+        return Response(serializer.data)
+
+class ApplicationPendingView(APIView):
+    permission_classes = [IsStudent]
+    def get(self, request):
+        apps = Application.objects.filter(student=request.user.student_profile, status='pending')
+        serializer = ApplicationSerializer(apps, many=True, context={'request': request})
+        return Response(serializer.data)
+
+class ApplicationAcceptedView(APIView):
+    permission_classes = [IsStudent]
+    def get(self, request):
+        apps = Application.objects.filter(student=request.user.student_profile, status='accepted')
+        serializer = ApplicationSerializer(apps, many=True, context={'request': request})
+        return Response(serializer.data)
+
+class ApplicationWithdrawView(APIView):
+    permission_classes = [IsStudent]
+    def post(self, request, pk):
+        app = get_object_or_404(Application, pk=pk, student=request.user.student_profile)
+        reason = request.data.get('reason', 'Student withdrew application')
+        app.status = 'withdrawn'
+        app.save()
+        log_application_event(app, 'withdrawn', f"Application withdrawn by student: {reason}")
+        return Response({"message": "Application withdrawn successfully."})
+
+class ApplicationTimelineView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request, pk):
+        app = get_object_or_404(Application, pk=pk)
+        # Permission: Only Student or Company or Admin
+        if request.user.role == 'student' and app.student.user != request.user:
+            return Response(status=403)
+        if request.user.role == 'company' and app.company.user != request.user:
+            return Response(status=403)
+            
+        events = app.timeline.all()
+        serializer = ApplicationEventSerializer(events, many=True)
+        return Response(serializer.data)
 
 
 class OfferReportView(APIView):
