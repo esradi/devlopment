@@ -765,6 +765,112 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             'status':  new_status,
         })
 
+    @action(detail=False, methods=['get'])
+    def analytics(self, request):
+        """
+        GET /api/applications/analytics/
+        Company: full recruitment funnel and per-offer breakdown.
+        """
+        if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
+            return Response({'error': 'Only companies can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+
+        from django.db.models import Count, Avg
+        from django.db.models.functions import TruncMonth
+
+        company = request.user.company_profile
+        apps = Application.objects.filter(company=company)
+
+        # 1. Per-offer breakdown
+        by_offer = (
+            apps.values('offer__id', 'offer__title')
+            .annotate(
+                applications=Count('id'),
+                accepted_count=Count('id', filter=Q(status='accepted')),
+            )
+        )
+        by_offer_result = []
+        for row in by_offer:
+            total = row['applications']
+            accepted = row['accepted_count']
+            by_offer_result.append({
+                'offer_id':        row['offer__id'],
+                'offer_title':     row['offer__title'],
+                'applications':    total,
+                'acceptance_rate': round(accepted / total * 100, 1) if total > 0 else 0.0,
+            })
+
+        # 2. By Month
+        by_month = (
+            apps.annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('month')
+        )
+        by_month_result = [
+            {'month': row['month'].strftime('%Y-%m'), 'applications': row['count']}
+            for row in by_month if row['month']
+        ]
+
+        # 3. Funnel
+        total_received  = apps.count()
+        total_accepted  = apps.filter(status='accepted').count()
+
+        return Response({
+            'by_offer': by_offer_result,
+            'by_month': by_month_result,
+            'funnel': {
+                'received': total_received,
+                'accepted': total_accepted,
+                'refused':  apps.filter(status='rejected').count(),
+                'pending':  apps.filter(status='pending').count(),
+            },
+        })
+
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        """
+        GET /api/applications/export/?offer_id=23&status=all&format=csv
+        Company: export their applications to CSV or Excel.
+        """
+        if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
+            return Response({'error': 'Only companies can export applications.'}, status=status.HTTP_403_FORBIDDEN)
+
+        import csv
+        from django.http import HttpResponse
+
+        company = request.user.company_profile
+        apps = Application.objects.filter(company=company).select_related(
+            'student__user', 'offer'
+        )
+
+        # Filters
+        offer_id = request.query_params.get('offer_id')
+        status_filter = request.query_params.get('status')
+        if offer_id:
+            apps = apps.filter(offer_id=offer_id)
+        if status_filter and status_filter != 'all':
+            apps = apps.filter(status=status_filter)
+
+        export_format = request.query_params.get('format', 'csv')
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="applications_export.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Student Name', 'Email', 'Offer', 'Status', 'Applied At'])
+
+        for app in apps:
+            writer.writerow([
+                app.id,
+                app.student.user.get_full_name(),
+                app.student.user.email,
+                app.offer.title,
+                app.status,
+                app.created_at.strftime('%Y-%m-%d'),
+            ])
+
+        return response
+
 
 class OfferSearchView(APIView):
     """
