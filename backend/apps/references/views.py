@@ -9,7 +9,7 @@ from .serializers import (
     ReferenceLetterSignSerializer,
     ReferenceLetterVerifySerializer
 )
-from utils.pdf_helpers import generate_reference_pdf
+from apps.utils.pdf_helpers import generate_reference_pdf
 
 
 class ReferenceLetterListCreateView(generics.ListCreateAPIView):

@@ -70,7 +70,7 @@ def _build_recent_activity(student):
 
     # Recent challenge results
     try:
-        from challenges.models import SkillChallengeSubmission
+        from apps.challenges.models import SkillChallengeSubmission
         subs = SkillChallengeSubmission.objects.filter(student=student).order_by('-submitted_at')[:3]
         for sub in subs:
             if sub.passed:
@@ -532,7 +532,7 @@ class StudentDashboardView(APIView):
         # Challenges
         challenges_completed = 0
         try:
-            from challenges.models import SkillChallengeSubmission
+            from apps.challenges.models import SkillChallengeSubmission
             challenges_completed = SkillChallengeSubmission.objects.filter(
                 student=student, passed=True
             ).count()
@@ -647,7 +647,7 @@ class StudentAnalyticsView(APIView):
         pass_rate           = 0.0
         avg_challenge_score = 0
         try:
-            from challenges.models import SkillChallengeSubmission
+            from apps.challenges.models import SkillChallengeSubmission
             subs            = SkillChallengeSubmission.objects.filter(student=student).select_related('challenge')
             total_attempted = subs.count()
             total_passed_ch = subs.filter(passed=True).count()
