@@ -799,32 +799,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
                 'acceptance_rate': round(accepted / total * 100, 1) if total > 0 else 0.0,
             })
 
-        # 2. By Month
-        by_month = (
-            apps.annotate(month=TruncMonth('created_at'))
-            .values('month')
-            .annotate(count=Count('id'))
-            .order_by('month')
-        )
-        by_month_result = [
-            {'month': row['month'].strftime('%Y-%m'), 'applications': row['count']}
-            for row in by_month if row['month']
-        ]
-
-        # 3. Funnel
-        total_received  = apps.count()
-        total_accepted  = apps.filter(status='accepted').count()
-
-        return Response({
-            'by_offer': by_offer_result,
-            'by_month': by_month_result,
-            'funnel': {
-                'received': total_received,
-                'accepted': total_accepted,
-                'refused':  apps.filter(status='rejected').count(),
-                'pending':  apps.filter(status='pending').count(),
-            },
-        })
+        return Response({'by_offer': by_offer_result})
 
     @action(detail=False, methods=['get'])
     def export(self, request):
