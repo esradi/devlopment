@@ -45,6 +45,8 @@ class Offer(models.Model):
     views_count = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False)
     boosted_until = models.DateTimeField(null=True, blank=True)
+    report_count = models.PositiveIntegerField(default=0)
+    is_flagged = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -53,6 +55,25 @@ class Offer(models.Model):
 
     def __str__(self):
         return f"{self.title} at {self.company.company_name}"
+
+class OfferReport(models.Model):
+    # Tracking student reports on inappropriate offers
+    REASON_CHOICES = [
+        ('spam', 'Spam or Fake'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('misleading', 'Misleading Information'),
+        ('other', 'Other'),
+    ]
+    
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='reports')
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_offerreport'
+        unique_together = ('offer', 'reporter') # One report per student per offer
 
 class OfferView(models.Model):
     # Tracks every unique student view for analytics

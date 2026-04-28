@@ -10,7 +10,7 @@ from apps.specialities.models import Domain, Skill
 from .serializers import OfferSerializer, OfferStatusUpdateSerializer
 from apps.api.permissions import IsCompany, IsStudent, IsOwnerOrAdmin
 from apps.matching.services import MatchingService
-from .models import OfferEvent, OfferView
+from .models import OfferEvent, OfferView, OfferReport
 from .utils import log_offer_event
 
 class OfferListCreateView(APIView):
@@ -29,7 +29,7 @@ class OfferListCreateView(APIView):
         qs = Offer.objects.all().order_by('-is_featured', '-created_at')
 
         if user.role == 'student':
-            qs = qs.filter(status='active')
+            qs = qs.filter(status='active', is_flagged=False)
             
             domains = request.query_params.get('domain') 
             locations = request.query_params.get('location')
@@ -713,7 +713,7 @@ class OfferSearchView(APIView):
         # 0. Cleanup expired boosts
         Offer.objects.filter(is_featured=True, boosted_until__lt=timezone.now()).update(is_featured=False)
         
-        qs = Offer.objects.filter(status='active').order_by('-is_featured', '-created_at').distinct()
+        qs = Offer.objects.filter(status='active', is_flagged=False).order_by('-is_featured', '-created_at').distinct()
         
         # 1. Text Query
         query = request.query_params.get('query')
@@ -969,6 +969,67 @@ class OfferMatchPreviewView(APIView):
             'top_candidate_previews': top_serializers,
             'ai_recommendations': suggestions
         })
+
+
+class OfferReportView(APIView):
+    """
+    Allow students to report inappropriate offers
+    """
+    permission_classes = [IsStudent]
+
+    def post(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        from .serializers import OfferReportSerializer
+        
+        serializer = OfferReportSerializer(data=request.data)
+        if serializer.is_valid():
+            if OfferReport.objects.filter(offer=offer, reporter=request.user).exists():
+                return Response({"error": "You have already reported this offer."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            serializer.save(offer=offer, reporter=request.user)
+            
+            # Increment report count and check threshold
+            offer.report_count += 1
+            if offer.report_count >= 3:
+                offer.is_flagged = True
+                log_offer_event(offer, 'status_change', 'Offer automatically flagged due to multiple student reports.')
+            
+            offer.save()
+            return Response({"message": "Report submitted successfully. Thank you for keeping the platform safe."}, status=status.HTTP_201_CREATED)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class AdminFlaggedOfferView(APIView):
+    """
+    List of offers that have been flagged by students (Admin only)
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        flagged = Offer.objects.filter(is_flagged=True).order_by('-report_count')
+        serializer = OfferSerializer(flagged, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        # Action to 'Clear' or 'Confirm' flag
+        offer = get_object_or_404(Offer, pk=pk)
+        action = request.data.get('action') # 'clear' or 'suspend'
+        
+        if action == 'clear':
+            offer.is_flagged = False
+            offer.report_count = 0
+            OfferReport.objects.filter(offer=offer).delete()
+            offer.save()
+            log_offer_event(offer, 'status_change', 'Admin cleared all flags. Offer is now visible again.')
+            return Response({"message": "Flags cleared. Offer is now live."})
+            
+        elif action == 'suspend':
+            offer.status = 'closed'
+            offer.save()
+            log_offer_event(offer, 'status_change', 'Admin suspended this offer based on student reports.')
+            return Response({"message": "Offer has been suspended."})
+            
+        return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class OfferAnalyticsView(APIView):

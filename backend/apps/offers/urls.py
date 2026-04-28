@@ -20,7 +20,9 @@ from .views import (
     OfferTimelineView,
     OfferAnalyticsView,
     OfferBoostView,
-    OfferMatchPreviewView
+    OfferMatchPreviewView,
+    OfferReportView,
+    AdminFlaggedOfferView
 )
 
 router = DefaultRouter()
@@ -50,4 +52,7 @@ urlpatterns = [
     path('offers/<int:pk>/analytics/', OfferAnalyticsView.as_view(), name='offer_analytics'),
     path('offers/<int:pk>/boost/', OfferBoostView.as_view(), name='offer_boost'),
     path('offers/<int:pk>/match-preview/', OfferMatchPreviewView.as_view(), name='offer_match_preview'),
+    path('offers/<int:pk>/report/', OfferReportView.as_view(), name='offer_report'),
+    path('admin/offers/flagged/', AdminFlaggedOfferView.as_view(), name='admin_flagged_offers'),
+    path('admin/offers/flagged/<int:pk>/', AdminFlaggedOfferView.as_view(), name='admin_flagged_offer_action'),
 ]
