@@ -541,6 +541,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         application.status = 'accepted'
         application.save()
 
+        log_application_event(application, 'accepted', 'Your application has been accepted by the company.')
+
         from apps.notifications.services import NotificationService
         NotificationService.notify_application_accepted(application)
 
@@ -560,6 +562,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
         application.status = 'rejected'
         application.save()
+
+        log_application_event(application, 'refused', 'Your application has been declined by the company.')
 
         from apps.notifications.services import NotificationService
         NotificationService.notify_application_refused(application)
@@ -703,6 +707,62 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             'refused':         refused,
             'acceptance_rate': round(accepted / total * 100, 1) if total > 0 else 0.0,
             'top_offers':      list(top_offers),
+        })
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """
+        GET /api/applications/stats/
+        Student: personal application statistics — total, pending, accepted, refused,
+        acceptance rate, and average match score.
+        """
+        if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
+            return Response({'error': 'Only students can access this endpoint.'}, status=status.HTTP_403_FORBIDDEN)
+
+        from django.db.models import Avg
+        apps = Application.objects.filter(student=request.user.student_profile)
+        total    = apps.count()
+        pending  = apps.filter(status='pending').count()
+        accepted = apps.filter(status='accepted').count()
+        refused  = apps.filter(status='rejected').count()
+
+        return Response({
+            'total':            total,
+            'pending':          pending,
+            'accepted':         accepted,
+            'refused':          refused,
+            'acceptance_rate':  round(accepted / total * 100, 1) if total > 0 else 0.0,
+        })
+
+    @action(detail=False, methods=['post'], url_path='bulk-action')
+    def bulk_action(self, request):
+        """
+        POST /api/applications/bulk-action/
+        Company: accept or refuse multiple applications in one request.
+        Body: { "application_ids": [1,2,3], "action": "refuse", "reason": "..." }
+        """
+        if request.user.role != 'company' or not hasattr(request.user, 'company_profile'):
+            return Response({'error': 'Only companies can perform bulk actions.'}, status=status.HTTP_403_FORBIDDEN)
+
+        ids    = request.data.get('application_ids', [])
+        action = request.data.get('action')
+        reason = request.data.get('reason', '')
+
+        if action not in ['accept', 'refuse']:
+            return Response({'error': "action must be 'accept' or 'refuse'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        apps = Application.objects.filter(
+            id__in=ids,
+            company=request.user.company_profile
+        )
+
+        new_status = 'accepted' if action == 'accept' else 'rejected'
+        updated    = apps.update(status=new_status)
+
+        return Response({
+            'updated': updated,
+            'action':  action,
+            'status':  new_status,
         })
 
 
