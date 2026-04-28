@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Offer, Location, OfferType, DurationOption,
-    FavoriteOffer, Application
+    FavoriteOffer, Application, OfferEvent
 )
 from apps.specialities.models import Domain, Skill
 from apps.specialities.serializers import DomainSerializer, SkillSerializer
@@ -58,6 +58,7 @@ class OfferSerializer(serializers.ModelSerializer):
             'offer_types', 'offer_type_ids', 'durations', 'duration_ids',
             'skills', 'skill_ids',
             'status', 'requirements', 'salary', 'is_favorite', 'match_score', 
+            'is_featured', 'boosted_until',
             'wilaya', 'created_at', 'updated_at'
         ]
         read_only_fields = ['company', 'created_at', 'updated_at']
@@ -129,3 +130,8 @@ class ApplicationNotesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = ['company_notes']
+
+class OfferEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfferEvent
+        fields = ['id', 'event_type', 'description', 'metadata', 'timestamp']

@@ -16,7 +16,11 @@ from .views import (
     OfferSearchView,
     OfferTrendingView,
     OfferRecommendedView,
-    OfferSimilarView
+    OfferSimilarView,
+    OfferTimelineView,
+    OfferAnalyticsView,
+    OfferBoostView,
+    OfferMatchPreviewView
 )
 
 router = DefaultRouter()
@@ -37,9 +41,13 @@ urlpatterns = [
     path('offers/<int:pk>/extend-deadline/', CompanyOfferExtendDeadlineView.as_view(), name='offer_extend_deadline'),
     path('offers/<int:pk>/applicants-summary/', CompanyOfferApplicantsSummaryView.as_view(), name='offer_applicants_summary'),
     
-    # Advanced Discovery
+    # Advanced Discovery & Lifecycle
     path('offers/search/', OfferSearchView.as_view(), name='offer_search'),
     path('offers/trending/', OfferTrendingView.as_view(), name='offer_trending'),
     path('offers/recommended/', OfferRecommendedView.as_view(), name='offer_recommended'),
     path('offers/similar/<int:pk>/', OfferSimilarView.as_view(), name='offer_similar'),
+    path('offers/<int:pk>/timeline/', OfferTimelineView.as_view(), name='offer_timeline'),
+    path('offers/<int:pk>/analytics/', OfferAnalyticsView.as_view(), name='offer_analytics'),
+    path('offers/<int:pk>/boost/', OfferBoostView.as_view(), name='offer_boost'),
+    path('offers/<int:pk>/match-preview/', OfferMatchPreviewView.as_view(), name='offer_match_preview'),
 ]

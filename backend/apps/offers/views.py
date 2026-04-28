@@ -10,6 +10,8 @@ from apps.specialities.models import Domain, Skill
 from .serializers import OfferSerializer, OfferStatusUpdateSerializer
 from apps.api.permissions import IsCompany, IsStudent, IsOwnerOrAdmin
 from apps.matching.services import MatchingService
+from .models import OfferEvent, OfferView
+from .utils import log_offer_event
 
 class OfferListCreateView(APIView):
     def get_permissions(self):
@@ -20,7 +22,11 @@ class OfferListCreateView(APIView):
     def get(self, request):
         user = request.user
         sort = request.query_params.get('sort', 'created_at')
-        qs = Offer.objects.all()
+        
+        # 0. Cleanup expired boosts
+        Offer.objects.filter(is_featured=True, boosted_until__lt=timezone.now()).update(is_featured=False)
+        
+        qs = Offer.objects.all().order_by('-is_featured', '-created_at')
 
         if user.role == 'student':
             qs = qs.filter(status='active')
@@ -82,7 +88,8 @@ class OfferListCreateView(APIView):
     def post(self, request):
         serializer = OfferSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save(company=request.user.company_profile)
+            offer = serializer.save(company=request.user.company_profile)
+            log_offer_event(offer, 'created', 'L\'offre a été publiée.')
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -91,6 +98,19 @@ class OfferDetailView(APIView):
 
     def get(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)
+        
+        # Log view and increment counter if student
+        if request.user.role == 'student' and hasattr(request.user, 'student_profile'):
+            # 1. Timeline (First View only)
+            log_offer_event(offer, 'first_view', 'Première consultation par un étudiant.')
+            
+            # 2. Analytics (Every unique view session)
+            from django.db import models
+            offer.views_count = models.F('views_count') + 1
+            offer.save(update_fields=['views_count'])
+            
+            OfferView.objects.create(offer=offer, student=request.user.student_profile)
+            
         serializer = OfferSerializer(offer, context={'request': request})
         return Response(serializer.data)
 
@@ -306,7 +326,16 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         if Application.objects.filter(student=student_profile, offer=offer).exists():
             return Response({'error': 'You have already applied to this offer.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        
+        # Log Events
+        log_offer_event(offer, 'first_app', f'Première candidature reçue de {request.user.get_full_name()}.')
+        
+        count = Application.objects.filter(offer=offer).count()
+        if count in [10, 50, 100]:
+            log_offer_event(offer, 'milestone', f'Félicitations ! Vous avez atteint {count} candidatures.', {'count': count})
+            
+        return response
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -681,7 +710,10 @@ class OfferSearchView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        qs = Offer.objects.filter(status='active').distinct()
+        # 0. Cleanup expired boosts
+        Offer.objects.filter(is_featured=True, boosted_until__lt=timezone.now()).update(is_featured=False)
+        
+        qs = Offer.objects.filter(status='active').order_by('-is_featured', '-created_at').distinct()
         
         # 1. Text Query
         query = request.query_params.get('query')
@@ -822,4 +854,180 @@ class OfferTrendingView(APIView):
             })
             
         return Response({'trending': results})
+
+
+class OfferTimelineView(APIView):
+    """
+    Chronological activity log for an offer
+    """
+    permission_classes = [IsOwnerOrAdmin]
+
+    def get(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        self.check_object_permissions(request, offer)
+        
+        from .serializers import OfferEventSerializer
+        events = offer.events.all()
+        serializer = OfferEventSerializer(events, many=True)
+        return Response({'timeline': serializer.data})
+
+
+class OfferBoostView(APIView):
+    """
+    Boost an offer to the top of search results
+    """
+    permission_classes = [IsOwnerOrAdmin]
+
+    def post(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        self.check_object_permissions(request, offer)
+        
+        duration_days = int(request.data.get('duration_days', 7))
+        
+        offer.is_featured = True
+        offer.boosted_until = timezone.now() + timedelta(days=duration_days)
+        offer.save()
+        
+        log_offer_event(
+            offer, 
+            'milestone', 
+            f"L'offre a été boostée pour {duration_days} jours !",
+            {'duration': duration_days, 'expires_at': offer.boosted_until.isoformat()}
+        )
+        
+        return Response({
+            'status': 'boosted',
+            'is_featured': offer.is_featured,
+            'boosted_until': offer.boosted_until
+        })
+
+
+class OfferMatchPreviewView(APIView):
+    """
+    AI-driven simulator to predict how many students will match an offer
+    """
+    permission_classes = [IsOwnerOrAdmin]
+
+    def get(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        self.check_object_permissions(request, offer)
+        
+        from apps.accounts.models import Student
+        from apps.accounts.serializers import StudentBrowseSerializer
+        from apps.matching.services import MatchingService
+        
+        students = Student.objects.all()
+        results = []
+        
+        # 1. Simulate matching for all students
+        for student in students:
+            try:
+                score_data = MatchingService.calculate_match_score(student.id, offer.id)
+                results.append({
+                    'student': student,
+                    'score': score_data.get('total_score', 0)
+                })
+            except: continue
+            
+        # 2. Categorize results
+        high_matches = [r for r in results if r['score'] >= 75]
+        good_matches = [r for r in results if 50 <= r['score'] < 75]
+        
+        # 3. Generate Top Samples
+        results.sort(key=lambda x: x['score'], reverse=True)
+        top_samples = results[:5]
+        top_serializers = []
+        for r in top_samples:
+            s_data = StudentBrowseSerializer(r['student'], context={'request': request}).data
+            s_data['predicted_match_score'] = r['score']
+            top_serializers.append(s_data)
+            
+        # 4. AI Insights & Suggestions
+        suggestions = []
+        if len(high_matches) < 5:
+            suggestions.append("Votre offre est très restrictive. Essayez d'élargir les compétences requises.")
+            
+        # Skill-based suggestion (Check for common skills in the same domain)
+        offer_skills = offer.skills.all()
+        from apps.specialities.models import Skill
+        common_skills = Skill.objects.filter(students__domain=offer.domains.first())\
+            .annotate(count=Count('students'))\
+            .order_by('-count')[:3]
+            
+        for skill in common_skills:
+            if skill not in offer_skills:
+                suggestions.append(f"Beaucoup d'étudiants possèdent la compétence '{skill.name}'. L'ajouter pourrait augmenter votre visibilité.")
+                break
+
+        return Response({
+            'simulation_summary': {
+                'total_scanned_students': len(results),
+                'high_potential_matches': len(high_matches),
+                'good_matches': len(good_matches),
+                'market_saturation': 'High' if len(high_matches) > 20 else 'Low'
+            },
+            'top_candidate_previews': top_serializers,
+            'ai_recommendations': suggestions
+        })
+
+
+class OfferAnalyticsView(APIView):
+    """
+    Detailed performance metrics for a specific offer
+    """
+    permission_classes = [IsOwnerOrAdmin]
+
+    def get(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        self.check_object_permissions(request, offer)
+        
+        from django.db.models import Count, Avg
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # 1. Performance Overview
+        apps = Application.objects.filter(offer=offer)
+        total_apps = apps.count()
+        total_views = offer.views_count
+        
+        conversion_rate = (total_apps / total_views * 100) if total_views > 0 else 0
+        
+        # 2. Applicant Quality (Avg Match Score)
+        from apps.matching.services import MatchingService
+        avg_score = 0
+        if total_apps > 0:
+            scores = []
+            for app in apps:
+                try:
+                    s = MatchingService.calculate_match_score(app.student.id, offer.id).get('total_score', 0)
+                    scores.append(s)
+                except: pass
+            avg_score = sum(scores) / len(scores) if scores else 0
+
+        # 3. Trends (Last 7 Days)
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        views_trend = OfferView.objects.filter(offer=offer, timestamp__gte=seven_days_ago)\
+            .extra(select={'day': "date(timestamp)"})\
+            .values('day')\
+            .annotate(count=Count('id'))\
+            .order_by('day')
+            
+        apps_trend = apps.filter(created_at__gte=seven_days_ago)\
+            .extra(select={'day': "date(created_at)"})\
+            .values('day')\
+            .annotate(count=Count('id'))\
+            .order_by('day')
+
+        return Response({
+            'performance': {
+                'total_views': total_views,
+                'total_applications': total_apps,
+                'conversion_rate': round(conversion_rate, 1),
+                'avg_applicant_match_score': round(avg_score, 1)
+            },
+            'trends': {
+                'views_by_day': list(views_trend),
+                'applications_by_day': list(apps_trend)
+            }
+        })
 

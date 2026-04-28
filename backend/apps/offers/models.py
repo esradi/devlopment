@@ -42,6 +42,9 @@ class Offer(models.Model):
     requirements = models.TextField(blank=True, null=True)
     salary = models.CharField(max_length=100, blank=True, null=True)
     deadline = models.DateTimeField(null=True, blank=True)
+    views_count = models.PositiveIntegerField(default=0)
+    is_featured = models.BooleanField(default=False)
+    boosted_until = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -50,6 +53,40 @@ class Offer(models.Model):
 
     def __str__(self):
         return f"{self.title} at {self.company.company_name}"
+
+class OfferView(models.Model):
+    # Tracks every unique student view for analytics
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='detailed_views')
+    student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_offerview'
+        unique_together = ('offer', 'student', 'timestamp') # Or just timestamp if we want total views
+
+class OfferEvent(models.Model):
+    # Tracks milestones for the offer timeline
+    EVENT_TYPES = [
+        ('created', 'Offer Created'),
+        ('first_view', 'First View'),
+        ('first_app', 'First Application'),
+        ('milestone', 'Volume Milestone'),
+        ('status_change', 'Status Change'),
+        ('deadline_ext', 'Deadline Extended'),
+    ]
+    
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='events')
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
+    description = models.TextField()
+    metadata = models.JSONField(default=dict, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_offerevent'
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.event_type} on {self.offer.title} at {self.timestamp}"
 
 
 class FavoriteOffer(models.Model):
