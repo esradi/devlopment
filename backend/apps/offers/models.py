@@ -41,6 +41,7 @@ class Offer(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
     requirements = models.TextField(blank=True, null=True)
     salary = models.CharField(max_length=100, blank=True, null=True)
+    deadline = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

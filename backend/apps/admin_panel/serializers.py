@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import InternshipValidation
+from apps.admin_panel.models import InternshipValidation, AdminActionLog
 from apps.conventions.models import Convention
 from apps.offers.models import Application, Offer
 from apps.accounts.models import Student, Company
@@ -9,223 +9,74 @@ from apps.specialities.serializers import SpecialityDetailSerializer
 
 User = get_user_model()
 
+# --- 1. SHARED MINIMAL SERIALIZERS ---
 class UserMinimalSerializer(serializers.ModelSerializer):
-    #Minimal user info embedded in other serializers
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name']
-        read_only_fields = fields
-
 
 class StudentMinimalSerializer(serializers.ModelSerializer):
-    #Student info for admin user list and validation detail
     email = serializers.EmailField(source='user.email', read_only=True)
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
-    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
-
     class Meta:
         model = Student
-        fields = [
-            'id', 'email', 'first_name', 'last_name',
-            'is_active', 'domain', 'speciality', 'university',
-        ]
-        read_only_fields = fields
-
+        fields = ['id', 'email', 'first_name', 'last_name', 'domain', 'speciality']
 
 class CompanyMinimalSerializer(serializers.ModelSerializer):
-    #Company info for admin company list
     email = serializers.EmailField(source='user.email', read_only=True)
-    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
+    class Meta:
+        model = Company
+        fields = ['id', 'email', 'company_name', 'industry', 'verification_status']
+
+# --- 2. CORE ADMIN SERIALIZERS ---
+
+class InternshipValidationSerializer(serializers.ModelSerializer):
+    """Handles List, Detail, and Status Updates for Internships"""
+    student_name = serializers.CharField(source='application.student.user.get_full_name', read_only=True)
+    offer_title = serializers.CharField(source='application.offer.title', read_only=True)
+    validated_by_name = serializers.CharField(source='validated_by.get_full_name', read_only=True)
+
+    class Meta:
+        model = InternshipValidation
+        fields = [
+            'id', 'student_name', 'offer_title', 'status', 
+            'feedback', 'validated_by_name', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'validated_by_name']
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    """Handles User listing and status/ID verification toggles"""
+    domain = serializers.CharField(source='student_profile.domain', read_only=True, default=None)
+    
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'is_active', 'id_verified', 'domain', 'date_joined']
+        read_only_fields = ['id', 'email', 'date_joined']
+
+class AdminCompanySerializer(serializers.ModelSerializer):
+    """Handles Company listing and verification status"""
+    email = serializers.EmailField(source='user.email', read_only=True)
 
     class Meta:
         model = Company
-        fields = ['id', 'email', 'company_name', 'industry', 'verification_status', 'is_active']
-        read_only_fields = fields
-
-
-class OfferMinimalSerializer(serializers.ModelSerializer):
-    company_name = serializers.CharField(source='company.company_name', read_only=True)
-    domains = serializers.StringRelatedField(many=True, read_only=True)
-    offer_types = serializers.StringRelatedField(many=True, read_only=True)
-
-    class Meta:
-        model = Offer
-        fields = ['id', 'title', 'company_name', 'domains', 'offer_types', 'status']
-        read_only_fields = fields
-
-
-class ApplicationMinimalSerializer(serializers.ModelSerializer):
-    student = StudentMinimalSerializer(read_only=True)
-    offer = OfferMinimalSerializer(read_only=True)
-
-    class Meta:
-        model = Application
-        fields = ['id', 'student', 'offer', 'status', 'created_at']
-        read_only_fields = fields
-
-class UsersStatsSerializer(serializers.Serializer):
-    total = serializers.IntegerField()
-    students = serializers.IntegerField()
-    companies = serializers.IntegerField()
-
-class OffersStatsSerializer(serializers.Serializer):
-    total = serializers.IntegerField()
-    active = serializers.IntegerField()
-
-class ApplicationsStatsSerializer(serializers.Serializer):
-    total = serializers.IntegerField()
-    accepted = serializers.IntegerField()
-
-class ValidationsStatsSerializer(serializers.Serializer):
-    pending = serializers.IntegerField()
+        fields = ['id', 'email', 'company_name', 'industry', 'verification_status']
+        read_only_fields = ['id', 'email']
 
 class AdminDashboardSerializer(serializers.Serializer):
-    #used by GET /api/admin/dashboard/
-    users = UsersStatsSerializer()
-    offers = OffersStatsSerializer()
-    applications = ApplicationsStatsSerializer()
-    validations = ValidationsStatsSerializer()
+    users = serializers.DictField()
+    offers = serializers.DictField()
+    applications = serializers.DictField()
+    validations = serializers.DictField()
+    conventions = serializers.DictField()
+    pending_validations_url = serializers.CharField()
+    pending_conventions_url = serializers.CharField()
 
-
-class InternshipValidationListSerializer(serializers.ModelSerializer):
-    #used by GET /api/admin/validations/
-    application = ApplicationMinimalSerializer(read_only=True)
-    validated_by = UserMinimalSerializer(read_only=True)
-
+class AdminActionLogSerializer(serializers.ModelSerializer):
     class Meta:
-        model = InternshipValidation
-        fields = [
-            'id',
-            'application',
-            'status',
-            'validated_by',
-            'created_at',
-            'updated_at',
-        ]
-        read_only_fields = fields
-
-
-class InternshipValidationDetailSerializer(serializers.ModelSerializer):
-    #used by GET /api/admin/validations/:id/
-    application = ApplicationMinimalSerializer(read_only=True)
-    validated_by = UserMinimalSerializer(read_only=True)
-
-    class Meta:
-        model = InternshipValidation
-        fields = [
-            'id',
-            'application',
-            'status',
-            'feedback',
-            'validated_by',
-            'created_at',
-            'updated_at',
-        ]
-        read_only_fields = fields
-
-
-class InternshipValidationApproveSerializer(serializers.ModelSerializer):
-    #used by POST /api/admin/validations/:id/approve/
-    class Meta:
-        model = InternshipValidation
-        fields = ['feedback'] 
-
-
-class InternshipValidationRejectSerializer(serializers.ModelSerializer):
-    #used by POST /api/admin/validations/:id/reject/
-    feedback = serializers.CharField(required=True, allow_blank=False)
-
-    class Meta:
-        model = InternshipValidation
-        fields = ['feedback']
-
-    def validate_feedback(self, value):
-        if len(value.strip()) < 10:
-            raise serializers.ValidationError(
-                "Rejection reason must be at least 10 characters."
-            )
-        return value
-
-
-class ConventionSerializer(serializers.ModelSerializer):
-    #used by GET /api/admin/documents/
-    class Meta:
-        model = Convention
-        fields = '__all__'
-        
-
-class AdminUserListSerializer(serializers.ModelSerializer):
-    #used by GET /api/admin/users/
-    domain = serializers.CharField(
-        source='student_profile.domain', read_only=True, default=None
-    )
-    speciality = serializers.CharField(
-        source='student_profile.speciality', read_only=True, default=None
-    )
-
-    class Meta:
-        model = User
-        fields = [
-            'id', 'email', 'first_name', 'last_name',
-            'is_active', 'domain', 'speciality', 'date_joined',
-        ]
-        read_only_fields = fields
-
-
-class AdminUserStatusSerializer(serializers.ModelSerializer):
-    #used by PATCH /api/admin/users/:id/status/
-    class Meta:
-        model = User
-        fields = ['is_active']
-
-class AdminUserVerifyIdSerializer(serializers.ModelSerializer):
-    #used by PATCH /api/admin/users/:id/verify-id/
-    class Meta:
-        model = User
-        fields = ['id_verified']
-
-
-class AdminCompanyListSerializer(serializers.ModelSerializer):
-    #used by GET /api/admin/companies/
-    email = serializers.EmailField(source='user.email', read_only=True)
-    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
-
-    class Meta:
-        model = Company
-        fields = [
-            'id', 'email', 'company_name', 'industry',
-            'verification_status', 'is_active',
-        ]
-        read_only_fields = fields
-
-
-class AdminCompanyVerifySerializer(serializers.ModelSerializer):
-    #used by PATCH /api/admin/companies/:id/verify/
-    class Meta:
-        model = Company
-        fields = ['verification_status']
-
-
+        model = AdminActionLog
+        fields = ['id', 'action_type', 'target_model', 'target_id', 'ip_address', 'metadata', 'timestamp']
 
 class AdminDomainTreeSerializer(serializers.ModelSerializer):
-    #used by GET /api/admin/specialities/
     specialities = SpecialityDetailSerializer(many=True, read_only=True)
-    
     class Meta:
         model = Domain
         fields = ['id', 'name', 'specialities']
-
-
-class PortfolioSubmissionReviewSerializer(serializers.ModelSerializer):
-    #used by POST /api/admin/portfolio/:submission_id/review/
-    feedback = serializers.CharField(required=False, allow_blank=True)
-    
-    class Meta:
-        model = PortfolioSubmission
-        fields = ['status', 'feedback']
-
-    def validate_status(self, value):
-        if value not in ['approved', 'rejected']:
-            raise serializers.ValidationError("Status must be 'approved' or 'rejected'.")
-        return value

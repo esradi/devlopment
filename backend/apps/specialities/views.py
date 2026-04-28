@@ -1,4 +1,4 @@
-from rest_framework import status, permissions
+from rest_framework import status, permissions, generics, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -241,4 +241,19 @@ class AvailableSkillsView(APIView):
             qs = qs.filter(speciality__domain__id=domain)
 
         serializer = SkillSerializer(qs, many=True)
-        return Response({"available_skills": serializer.data}, status=status.HTTP_200_OK)
+# --- ADMIN VIEWSETS (CRUD) ---
+
+class DomainViewSet(viewsets.ModelViewSet):
+    queryset = Domain.objects.all()
+    serializer_class = DomainSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class SpecialityViewSet(viewsets.ModelViewSet):
+    queryset = Speciality.objects.all()
+    serializer_class = SpecialitySerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class SkillViewSet(viewsets.ModelViewSet):
+    queryset = Skill.objects.all()
+    serializer_class = SkillSerializer
+    permission_classes = [permissions.IsAdminUser]
