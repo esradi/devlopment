@@ -89,7 +89,7 @@ class OfferListCreateView(APIView):
         serializer = OfferSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             offer = serializer.save(company=request.user.company_profile)
-            log_offer_event(offer, 'created', 'L\'offre a été publiée.')
+            log_offer_event(offer, 'created', 'The offer has been published.')
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -102,7 +102,7 @@ class OfferDetailView(APIView):
         # Log view and increment counter if student
         if request.user.role == 'student' and hasattr(request.user, 'student_profile'):
             # 1. Timeline (First View only)
-            log_offer_event(offer, 'first_view', 'Première consultation par un étudiant.')
+            log_offer_event(offer, 'first_view', 'First consultation by a student.')
             
             # 2. Analytics (Every unique view session)
             from django.db import models
@@ -329,11 +329,11 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         response = super().create(request, *args, **kwargs)
         
         # Log Events
-        log_offer_event(offer, 'first_app', f'Première candidature reçue de {request.user.get_full_name()}.')
+        log_offer_event(offer, 'first_app', f'First application received from {request.user.get_full_name()}.')
         
         count = Application.objects.filter(offer=offer).count()
         if count in [10, 50, 100]:
-            log_offer_event(offer, 'milestone', f'Félicitations ! Vous avez atteint {count} candidatures.', {'count': count})
+            log_offer_event(offer, 'milestone', f'Congratulations! You have reached {count} applications.', {'count': count})
             
         return response
 
@@ -808,11 +808,11 @@ class OfferRecommendedView(APIView):
     def _generate_reasons(self, breakdown):
         reasons = []
         if breakdown.get('skills', 0) > 70:
-            reasons.append("Excellente correspondance de compétences")
+            reasons.append("Excellent skill match")
         if breakdown.get('speciality', 0) > 50:
-            reasons.append("Correspond à votre domaine d'étude")
+            reasons.append("Matches your field of study")
         if breakdown.get('location', 0) == 100:
-            reasons.append("Proche de votre localisation")
+            reasons.append("Close to your location")
         return reasons
 
 class OfferSimilarView(APIView):
@@ -891,7 +891,7 @@ class OfferBoostView(APIView):
         log_offer_event(
             offer, 
             'milestone', 
-            f"L'offre a été boostée pour {duration_days} jours !",
+            f"The offer has been boosted for {duration_days} days!",
             {'duration': duration_days, 'expires_at': offer.boosted_until.isoformat()}
         )
         
@@ -945,7 +945,7 @@ class OfferMatchPreviewView(APIView):
         # 4. AI Insights & Suggestions
         suggestions = []
         if len(high_matches) < 5:
-            suggestions.append("Votre offre est très restrictive. Essayez d'élargir les compétences requises.")
+            suggestions.append("Your offer is very restrictive. Try broadening the required skills.")
             
         # Skill-based suggestion (Check for common skills in the same domain)
         offer_skills = offer.skills.all()
@@ -956,7 +956,7 @@ class OfferMatchPreviewView(APIView):
             
         for skill in common_skills:
             if skill not in offer_skills:
-                suggestions.append(f"Beaucoup d'étudiants possèdent la compétence '{skill.name}'. L'ajouter pourrait augmenter votre visibilité.")
+                suggestions.append(f"Many students possess the '{skill.name}' skill. Adding it could increase your visibility.")
                 break
 
         return Response({
