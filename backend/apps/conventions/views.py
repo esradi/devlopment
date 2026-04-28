@@ -175,7 +175,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
             return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
         
         from django.utils import timezone
-        from apps.conventions.services.convention_service import ConventionService
+        from .services.convention_service import ConventionService
         
         convention.student_signed = True
         convention.student_signed_at = timezone.now()
@@ -242,7 +242,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
             return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
         
         from django.utils import timezone
-        from apps.conventions.services.convention_service import ConventionService
+        from .services.convention_service import ConventionService
         
         convention.company_signed = True
         convention.company_signed_at = timezone.now()
@@ -303,7 +303,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
             return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
         
         from django.utils import timezone
-        from apps.conventions.services.convention_service import ConventionService
+        from .services.convention_service import ConventionService
         
         convention.admin_signed = True
         convention.admin_signed_at = timezone.now()
@@ -340,7 +340,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
             
         reason = request.data.get('reason', 'No reason provided')
         
-        from apps.conventions.services.convention_service import ConventionService
+        from .services.convention_service import ConventionService
         success = ConventionService.reject_convention(convention, request.user, reason)
         
         if success:

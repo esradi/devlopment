@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     # Group 1: Profile & Verification
+    path('profile/', views.CompanyProfileView.as_view(), name='company_profile'),
     path('profile/logo/', views.CompanyLogoView.as_view(), name='company_logo'),
     path('request-verification/', views.CompanyVerificationRequestView.as_view(), name='company_request_verification'),
     path('verification-status/', views.CompanyVerificationStatusView.as_view(), name='company_verification_status'),

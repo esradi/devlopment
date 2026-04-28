@@ -1,4 +1,4 @@
-from rest_framework import status, permissions
+from rest_framework import status, permissions, generics, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -17,73 +17,40 @@ from .serializers import (
 from apps.api.permissions import IsUniversityAdmin, IsStudent
 
 
-class DomainListCreateView(APIView):
-    #GET returns all domains; POST creates a domain (admin only)#
-    def get_permissions(self):
-        if self.request.method == 'POST':
-            return [IsUniversityAdmin()]
-        return [permissions.AllowAny()]
-
-    def get(self, request):
-        domains = Domain.objects.all()
-        serializer = DomainSerializer(domains, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        serializer = DomainSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class DomainListView(generics.ListAPIView):
+    #GET returns all domains
+    queryset = Domain.objects.all()
+    serializer_class = DomainSerializer
+    permission_classes = [permissions.AllowAny]
 
 
-class SpecialityListCreateView(APIView):
-    #GET returns all specialities; POST creates a speciality (admin only)#
-    def get_permissions(self):
-        if self.request.method == 'POST':
-            return [IsUniversityAdmin()]
-        return [permissions.AllowAny()]
+class SpecialityListView(generics.ListAPIView):
+    #GET returns all specialities
+    serializer_class = SpecialitySerializer
+    permission_classes = [permissions.AllowAny]
 
-    def get(self, request):
+    def get_queryset(self):
         qs = Speciality.objects.all()
-        domain = request.query_params.get('domain')
+        domain = self.request.query_params.get('domain')
         if domain:
             qs = qs.filter(domain__id=domain)
-        serializer = SpecialitySerializer(qs, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        serializer = SpecialitySerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return qs
 
 
-class SkillListCreateView(APIView):
-    #GET returns all skills (with optional filters); POST creates skill (admin only)#
-    def get_permissions(self):
-        if self.request.method == 'POST':
-            return [IsUniversityAdmin()]
-        return [permissions.AllowAny()]
+class SkillListView(generics.ListAPIView):
+    #GET returns all skills (with optional filters)
+    serializer_class = SkillSerializer
+    permission_classes = [permissions.AllowAny]
 
-    def get(self, request):
+    def get_queryset(self):
         qs = Skill.objects.all()
-        speciality = request.query_params.get('speciality')
-        domain = request.query_params.get('domain')
+        speciality = self.request.query_params.get('speciality')
+        domain = self.request.query_params.get('domain')
         if speciality:
             qs = qs.filter(speciality__id=speciality)
         if domain:
             qs = qs.filter(speciality__domain__id=domain)
-        serializer = SkillSerializer(qs, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        serializer = SkillSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return qs
 
 
 class SpecialitiesByDomainView(APIView):
@@ -274,4 +241,19 @@ class AvailableSkillsView(APIView):
             qs = qs.filter(speciality__domain__id=domain)
 
         serializer = SkillSerializer(qs, many=True)
-        return Response({"available_skills": serializer.data}, status=status.HTTP_200_OK)
+# --- ADMIN VIEWSETS (CRUD) ---
+
+class DomainViewSet(viewsets.ModelViewSet):
+    queryset = Domain.objects.all()
+    serializer_class = DomainSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class SpecialityViewSet(viewsets.ModelViewSet):
+    queryset = Speciality.objects.all()
+    serializer_class = SpecialitySerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class SkillViewSet(viewsets.ModelViewSet):
+    queryset = Skill.objects.all()
+    serializer_class = SkillSerializer
+    permission_classes = [permissions.IsAdminUser]

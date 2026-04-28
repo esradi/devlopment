@@ -13,7 +13,8 @@ from .serializers import (
     CompanyApplicationListSerializer, CompanyApplicationStatusSerializer,
     CompanyApplicationNoteSerializer, InterviewSerializer, 
     InterviewScheduleSerializer, InterviewFeedbackSerializer,
-    CompanyConventionListSerializer, CompanyConventionSignSerializer
+    CompanyConventionListSerializer, CompanyConventionSignSerializer,
+    CompanyProfileSerializer, CompanyUpdateSerializer
 )
 from django.db.models import Count, Avg, F, Q
 from django.db.models.functions import TruncMonth
@@ -29,6 +30,23 @@ def build_file_url(request, file_field):
 
 
 # --- 1. PROFILE MANAGEMENT ---
+
+class CompanyProfileView(APIView):
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def get(self, request):
+        company = request.user.company_profile
+        serializer = CompanyProfileSerializer(company)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        company = request.user.company_profile
+        serializer = CompanyUpdateSerializer(company, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            updated_serializer = CompanyProfileSerializer(company)
+            return Response(updated_serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CompanyLogoView(APIView):
     permission_classes = [IsAuthenticated, IsCompany]
