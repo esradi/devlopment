@@ -20,6 +20,10 @@ class User(AbstractUser):
     national_id_card = models.FileField(upload_to='id_cards/', null=True, blank=True)
     id_verified = models.BooleanField(default=False)
     
+    # Moderation fields
+    is_suspended = models.BooleanField(default=False)
+    suspension_reason = models.TextField(null=True, blank=True)
+    
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'role']
     

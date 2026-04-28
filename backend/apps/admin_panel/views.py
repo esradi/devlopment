@@ -147,9 +147,114 @@ class AdminUserViewSet(BaseAdminViewSet):
     serializer_class = AdminUserSerializer
     queryset = User.objects.all()
 
+    @action(detail=True, methods=['post'])
+    def verify(self, request, pk=None):
+        """Manually verify a user's ID"""
+        user = self.get_object()
+        user.id_verified = True
+        user.save()
+        log_admin_action(request, 'user_manual_verify', user)
+        return Response({'status': 'verified'})
+
+    @action(detail=True, methods=['post'])
+    def status(self, request, pk=None):
+        """Suspend or activate a user"""
+        user = self.get_object()
+        is_suspended = request.data.get('is_suspended', False)
+        reason = request.data.get('reason', '')
+        
+        user.is_suspended = is_suspended
+        user.suspension_reason = reason if is_suspended else None
+        user.save()
+        
+        action_name = 'user_suspended' if is_suspended else 'user_activated'
+        log_admin_action(request, action_name, user, {'reason': reason})
+        return Response({'status': action_name, 'is_suspended': user.is_suspended})
+
+    @action(detail=False, methods=['post'], url_path='bulk-verify')
+    def bulk_verify(self, request):
+        """Batch verify multiple users"""
+        user_ids = request.data.get('user_ids', [])
+        users = User.objects.filter(id__in=user_ids)
+        count = users.update(id_verified=True)
+        
+        log_admin_action(request, 'user_bulk_verify', None, {'count': count, 'ids': user_ids})
+        return Response({'verified_count': count})
+
+    @action(detail=True, methods=['get'])
+    def activity(self, request, pk=None):
+        """Drill-down: Detailed activity for a specific user"""
+        user = self.get_object()
+        from apps.offers.models import Application
+        from apps.admin_panel.models import AdminActionLog
+        from apps.admin_panel.serializers import AdminActionLogSerializer
+        
+        # 1. Applications (if student)
+        apps_data = []
+        if user.role == 'student':
+            apps = Application.objects.filter(student__user=user).select_related('offer')
+            apps_data = [{'id': a.id, 'offer': a.offer.title, 'status': a.status, 'date': a.created_at} for a in apps]
+            
+        # 2. Admin actions ON this user
+        logs = AdminActionLog.objects.filter(target_model='user', target_id=str(user.id))
+        logs_data = AdminActionLogSerializer(logs, many=True).data
+        
+        return Response({
+            'user': user.email,
+            'role': user.role,
+            'applications': apps_data,
+            'admin_history': logs_data
+        })
+
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        """Export users to Excel"""
+        from apps.admin_panel.exports import AdminExporter
+        from django.http import HttpResponse
+        
+        role = request.query_params.get('role')
+        queryset = self.get_queryset()
+        if role:
+            queryset = queryset.filter(role=role)
+            
+        buffer = AdminExporter.export_users_to_excel(queryset)
+        
+        filename = f"users_export_{timezone.now().strftime('%Y%m%d')}.xlsx"
+        response = HttpResponse(
+            buffer,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
 class AdminCompanyViewSet(BaseAdminViewSet):
     serializer_class = AdminCompanySerializer
     queryset = Company.objects.all()
+
+    @action(detail=True, methods=['post'])
+    def verify(self, request, pk=None):
+        """Verify a company profile"""
+        company = self.get_object()
+        company.verification_status = 'verified'
+        company.verified_at = timezone.now()
+        company.verified_by = request.user.email
+        company.save()
+        
+        log_admin_action(request, 'company_verified', company)
+        return Response({'status': 'verified'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject a company verification"""
+        company = self.get_object()
+        reason = request.data.get('reason', 'Documents non conformes')
+        
+        company.verification_status = 'rejected'
+        company.rejection_reason = reason
+        company.save()
+        
+        log_admin_action(request, 'company_rejected', company, {'reason': reason})
+        return Response({'status': 'rejected'})
 
 class AdminActionLogViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAdminUser]
