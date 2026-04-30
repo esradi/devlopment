@@ -49,5 +49,38 @@ export const useNotifications = () => {
         }
     }, [message]);
 
-    return { notifications, unreadCount, isConnected };
+    const markAsRead = async (id) => {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`http://127.0.0.1:8000/api/notifications/${id}/mark-read/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                // Optimistic update
+                setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
+
+    const markAllAsRead = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`http://127.0.0.1:8000/api/notifications/mark-all-read/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                setUnreadCount(0);
+            }
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    };
+
+    return { notifications, unreadCount, isConnected, markAsRead, markAllAsRead };
 };

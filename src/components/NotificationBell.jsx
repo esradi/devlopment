@@ -5,18 +5,20 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useNavigate } from 'react-router-dom';
 
 const NotificationBell = () => {
-    const { notifications, unreadCount, isConnected } = useNotifications();
+    const { notifications, unreadCount, isConnected, markAsRead, markAllAsRead } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
     const toggleDropdown = () => setIsOpen(!isOpen);
 
     const handleNotificationClick = (notif) => {
+        if (!notif.is_read) {
+            markAsRead(notif.id);
+        }
         if (notif.action_url) {
             navigate(notif.action_url);
         }
         setIsOpen(false);
-        // Optional: Call API to mark as read
     };
 
     const formatTime = (dateString) => {
@@ -170,8 +172,11 @@ const NotificationBell = () => {
 
                         {notifications.length > 0 && (
                             <div style={{ padding: '12px', textAlign: 'center', background: 'rgba(255,255,255,0.02)' }}>
-                                <button style={{ background: 'none', border: 'none', color: '#9e59ff', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-                                    View all notifications
+                                <button 
+                                    onClick={() => markAllAsRead()}
+                                    style={{ background: 'none', border: 'none', color: '#9e59ff', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                                >
+                                    Mark all as read
                                 </button>
                             </div>
                         )}

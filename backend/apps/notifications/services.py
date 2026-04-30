@@ -389,3 +389,32 @@ class NotificationService:
                 related_object_type="group_resource",
                 related_object_id=resource.id
             )
+
+    @staticmethod
+    def notify_group_joined(membership):
+        group = membership.group
+        student_name = membership.student.user.get_full_name()
+        
+        # Notify creator
+        NotificationService.create_and_send_notification(
+            user=group.creator,
+            notif_type="group_member_joined",
+            title="New Group Member",
+            message=f"{student_name} has joined your group '{group.name}'.",
+            action_url=f"/groups/{group.id}/members",
+            priority="normal",
+            related_object_type="group_member",
+            related_object_id=membership.id
+        )
+        
+        # Notify the student who joined (Welcome message)
+        NotificationService.create_and_send_notification(
+            user=membership.student.user,
+            notif_type="group_joined",
+            title=f"Welcome to {group.name}!",
+            message=f"You are now a member of '{group.name}'. Start chatting with your peers!",
+            action_url=f"/groups/{group.id}/chat",
+            priority="normal",
+            related_object_type="group",
+            related_object_id=group.id
+        )
