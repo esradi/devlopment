@@ -126,3 +126,48 @@
 .bottom-link-item:hover {
     color: #fff;
 }
+
+/* ============================================================
+   RESPONSIVE — Company Sidebar
+   ============================================================ */
+
+/* Tablets (<= 1024px): slim the sidebar so main content has more room */
+@media (max-width: 1024px) {
+    .global-company-sidebar {
+        width: 220px;                 /* Slimmer sidebar on tablets */
+        padding: 24px 14px;           /* Reduced inner padding to recover horizontal space */
+    }
+
+    .nav-item {
+        padding: 12px 14px;           /* Slightly tighter nav items for narrower sidebar */
+        font-size: 14px;              /* Smaller font for the slimmer column */
+        gap: 12px;                    /* Reduced gap between icon and label */
+    }
+}
+
+/* ============================================================
+   ★ RESPONSIVE COMPANY SIDEBAR — NEW CODE
+   The drawer slide-in is owned by the parent wrapper
+   (.company-sidebar-wrapper in CompanyDashboard.css). Here we
+   only resize the sidebar itself for mobile drawer dimensions.
+   ============================================================ */
+
+/* ★ Mobile (<= 900px): adjust sidebar to drawer-friendly size */
+@media (max-width: 900px) {
+    .global-company-sidebar {
+        width: 260px;                 /* ★ Standard mobile drawer width */
+        height: calc(100vh - 70px);   /* ★ Match parent's adjusted 70px top offset */
+    }
+}
+
+/* ★ Small phones (<= 480px): drawer takes more viewport so labels don't truncate */
+@media (max-width: 480px) {
+    .global-company-sidebar {
+        width: 82vw;                  /* ★ Fluid drawer width on tiny phones */
+        max-width: 300px;             /* ★ Cap so it never overshoots */
+    }
+
+    .premium-upgrade-card {
+        padding: 14px;                /* ★ Tighter padding on tiny screens */
+    }
+}

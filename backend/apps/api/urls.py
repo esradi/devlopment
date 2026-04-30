@@ -16,6 +16,7 @@ urlpatterns = [
     path('', include('apps.notifications.urls')),
     path('', include('apps.groups.urls')),
     path('', include('apps.references.urls')),
+    path('', include('apps.contact.urls')),
     path('admin/', include('apps.admin_panel.urls')),
     path('company/', include('apps.company.urls')),
     path('', include('challenges.urls')),

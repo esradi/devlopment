@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import laptopImage from '../../assets/computer.png'; // Using computer.png as it exists
 import './AboutUs.css'; // Renamed import to match file
 
 import { FaBrain, FaShieldHalved, FaVideo, FaFileLines, FaChartLine, FaBell, FaBolt, FaCheckDouble } from 'react-icons/fa6';
+
 
 const features = [
     {
@@ -74,6 +76,30 @@ const AboutUs = () => {
 
     const activeFeature = features[activeIndex];
 
+const navigate = useNavigate();
+
+    const handleLearnMore = () => {
+        try {
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
+
+            if (user && user.role && typeof user.role === 'string') {
+                if (user.role === 'student') {
+                    navigate('/dashboard/student');
+                } else if (user.role === 'company') {
+                    navigate('/dashboard/company');
+                } else {
+                    navigate('/signup');
+                }
+            } else {
+                navigate('/signup');
+            }
+        } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+            navigate('/signup');
+        }
+    };
+    
     return (
         <section id="about" className="why-us-section">
             <div className="why-us-container">
@@ -104,7 +130,7 @@ const AboutUs = () => {
 
                             <p className="feature-description">{activeFeature.description}</p>
 
-                            <button className="learn-more-btn">
+                            <button className="learn-more-btn"  onClick={handleLearnMore}>
                                 <span>LEARN MORE</span>
                                 <span className="arrow">→</span>
                             </button>

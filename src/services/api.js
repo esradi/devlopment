@@ -100,7 +100,7 @@ export const companyService = {
 export const offerService = {
     getAll: () => api.get('/offers/'),
     getDetails: (id) => api.get(`/offers/${id}/`),
-    toggleFavorite: (id) => api.post(`/offers/${id}/toggle-favorite/`),
+    toggleFavorite: (id) => api.post(`/offers/${id}/favorite/`),
 };
 
 export const applicationService = {

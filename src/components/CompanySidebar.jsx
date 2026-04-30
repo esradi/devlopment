@@ -17,8 +17,9 @@ const CompanySidebar = ({ activePath }) => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        // Implement logout logic securely or via context based on your apps requirement
-        // For visual, just redirect
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
         navigate('/login');
     };
 

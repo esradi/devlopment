@@ -163,17 +163,18 @@
   overflow: hidden; /* Contain children */
 }
 
+/* Main Content Area */
 .main-content-scroll {
   flex: 1;
   padding: 24px 48px 40px 48px;
-  max-width: calc(100vw - var(--sidebar-width) - var(--right-panel-width));
+  width: 0; /* ← prevents flex blowout */
+  min-width: 0;
   height: 100%;
   overflow-y: auto;
 }
-
-.main-content-scroll.full-width-scroll {
+/* .main-content-scroll.full-width-scroll {
   max-width: calc(100vw - var(--sidebar-width));
-}
+} */
 
 .dashboard-summary-header {
   display: flex;
@@ -649,7 +650,7 @@
 }
 
 /* Chart Placeholder */
-.chart-placeholder-box {
+/* .chart-placeholder-box {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--glass-border);
   height: 180px;
@@ -657,4 +658,282 @@
   display: flex;
   align-items: center;
   justify-content: center;
+} */
+
+.chart-placeholder-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  height: 180px;
+  border-radius: 20px;
+  display: flex;
+  align-items: flex-end;      /* ← bars grow upward from bottom */
+  padding: 0 24px;
+  overflow: hidden;
+}
+
+.applications-chart-section {
+  margin-bottom: 48px;
+}
+
+/* ============================================================
+   ★ RESPONSIVE COMPANY DASHBOARD — NEW CODE
+   Strategy:
+     1. Hamburger toggle button (hidden on desktop, shown <=900px)
+     2. Backdrop overlay (dims content while drawer is open)
+     3. Progressive breakpoints: 1280 → 1100 → 900 → 600 → 480
+        - 1280: tighten paddings/widths
+        - 1100: hide the right panel, 4→2 stat cols
+        - 900:  sidebar becomes a slide-in drawer, offer cards stack
+        - 600:  1-col stats, table becomes horizontally scrollable
+        - 480:  smallest paddings + smaller toggle
+   ============================================================ */
+
+/* ★ Hamburger toggle — hidden on desktop, only revealed by media query at <=900px */
+.company-sidebar-toggle {
+  display: none;                      /* Hidden by default; flex'd in @900px block */
+  position: fixed;                    /* Stays in place when content scrolls */
+  top: 92px;                          /* Below the global navbar (80px) + 12px gap */
+  left: 16px;
+  z-index: 1100;                      /* Above backdrop (999) and drawer (1000) */
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(13, 15, 20, 0.9);
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.company-sidebar-toggle:hover {
+  background: rgba(158, 89, 255, 0.15);
+  border-color: var(--accent-primary);
+}
+
+/* ★ Backdrop — dims page when drawer is open, click-to-close (handler in JSX) */
+.company-sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;                       /* Just below the drawer */
+  backdrop-filter: blur(2px);
+}
+
+/* ============================================================
+   ★ RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+/* ★ Large laptops (<= 1280px): tighten widths so content has more room */
+@media (max-width: 1280px) {
+  :root {
+    --sidebar-width: 230px;           /* ★ Slimmer sidebar */
+    --right-panel-width: 280px;       /* ★ Slimmer right panel */
+  }
+
+  .main-content-scroll {
+    padding: 24px 32px 40px 32px;     /* ★ Reduced horizontal padding */
+  }
+}
+
+/* ★ Tablets landscape (<= 1100px): drop the right panel entirely */
+@media (max-width: 1100px) {
+  .company-right-panel {
+    display: none;                    /* ★ Right panel hidden — main content takes the space */
+  }
+
+  /* .main-content-scroll {
+    max-width: calc(100vw - var(--sidebar-width)); 
+  } */
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr); /* ★ 4 cols → 2 cols */
+  }
+}
+
+/* ★ Tablets/large phones (<= 900px): sidebar becomes a slide-in drawer */
+@media (max-width: 900px) {
+  .company-sidebar-toggle {
+    display: flex;                    /* ★ Reveal hamburger button */
+  }
+
+  .company-dashboard {
+    padding-top: 70px;                /* ★ Smaller top offset to free vertical space */
+  }
+
+  /* ★ Drawer wrapper — hidden off-canvas, slides in when .open class is added by React state */
+  .company-sidebar-wrapper {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    z-index: 1000;
+    transform: translateX(-100%);     /* ★ Hidden off-screen */
+    transition: transform 0.3s ease;  /* ★ Smooth slide animation */
+  }
+
+  .company-sidebar-wrapper.open {
+    transform: translateX(0);         /* ★ Slide drawer into view when toggled */
+  }
+
+  /* ★ Reset sidebar's own positioning since the wrapper handles it now */
+  .company-sidebar-wrapper .global-company-sidebar {
+    position: relative;
+    transform: none;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4); /* ★ Drop shadow to separate from content */
+  }
+
+  .company-main {
+    width: 100%;                      /* ★ Main fills viewport (sidebar is now overlay) */
+    height: calc(100vh - 70px);
+  }
+
+  /* ★ Recompute max-width since sidebar no longer takes a column */
+  .main-content-scroll,
+  .main-content-scroll.full-width-scroll {
+    max-width: 100vw;
+    padding: 60px 24px 32px 24px;     /* ★ Top padding clears the floating toggle */
+  }
+
+  .welcome-section h2 {
+    font-size: 26px;                  /* ★ Smaller heading on tablet */
+  }
+
+  .dashboard-summary-header {
+    margin-bottom: 28px;
+  }
+
+  .stats-row {
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+
+  .stat-pille {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  /* ★ Offer cards: stack info above actions (was side-by-side) */
+  .offer-wide-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .offer-actions {
+    flex-wrap: wrap;                  /* ★ Wrap buttons to next line if needed */
+  }
+
+  .offer-actions .btn-secondary-outline {
+    flex: 1;                          /* ★ Buttons share row evenly */
+    min-width: 120px;
+  }
+}
+
+/* ★ Phones (<= 600px): single-column layout, scrollable table */
+@media (max-width: 600px) {
+  .stats-row {
+    grid-template-columns: 1fr;       /* ★ 2 cols → 1 col stack */
+    gap: 12px;
+  }
+
+  .main-content-scroll,
+  .main-content-scroll.full-width-scroll {
+    padding: 56px 16px 24px 16px;     /* ★ Tighter side gutters */
+  }
+
+  .welcome-section h2 {
+    font-size: 22px;
+  }
+
+  .welcome-section p {
+    font-size: 14px;
+  }
+
+  /* ★ Full-width CTA — easier to tap on phones */
+  .post-offer-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .section-header h3 {
+    font-size: 17px;
+  }
+
+  /* ★ Allow tag pills and stat rows to wrap to multiple lines */
+  .offer-tags {
+    flex-wrap: wrap;
+  }
+
+  .offer-stats-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ★ Table strategy: keep min-width and let the parent scroll horizontally
+     instead of cramming columns and breaking readability */
+  .modern-table-card {
+    border-radius: 16px;
+  }
+
+  .modern-table {
+    min-width: 560px;                 /* ★ Triggers horizontal scroll on parent */
+  }
+
+  .modern-table th,
+  .modern-table td {
+    padding: 12px;
+  }
+
+  .candidate-cell {
+    gap: 10px;
+  }
+
+  /* ★ Toast spans full width on phones for visibility */
+  .toast-notification {
+    left: 16px;
+    right: 16px !important;
+    bottom: 16px !important;
+    justify-content: center;
+  }
+}
+
+/* ★ Small phones (<= 480px): smallest paddings + scaled toggle */
+@media (max-width: 480px) {
+  .company-sidebar-toggle {
+    top: 84px;
+    left: 12px;
+    width: 38px;                      /* ★ Smaller toggle to save space */
+    height: 38px;
+  }
+
+  .main-content-scroll,
+  .main-content-scroll.full-width-scroll {
+    padding: 50px 12px 20px 12px;
+  }
+
+  .welcome-section h2 {
+    font-size: 20px;
+  }
+
+  .stat-pille {
+    padding: 16px;
+  }
+
+  .icon-box {
+    width: 40px;
+    height: 40px;
+  }
+
+  .offer-title-row {
+    flex-wrap: wrap;                  /* ★ Title + status badge wrap if needed */
+  }
 }

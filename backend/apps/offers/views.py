@@ -257,6 +257,34 @@ class CompanyOfferApplicantsSummaryView(APIView):
             }
         })
 
+class PublicPlatformStatsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        from django.db.models import Count
+        
+        # Total active offers
+        active_offers = Offer.objects.filter(status='active').count()
+        
+        # Total companies with at least one active offer
+        companies_with_offers = Offer.objects.filter(
+            status='active'
+        ).values('company').distinct().count()
+        
+        # Success rate: accepted / total applications * 100
+        all_applications = Application.objects.all()
+        total_apps = all_applications.count()
+        accepted_apps = all_applications.filter(status='accepted').count()
+        success_rate = round((accepted_apps / total_apps * 100), 1) if total_apps > 0 else 0
+        
+        return Response({
+            'active_offers': active_offers,
+            'companies_with_offers': companies_with_offers,
+            'success_rate': success_rate,
+            'total_applications': total_apps,
+            'accepted_applications': accepted_apps,
+        })
+
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination

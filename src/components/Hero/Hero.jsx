@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import pic from '../../assets/pic.png';
 import './Hero.css';
+
 
 const Hero = () => {
     // Animation variants
@@ -41,10 +43,13 @@ const Hero = () => {
             }
         }
     };
-
+const navigate = useNavigate();
     return (
+        
         <section id="home" className="hero-section">
+            
             <div className="hero-content">
+                
                 <motion.div
                     className="text-content"
                     variants={containerVariants}
@@ -67,6 +72,7 @@ const Hero = () => {
                             className="cta-button"
                             whileHover={{ scale: 1.05, boxShadow: "0 0 25px rgba(139, 92, 246, 0.5)" }}
                             whileTap={{ scale: 0.95 }}
+                            onClick={() => navigate('/signup')}
                         >
                             LEARN MORE
                         </motion.button>
@@ -74,10 +80,9 @@ const Hero = () => {
                 </motion.div>
 
                 <div className="image-container">
-                    {/* Glowing background effect BEHIND image (First in DOM + z-index 0) */}
                     <div className="image-glow" style={{ zIndex: 0 }}></div>
 
-                    {/* Wrapper handles the entrance and floating - On TOP of glow (Second in DOM + z-index 10) */}
+                    {/* Wrapper handles the entrance and floating */}
                     <motion.div
                         variants={floatVariants}
                         initial="hidden"

@@ -38,6 +38,9 @@ const Navbar = ({ role, setUserRole }) => {
     };
 
     const handleLogout = () => {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
         setUserRole('public');
         navigate('/');
     };
@@ -91,6 +94,15 @@ const Navbar = ({ role, setUserRole }) => {
             case 'company': return '/company/dashboard';
             case 'admin': return '/admin/dashboard';
             default: return '/';
+        }
+    };
+
+    const getProfileLink = () => {
+        switch (role) {
+            case 'student': return '/student/profile';
+            case 'company': return '/CompanyProfile';
+            case 'admin': return '/admin/profile';
+            default: return '/profile';
         }
     };
 
@@ -176,7 +188,7 @@ const Navbar = ({ role, setUserRole }) => {
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
                                         >
-                                            <Link to="/profile" className="dropdown-item">
+                                            <Link to={getProfileLink()} className="dropdown-item">
                                                 <User size={16} />
                                                 <span>Profile</span>
                                             </Link>
@@ -226,7 +238,7 @@ const Navbar = ({ role, setUserRole }) => {
                             {role !== 'public' && (
                                 <>
                                     <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%', margin: '10px 0' }} />
-                                    <li><Link to="/profile" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link></li>
+                                    <li><Link to={getProfileLink()} onClick={() => setIsMobileMenuOpen(false)}>Profile</Link></li>
                                     <li><button onClick={handleLogout} className="mobile-logout-link">Logout</button></li>
                                 </>
                             )}

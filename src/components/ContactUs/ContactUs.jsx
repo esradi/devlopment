@@ -1,14 +1,56 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaArrowRight } from 'react-icons/fa';
 import pic from '../../assets/pic.png';
+import { api } from '../../services/api';
 import './ContactUs.css';
 
 const ContactUs = () => {
-    const handleSubmit = (e) => {
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: ''
+    });
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle form submission logic here
-        alert("Message sent! (Demo)");
+        setLoading(true);
+        setError('');
+        setSuccess(false);
+
+        try {
+            await api.post('/contact/', formData);
+            setSuccess(true);
+            setFormData({
+                name: '',
+                email: '',
+                phone: '',
+                subject: '',
+                message: ''
+            });
+            // Hide success message after 5 seconds
+            setTimeout(() => {
+                setSuccess(false);
+            }, 5000);
+        } catch (err) {
+            setError('Failed to send message. Please try again.');
+            console.error('Contact form error:', err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -60,20 +102,71 @@ const ContactUs = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6, delay: 0.2 }}
                         >
+                            {success && (
+                                <div className="form-feedback success-message">
+                                    ✓ Your message has been received. We will get back to you soon!
+                                </div>
+                            )}
+                            {error && (
+                                <div className="form-feedback error-message">
+                                    ✗ {error}
+                                </div>
+                            )}
+
                             <div className="form-row-v2">
-                                <input type="text" placeholder="Name" required className="pill-input" />
+                                <input
+                                    type="text"
+                                    placeholder="Name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    required
+                                    className="pill-input"
+                                />
                             </div>
                             <div className="form-row-v2">
-                                <input type="email" placeholder="Email" required className="pill-input" />
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    className="pill-input"
+                                />
                             </div>
                             <div className="form-row-v2">
-                                <input type="text" placeholder="Phone nr" required className="pill-input" />
+                                <input
+                                    type="text"
+                                    placeholder="Phone nr"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    required
+                                    className="pill-input"
+                                />
                             </div>
                             <div className="form-row-v2">
-                                <input type="text" placeholder="Subject" required className="pill-input" />
+                                <input
+                                    type="text"
+                                    placeholder="Subject"
+                                    name="subject"
+                                    value={formData.subject}
+                                    onChange={handleChange}
+                                    required
+                                    className="pill-input"
+                                />
                             </div>
                             <div className="form-row-v2">
-                                <textarea placeholder="Message" rows="3" required className="pill-textarea"></textarea>
+                                <textarea
+                                    placeholder="Message"
+                                    rows="3"
+                                    name="message"
+                                    value={formData.message}
+                                    onChange={handleChange}
+                                    required
+                                    className="pill-textarea"
+                                ></textarea>
                             </div>
 
                             <motion.button
@@ -81,8 +174,11 @@ const ContactUs = () => {
                                 className="contact-submit-pill"
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
+                                disabled={loading}
                             >
-                                <span className="submit-text">SEND</span>
+                                <span className="submit-text">
+                                    {loading ? 'SENDING...' : 'SEND'}
+                                </span>
                                 <div className="submit-arrow-circle">
                                     <FaArrowRight />
                                 </div>

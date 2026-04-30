@@ -21,7 +21,8 @@ import {
     Building2,
     Shield,
     Calendar,
-    Folder
+    Folder,
+    Menu
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { companyService } from '../../services/api';
@@ -29,6 +30,7 @@ import CompanyOffers from './CompanyOffers';
 import CompanyCandidates from './CompanyCandidates';
 import CreateOffer from './CreateOffer';
 import CompanySidebar from '../../components/CompanySidebar';
+import CompanyNavbar from '../../components/Navbar/CompanyNavbar';
 import './CompanyDashboard.css';
 
 const CompanyDashboard = ({ setUserRole }) => {
@@ -47,6 +49,13 @@ const CompanyDashboard = ({ setUserRole }) => {
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
+    // ★ RESPONSIVE: drives the mobile sidebar drawer (open/close)
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // ★ RESPONSIVE: auto-close drawer on route change so it doesn't stay open after nav
+    useEffect(() => {
+        setSidebarOpen(false);
+    }, [location.pathname]);
 
     const showToast = (message) => {
         setToastMessage(message);
@@ -98,11 +107,31 @@ const CompanyDashboard = ({ setUserRole }) => {
             </div>
         );
     }
-
+    
     return (
         <div className="company-dashboard">
-            {/* 1. Sidebar (Navbar) */}
-            <CompanySidebar activePath={activeTab} />
+            {/* ★ RESPONSIVE: hamburger button — CSS hides it on desktop, shows it ≤900px */}
+            <button
+                className="company-sidebar-toggle"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open menu"
+            >
+                <Menu size={22} />
+            </button>
+
+            {/* ★ RESPONSIVE: dimming backdrop, click anywhere to close drawer */}
+            {sidebarOpen && (
+                <div
+                    className="company-sidebar-backdrop"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
+            {/* ★ RESPONSIVE: wrapper that turns the static sidebar into a slide-in drawer.
+                The `.open` class is what the CSS animates via translateX */}
+            <div className={`company-sidebar-wrapper ${sidebarOpen ? 'open' : ''}`}>
+                <CompanySidebar activePath={activeTab} />
+            </div>
 
             {/* 2. Main Content Area */}
             <div className="company-main">
@@ -164,6 +193,41 @@ const CompanyDashboard = ({ setUserRole }) => {
                                     <span className="stat-value">5</span>
                                 </div>
                             </div>
+
+                         {/*Applications This Week*/}
+                             <section className="applications-chart-section">
+                                <div className="section-header">
+                                    <h3>Applications This Week</h3>
+                                </div>
+                                <div className="applications-chart">
+                              
+                                   <div className="chart-placeholder-box" style={{ alignItems: 'flex-end', padding: '20px 24px 0 24px' }}>
+                                   {[
+                                     { day: 'Sun', h: 30 },
+                                     { day: 'Mon', h: 45 },
+                                     { day: 'Tue', h: 25 },
+                                     { day: 'Wed', h: 60 },
+                                     { day: 'Thu', h: 80 },
+                                     { day: 'Fri', h: 50 },
+                                     { day: 'Sat', h: 40 },
+                                    ].map((item, i) => (
+                                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                   <div style={{
+                                    width: '100%',
+                                    maxWidth: '40px',
+                                    height: `${item.h * 1.2}px`,   // ← fixed pixel height, scales to 96px max
+                                    background: i === 4 ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                    borderRadius: '6px 6px 0 0',
+                                    transition: 'background 0.3s',
+                                   }} />
+                                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', paddingBottom: '12px' }}>
+                                   {item.day}
+                                 </span>
+                                </div>
+                             ))}
+                                </div>
+                               </div>
+                            </section>   
 
                             {/* Recent Offers */}
                             <section className="recent-offers-section">
@@ -296,102 +360,10 @@ const CompanyDashboard = ({ setUserRole }) => {
                             <p style={{ color: 'var(--text-secondary)' }}>We are working hard to bring you more company features.</p>
                         </div>
                     )}
+   
                 </main>
-
-                {/* 3. Right Sidebar Panel */}
-                {activeTab === 'dashboard' && (
-                    <aside className="company-right-panel">
-                        <div className="profile-preview-card">
-                            <div className="company-large-icon">
-                                {userData?.company_name ? userData.company_name[0] : 'S'}
-                            </div>
-                            <h3>{userData?.company_name || 'Sonatrach'} <Shield size={18} color="#10b981" fill="#10b981" /></h3>
-                            <p>{userData?.industry || 'Energy & Oil'} • {userData?.location || 'Algiers'}</p>
-                            
-                            <div className="strength-wrap">
-                                <div className="completion-header">
-                                    <span style={{ color: 'var(--text-secondary)' }}>Profile Strength</span>
-                                    <span style={{ color: 'var(--accent-primary)' }}>75%</span>
-                                </div>
-                                <div className="progress-bar-container">
-                                    <div className="progress-bar-fill" style={{ width: '75%' }}></div>
-                                </div>
-                            </div>
-                            <button 
-                                className="btn-full-outline"
-                                onClick={() => navigate('/dashboard/company/complete-profile')}
-                            >
-                                Complete Profile
-                            </button>
-                        </div>
-
-                        <div className="quick-actions-section">
-                            <h4 style={{ fontSize: '14px', marginBottom: '16px', color: 'var(--text-secondary)' }}>Quick Actions</h4>
-                            <div className="quick-actions-grid">
-                                <div className="action-pille" onClick={() => navigate('/dashboard/company/offer/create')}>
-                                    <Plus size={20} color={'var(--accent-secondary)'} />
-                                    <span>New Offer</span>
-                                </div>
-                                <div className="action-pille" onClick={() => setActiveTab('offers')}>
-                                    <Briefcase size={20} color={'var(--accent-primary)'} />
-                                    <span>My Offers</span>
-                                </div>
-                                <div className="action-pille" onClick={() => navigate('/dashboard/company/messages')}>
-                                    <MessageSquare size={20} color="#00f2fe" />
-                                    <span>Messages</span>
-                                </div>
-                                <div className="action-pille" onClick={() => navigate('/dashboard/company/offer/1/candidates')}>
-                                    <Users size={20} color={'var(--success)'} />
-                                    <span>Applications</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="applications-chart">
-                            <h4 style={{ fontSize: '14px', marginBottom: '16px', color: 'var(--text-secondary)' }}>Applications This Week</h4>
-                            <div className="chart-placeholder-box">
-                                {/* Simplified Bar Chart visualization */}
-                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', height: '100px' }}>
-                                    {[30, 45, 25, 60, 80, 50, 40].map((h, i) => (
-                                        <div key={i} style={{ 
-                                            width: '12px', 
-                                            height: `${h}%`, 
-                                            background: i === 4 ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
-                                            borderRadius: '4px 4px 0 0'
-                                        }}></div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '10px', color: 'var(--text-muted)' }}>
-                                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-                            </div>
-                        </div>
-
-                        <div className="activity-section">
-                            <h4 style={{ fontSize: '14px', marginBottom: '16px', color: 'var(--text-secondary)' }}>Recent Activity</h4>
-                            <div className="activity-feed">
-                                <div className="activity-item">
-                                    <div className="activity-dot" style={{ background: 'var(--accent-primary)' }}></div>
-                                    <div className="activity-meta">
-                                        <h5>New application received</h5>
-                                        <p>Amira Benali applied for Data Scientist</p>
-                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>2 minutes ago</span>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot" style={{ background: 'var(--success)' }}></div>
-                                    <div className="activity-meta">
-                                        <h5>Candidate Accepted</h5>
-                                        <p>Sara Ould Ali accepted the interview invite</p>
-                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>3 hours ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
-                )}
             </div>
-
+ 
             <AnimatePresence>
                 {toastMessage && (
                     <motion.div

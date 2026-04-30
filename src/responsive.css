@@ -1,0 +1,416 @@
+/* ============================================================
+   responsive.css — Global responsive overrides for the platform
+   ------------------------------------------------------------
+   Each media query targets a breakpoint:
+     • <= 1200px : Large tablets / small desktops
+     • <= 1024px : Tablets landscape
+     • <= 900px  : Tablets portrait
+     • <= 768px  : Large phones / small tablets
+     • <= 600px  : Phones
+     • <= 480px  : Small phones
+   Every responsive line below is annotated with what it does.
+   ============================================================ */
+
+
+/* ===== Universal safety: prevent horizontal scroll on small screens ===== */
+html, body, #root {
+  max-width: 100vw;            /* Cap width to viewport so nothing overflows horizontally */
+  overflow-x: hidden;          /* Hide any leftover horizontal scrollbars on mobile */
+}
+
+/* Make every image fluid by default so they scale within their containers */
+img, video, svg {
+  max-width: 100%;             /* Image never exceeds its parent's width on small screens */
+  height: auto;                /* Keep aspect ratio when width shrinks */
+}
+
+/* Make tables scroll horizontally instead of breaking the layout on phones */
+.table-wrapper, .responsive-table {
+  width: 100%;                 /* Use full width of container */
+  overflow-x: auto;            /* Allow horizontal scroll on narrow viewports */
+  -webkit-overflow-scrolling: touch; /* Smooth momentum scroll on iOS */
+}
+
+/* ============================================================
+   BREAKPOINT 1200px — collapse wide multi-column layouts
+   ============================================================ */
+@media (max-width: 1200px) {
+  /* Dashboard split layouts: stack sidebar + content vertically */
+  .company-dashboard,
+  .student-dashboard {
+    flex-direction: row;        /* Keep row at this breakpoint, only adjust spacing */
+  }
+
+  /* Shrink sidebars slightly so main content has more room */
+  .company-sidebar,
+  .dashboard-sidebar,
+  .global-company-sidebar {
+    width: 220px;               /* Reduced sidebar width on tablet-desktop */
+  }
+
+  /* Generic 4-column grids drop to 3 columns at this width */
+  .stats-grid,
+  .cards-grid,
+  .offers-grid,
+  .applications-grid {
+    grid-template-columns: repeat(3, 1fr) !important; /* 3 columns instead of 4 */
+  }
+}
+
+/* ============================================================
+   BREAKPOINT 1024px — tablet landscape
+   ============================================================ */
+@media (max-width: 1024px) {
+  /* Hero / landing two-column flex layouts stack vertically */
+  .content-container,
+  .hero-content,
+  .why-us-container {
+    flex-direction: column !important; /* Stack text and image vertically */
+    text-align: center;                /* Center content on stacked layout */
+  }
+
+  /* Each side becomes full-width when stacked */
+  .text-content,
+  .image-container,
+  .left-content,
+  .right-content {
+    width: 100% !important;     /* Take full width when stacked */
+    flex: 1 1 100% !important;  /* Override fixed flex-basis (e.g., 0 0 45%) */
+    max-width: 100%;            /* Prevent overflow */
+    padding: 0;                 /* Reset side padding from desktop layout */
+  }
+
+  /* Reduce dashboard/sidebar widths further so cards have breathing room */
+  .company-sidebar,
+  .dashboard-sidebar,
+  .global-company-sidebar {
+    width: 200px;               /* Slimmer sidebar at tablet width */
+  }
+
+  /* Multi-column footer becomes 2 columns */
+  .footer-grid-v2,
+  .footer-grid {
+    grid-template-columns: repeat(2, 1fr) !important; /* Two-column footer */
+    gap: 40px;                  /* Tighter gap on tablets */
+  }
+
+  /* 4-column stat grids -> 2 columns */
+  .stats-grid,
+  .cards-grid,
+  .offers-grid,
+  .applications-grid {
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 columns on tablet */
+  }
+}
+
+/* ============================================================
+   BREAKPOINT 900px — small tablets, large phones in landscape
+   ============================================================ */
+@media (max-width: 900px) {
+  /* Hide desktop nav menus, show mobile toggle (project already does this for Navbar) */
+  .menu-section,
+  .auth-actions,
+  .nav-menu {
+    display: none;              /* Hide horizontal nav links — replaced by mobile menu */
+  }
+
+  .mobile-toggle {
+    display: block !important;  /* Show hamburger toggle button */
+  }
+
+  /* Convert sidebar from fixed column to a top drawer (off-canvas style) */
+  .company-sidebar,
+  .dashboard-sidebar,
+  .global-company-sidebar {
+    position: fixed;            /* Float above content so it can slide in/out */
+    top: 80px;                  /* Sit below the navbar */
+    left: 0;
+    width: 240px;               /* Standard mobile drawer width */
+    height: calc(100vh - 80px); /* Fill viewport below navbar */
+    transform: translateX(-100%); /* Hidden by default, toggled to 0 when open */
+    transition: transform 0.3s ease; /* Smooth slide-in animation */
+    z-index: 999;               /* Above main content but below modals */
+  }
+
+  /* When sidebar receives .open class (added via JS), slide it in */
+  .company-sidebar.open,
+  .dashboard-sidebar.open,
+  .global-company-sidebar.open {
+    transform: translateX(0);   /* Slide drawer into view */
+  }
+
+  /* Main content reclaims the full width when sidebar is collapsed */
+  .main-content-area,
+  .dashboard-content,
+  .student-content,
+  .company-content {
+    margin-left: 0 !important;  /* Remove sidebar offset on mobile */
+    width: 100% !important;     /* Use full available width */
+    padding: 16px !important;   /* Tighter padding on mobile */
+  }
+
+  /* Right side panels (chat lists, profile cards) stack below content */
+  .right-panel,
+  .side-panel {
+    width: 100% !important;     /* Right panel becomes full-width below */
+    margin-top: 24px;           /* Spacing from content above */
+  }
+}
+
+/* ============================================================
+   BREAKPOINT 768px — phones
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Reduce typographic scale across the board */
+  h1 { font-size: 2rem !important; }     /* Shrink large headings to fit narrow screens */
+  h2 { font-size: 1.6rem !important; }   /* Section headings smaller on mobile */
+  h3 { font-size: 1.3rem !important; }   /* Sub-section headings smaller */
+
+  /* Heading clamps that were too large for phone width */
+  .main-heading,
+  .section-title,
+  .feature-title {
+    font-size: clamp(1.8rem, 7vw, 2.4rem) !important; /* Fluid scale for phones */
+    line-height: 1.2;                     /* Tighter line-height on smaller text */
+  }
+
+  /* All grids collapse to a single column on phones */
+  .stats-grid,
+  .cards-grid,
+  .offers-grid,
+  .applications-grid,
+  .features-grid,
+  .testimonials-grid,
+  .footer-grid,
+  .footer-grid-v2,
+  .form-grid,
+  .resources-grid,
+  .challenges-grid,
+  .messages-grid,
+  .interviews-grid,
+  .candidates-grid,
+  .documents-grid,
+  .billing-grid,
+  .settings-grid {
+    grid-template-columns: 1fr !important; /* Single column stack on phones */
+    gap: 16px !important;                  /* Tighter spacing between cards */
+  }
+
+  /* Convert any flex-row card layouts into stacked column */
+  .row,
+  .flex-row,
+  .two-col,
+  .three-col {
+    flex-direction: column !important;     /* Stack flex children vertically */
+    align-items: stretch !important;       /* Children fill the row width */
+  }
+
+  /* Buttons take full width inside forms / cards on phones */
+  .cta-button,
+  .submit-btn,
+  .primary-btn,
+  .form-submit {
+    width: 100% !important;                /* Full-width tap target on mobile */
+    padding: 14px 20px !important;         /* Comfortable tap height (>= 44px) */
+    font-size: 0.95rem !important;         /* Slightly smaller label */
+  }
+
+  /* Form inputs fill width and have larger touch areas */
+  input, textarea, select {
+    width: 100% !important;                /* Full width form fields */
+    font-size: 16px !important;            /* 16px prevents iOS auto-zoom on focus */
+    padding: 12px 14px !important;         /* Bigger tap target */
+    box-sizing: border-box;                /* Include padding in width calc */
+  }
+
+  /* Auth card narrows for phone screens */
+  .auth-card {
+    flex-direction: column !important;     /* Image + form stack vertically */
+    max-width: 95% !important;             /* Card almost fills the screen */
+    min-height: auto !important;           /* Let content decide height */
+  }
+
+  .auth-card .left-side,
+  .auth-card .right-side,
+  .auth-image-side,
+  .auth-form-side {
+    width: 100% !important;                /* Each half becomes full width */
+    padding: 24px 18px !important;         /* Comfortable inner padding on phone */
+  }
+
+  /* Modals adapt to small viewports */
+  .modal,
+  .modal-content {
+    width: 95vw !important;                /* Modal nearly fills viewport */
+    max-height: 90vh !important;           /* Don't exceed screen height */
+    margin: 5vh auto !important;           /* Comfortable top spacing */
+    padding: 20px !important;              /* Tighter modal padding */
+  }
+
+  /* Section paddings reduced so content isn't pushed off-screen */
+  .section-placeholder,
+  .hero-section,
+  .why-us-section,
+  .hiw-section,
+  .testimonials-section,
+  .verified-section,
+  .contact-section {
+    padding: 60px 16px !important;          /* Less vertical/horizontal padding */
+    min-height: auto !important;            /* Let content drive height */
+  }
+}
+
+/* ============================================================
+   BREAKPOINT 600px — most phones
+   ============================================================ */
+@media (max-width: 600px) {
+  /* Tighten navbar pill on small phones */
+  .nav-content {
+    padding: 6px 14px !important;            /* Slimmer navbar pill on phones */
+    width: 95% !important;                   /* Use almost full width */
+    border-radius: 50px !important;          /* Slightly smaller pill radius */
+  }
+
+  /* Logo image scales down */
+  .nav-logo-img,
+  .footer-logo-img {
+    height: 40px !important;                 /* Smaller logo to save space */
+  }
+
+  /* Tab/segmented controls scroll horizontally instead of overflowing */
+  .tabs,
+  .tab-list,
+  .nav-tabs,
+  .filter-tabs {
+    display: flex !important;
+    overflow-x: auto !important;             /* Horizontal scroll for tab strip */
+    flex-wrap: nowrap !important;            /* Don't wrap tabs onto new lines */
+    -webkit-overflow-scrolling: touch;       /* Smooth iOS scroll */
+    scrollbar-width: none;                   /* Hide scrollbar in Firefox */
+  }
+
+  .tabs::-webkit-scrollbar,
+  .tab-list::-webkit-scrollbar,
+  .filter-tabs::-webkit-scrollbar {
+    display: none;                           /* Hide scrollbar in WebKit */
+  }
+
+  /* Tab buttons keep readable size */
+  .tab,
+  .tab-btn,
+  .filter-tab {
+    flex-shrink: 0;                          /* Don't crush tabs together */
+    white-space: nowrap;                     /* Keep tab labels on one line */
+  }
+
+  /* Cards: lighter padding and rounded corners */
+  .card,
+  .stat-card,
+  .offer-card,
+  .application-card,
+  .dashboard-card {
+    padding: 16px !important;                /* Comfortable card padding on phone */
+    border-radius: 14px !important;          /* Slightly smaller corner radius */
+  }
+
+  /* Footer columns center on very small viewports */
+  .footer-bottom-content {
+    flex-direction: column !important;       /* Stack copyright + legal links */
+    gap: 12px !important;                    /* Spacing between stacked rows */
+    text-align: center !important;           /* Center the stacked text */
+  }
+
+  /* Reduce hero rotated image rotation so it doesn't overflow */
+  .main-image {
+    transform: rotate(-5deg) !important;     /* Less aggressive tilt on phone */
+    max-width: 80% !important;               /* Constrain image width */
+  }
+
+  /* Page wrappers + auth: tighter side gutters */
+  .page-wrapper,
+  .auth-page,
+  .signup-page {
+    padding: 12px !important;                /* Minimal gutter so content fits */
+  }
+}
+
+/* ============================================================
+   BREAKPOINT 480px — small phones (iPhone SE, etc.)
+   ============================================================ */
+@media (max-width: 480px) {
+  /* Pull big headings down further */
+  .main-heading,
+  .hero-title,
+  .section-title {
+    font-size: 1.6rem !important;            /* Even smaller heading on tiny screens */
+    letter-spacing: 0 !important;            /* Reduce letter-spacing for fit */
+  }
+
+  /* Subheadings tighter */
+  .subheading,
+  .section-subtitle {
+    font-size: 0.9rem !important;            /* Smaller body text on tiny phones */
+    line-height: 1.5 !important;             /* Comfortable line-height */
+  }
+
+  /* Buttons compact further */
+  .cta-button,
+  .primary-btn {
+    padding: 12px 18px !important;           /* Smaller button on tiny phones */
+    font-size: 0.85rem !important;           /* Smaller label */
+    letter-spacing: 1.5px !important;        /* Reduced letter spacing */
+  }
+
+  /* Sidebar drawer slimmer to leave content visible */
+  .company-sidebar,
+  .dashboard-sidebar,
+  .global-company-sidebar {
+    width: 85vw !important;                  /* Drawer width as % of viewport */
+  }
+
+  /* Avatars / icons in cards smaller */
+  .avatar,
+  .profile-avatar,
+  .user-avatar-mini {
+    width: 32px !important;                  /* Compact avatar */
+    height: 32px !important;
+  }
+
+  /* Reduce gap in dashboard top stats */
+  .stats-row,
+  .stats-grid {
+    gap: 12px !important;                    /* Tighter spacing on tiny screens */
+  }
+}
+
+/* ============================================================
+   ORIENTATION — landscape phones (height-constrained)
+   ============================================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Auth pages can overflow vertically in landscape — make them scrollable */
+  .auth-card,
+  .page-wrapper {
+    min-height: auto !important;             /* Don't force 100vh in landscape */
+    padding: 20px !important;                /* Tighter padding for landscape */
+  }
+
+  /* Hero section also adapts to short viewports */
+  .hero-section,
+  .main-content {
+    min-height: auto !important;             /* Allow shorter hero in landscape */
+    padding: 100px 20px 40px !important;     /* Account for navbar at top */
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITY — respect user motion preferences
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  /* Disable transitions for users who request reduced motion */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;   /* Effectively disable animations */
+    animation-iteration-count: 1 !important; /* Don't loop reduced animations */
+    transition-duration: 0.01ms !important;  /* Disable transitions */
+    scroll-behavior: auto !important;        /* Disable smooth scroll */
+  }
+}

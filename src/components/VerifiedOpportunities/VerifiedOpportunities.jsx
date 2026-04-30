@@ -1,10 +1,69 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { FaPlay, FaCheck, FaBuilding, FaChartLine } from 'react-icons/fa6';
 import pcImage from '../../assets/pc.jpg';
+import { api } from '../../services/api';
 import './VerifiedOpportunities.css';
 
+
 const VerifiedOpportunities = () => {
+    const navigate = useNavigate();
+    const [stats, setStats] = useState({
+        activeOffers: 0,
+        companiesWithOffers: 0,
+        successRate: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchPlatformStats();
+    }, []);
+
+    const fetchPlatformStats = async () => {
+        try {
+            const data = await api.get('/platform-stats/');
+            
+            setStats({
+                activeOffers: data.active_offers || 0,
+                companiesWithOffers: data.companies_with_offers || 0,
+                successRate: data.success_rate || 0
+            });
+        } catch (error) {
+            console.error('Error fetching platform stats:', error);
+            // Fallback to default values if API fails
+            setStats({
+                activeOffers: 200,
+                companiesWithOffers: 50,
+                successRate: 92
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLearnMore = () => {
+        try {
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
+
+            if (user && user.role && typeof user.role === 'string') {
+                if (user.role === 'student') {
+                    navigate('/dashboard/student');
+                } else if (user.role === 'company') {
+                    navigate('/dashboard/company');
+                } else {
+                    navigate('/signup');
+                }
+            } else {
+                navigate('/signup');
+            }
+        } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+            navigate('/signup');
+        }
+    };
+
     return (
         <section id="opportunities" className="verified-opportunities-section">
             <div className="vo-container">
@@ -27,16 +86,16 @@ const VerifiedOpportunities = () => {
                         Every offer is validated by universities to ensure quality and compliance with academic requirements.
                     </p>
 
-                    <button className="vo-btn">
+                    <button className="vo-btn" onClick={handleLearnMore}>
                         <span>Discover More</span>
                         <span className="arrow">→</span>
                     </button>
 
                     <div className="vo-stats-row">
                         {[
-                            { num: "200+", label: "Active Offers" },
-                            { num: "50+", label: "Companies" },
-                            { num: "92%", label: "Success Rate" }
+                            { num: `${stats.activeOffers}+`, label: "Active Offers" },
+                            { num: `${stats.companiesWithOffers}+`, label: "Companies" },
+                            { num: `${stats.successRate}%`, label: "Success Rate" }
                         ].map((stat, i) => (
                             <motion.div
                                 key={i}

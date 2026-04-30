@@ -29,7 +29,7 @@ import {
     BarChart3
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { studentService, applicationService, offerService } from '../../services/api';
+import { studentService, applicationService, offerService,authService } from '../../services/api';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import StudentOffers from './StudentOffers';
 import StudentApplications from './StudentApplications';
@@ -104,36 +104,35 @@ const StudentDashboard = ({ setUserRole }) => {
         setActiveTab(getTabFromPath(location.pathname));
     }, [location.pathname]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const [profileRes, dashboardRes, appsRes] = await Promise.all([
-                    studentService.getProfile(),
-                    studentService.getDashboard(),
-                    applicationService.getMine()
-                ]);
-                
-                // Combine into a usable userData state unifying the stats
-                setUserData({
-                    ...profileRes, 
-                    dashboardStats: dashboardRes?.stats || {},
-                    recentActivity: dashboardRes?.recent_activity || [],
-                    completeness: dashboardRes?.profile_completeness || 0
-                });
-                setRecentApps(appsRes || []);
-                setRecommendations(dashboardRes?.recommended_offers || []);
-            } catch (err) {
-                console.error("Failed to fetch dashboard data:", err);
-                if (err.message.includes('401')) {
-                    handleLogout();
-                }
-            } finally {
-                setLoading(false);
+useEffect(() => {
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [profileRes, dashboardRes, appsRes] = await Promise.all([
+                authService.getMe(),          // ← change from studentService.getProfile()
+                studentService.getDashboard(),
+                applicationService.getMine()
+            ]);
+            
+            setUserData({
+                ...profileRes,
+                dashboardStats: dashboardRes?.stats || {},
+                recentActivity: dashboardRes?.recent_activity || [],
+                completeness: dashboardRes?.profile_completeness || 0
+            });
+            setRecentApps(appsRes || []);
+            setRecommendations(dashboardRes?.recommended_offers || []);
+        } catch (err) {
+            console.error("Failed to fetch dashboard data:", err);
+            if (err.message.includes('401')) {
+                handleLogout();
             }
-        };
-        fetchData();
-    }, []);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchData();
+}, []);
 
     const fetchBreakdown = async (offerId) => {
         // Now using actual DB breakdown if possible
