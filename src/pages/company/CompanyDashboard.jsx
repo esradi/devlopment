@@ -29,6 +29,7 @@ import CompanyOffers from './CompanyOffers';
 import CompanyCandidates from './CompanyCandidates';
 import CreateOffer from './CreateOffer';
 import CompanySidebar from '../../components/CompanySidebar';
+import NotificationBell from '../../components/NotificationBell';
 import './CompanyDashboard.css';
 
 const CompanyDashboard = ({ setUserRole }) => {
@@ -110,15 +111,18 @@ const CompanyDashboard = ({ setUserRole }) => {
                     {activeTab === 'dashboard' ? (
                         <>
                             {/* Summary Header */}
-                            <header className="dashboard-summary-header">
+                            <header className="dashboard-summary-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div className="welcome-section">
                                     <h2>Welcome back, {userData?.company_name || 'Partner'}! 👋</h2>
                                     <p>You have <strong>3 new applications</strong> today.</p>
                                 </div>
-                                <button className="post-offer-btn" onClick={() => navigate('/dashboard/company/offer/create')}>
-                                    <Plus size={20} />
-                                    <span>Post an Offer</span>
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                    <NotificationBell />
+                                    <button className="post-offer-btn" onClick={() => navigate('/dashboard/company/offer/create')}>
+                                        <Plus size={20} />
+                                        <span>Post an Offer</span>
+                                    </button>
+                                </div>
                             </header>
 
                             {/* Stat Cards */}

@@ -349,6 +349,9 @@ class CompanyInterviewScheduleView(APIView):
                 return Response({"error": "Application does not belong to your company."}, status=status.HTTP_403_FORBIDDEN)
             
             interview = serializer.save(company=request.user.company_profile)
+            
+            from apps.notifications.services import NotificationService
+            NotificationService.notify_interview_proposed(interview)
             return Response({
                 "message": "Interview scheduled successfully.",
                 "interview": InterviewSerializer(interview).data
@@ -401,6 +404,9 @@ class CompanyInterviewManageView(APIView):
         interview = get_object_or_404(Interview, pk=pk, company=request.user.company_profile)
         interview.status = 'cancelled'
         interview.save()
+        
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_interview_cancelled(interview, cancelled_by_role='company')
         return Response({"message": "Interview cancelled successfully."}, status=status.HTTP_200_OK)
 
 class CompanyInterviewCompleteView(APIView):

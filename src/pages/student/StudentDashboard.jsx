@@ -26,7 +26,8 @@ import {
     Loader2,
     Plus,
     Target,
-    BarChart3
+    BarChart3,
+    Users
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { studentService, applicationService, offerService } from '../../services/api';
@@ -39,6 +40,8 @@ import StudentSettings from './StudentSettings';
 import CompleteProfile from './CompleteProfile';
 import StudentChallenges from './StudentChallenges';
 import StudentAnalytics from './StudentAnalytics';
+import StudentGroups from './StudentGroups';
+import NotificationBell from '../../components/NotificationBell';
 import './StudentDashboard.css';
 
 const formatDate = (dateString) => {
@@ -265,6 +268,10 @@ const StudentDashboard = ({ setUserRole }) => {
                         <MessageSquare size={20} />
                         <span>Messages</span>
                     </Link>
+                    <Link to="/dashboard/student/groups" className={`nav-item ${activeTab === 'groups' ? 'active' : ''}`}>
+                        <Users size={20} />
+                        <span>Study Groups</span>
+                    </Link>
                     <Link to="/dashboard/student/settings" className={`nav-item ${activeTab === 'settings' || activeTab === 'complete-profile' ? 'active' : ''}`}>
                         <Settings size={20} />
                         <span>Settings</span>
@@ -288,7 +295,7 @@ const StudentDashboard = ({ setUserRole }) => {
             </aside>
 
             {/* Main Content */}
-            <main className="dashboard-main" style={['offers', 'applications', 'favorites', 'messages', 'settings', 'complete-profile', 'challenges', 'analytics'].includes(activeTab) ? { padding: '110px 0 0 0' } : {}}>
+            <main className="dashboard-main" style={['offers', 'applications', 'favorites', 'messages', 'settings', 'complete-profile', 'challenges', 'analytics', 'groups'].includes(activeTab) ? { padding: '110px 0 0 0' } : {}}>
                 {activeTab === 'dashboard' ? (
                     <>
                         <header className="dashboard-header">
@@ -301,6 +308,12 @@ const StudentDashboard = ({ setUserRole }) => {
                                         if (e.key === 'Enter') showToast(`Searching for "${e.target.value}"...`);
                                     }}
                                 />
+                            </div>
+                            <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                <NotificationBell />
+                                <div className="user-profile-toggle" onClick={() => navigate('/dashboard/student/settings')} style={{ cursor: 'pointer' }}>
+                                    <img src={userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="User" style={{ width: '35px', height: '35px', borderRadius: '50%', border: '2px solid rgba(158, 89, 255, 0.3)' }} />
+                                </div>
                             </div>
                         </header>
 
@@ -524,6 +537,10 @@ const StudentDashboard = ({ setUserRole }) => {
                     />
                 ) : activeTab === 'analytics' ? (
                     <StudentAnalytics 
+                        userData={userData} 
+                    />
+                ) : activeTab === 'groups' ? (
+                    <StudentGroups 
                         userData={userData} 
                     />
                 ) : activeTab === 'settings' ? (
