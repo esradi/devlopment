@@ -98,7 +98,7 @@ class MatchingService:
         Rewards both mastering the required stack and general area competence.
         """
         try:
-            from challenges.models import SkillChallengeSubmission, SkillChallenge
+            from apps.challenges.models import SkillChallengeSubmission, SkillChallenge
 
             required_skills = list(offer.skills.values_list('name', flat=True))
             offer_domains   = list(offer.domains.values_list('name', flat=True))

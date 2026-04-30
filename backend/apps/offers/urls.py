@@ -13,7 +13,26 @@ from .views import (
     CompanyOfferExtendDeadlineView,
     CompanyOfferApplicantsSummaryView,
     PublicPlatformStatsView,
-    ApplicationViewSet
+
+    ApplicationViewSet,
+    OfferSearchView,
+    OfferTrendingView,
+    OfferRecommendedView,
+    OfferSimilarView,
+    OfferTimelineView,
+    OfferAnalyticsView,
+    OfferBoostView,
+    OfferMatchPreviewView,
+    OfferReportView,
+    AdminFlaggedOfferView,
+    OfferCloseView,
+    OfferReopenView,
+    OfferArchiveView,
+    ApplicationMineView,
+    ApplicationPendingView,
+    ApplicationAcceptedView,
+    ApplicationWithdrawView,
+    ApplicationTimelineView,
 )
 
 router = DefaultRouter()
@@ -33,4 +52,30 @@ urlpatterns = [
     path('offers/<int:pk>/extend-deadline/', CompanyOfferExtendDeadlineView.as_view(), name='offer_extend_deadline'),
     path('offers/<int:pk>/applicants-summary/', CompanyOfferApplicantsSummaryView.as_view(), name='offer_applicants_summary'),
     path('platform-stats/', PublicPlatformStatsView.as_view(), name='platform_stats'),
+
+    # Advanced Discovery & Lifecycle
+    path('offers/search/', OfferSearchView.as_view(), name='offer_search'),
+    path('offers/trending/', OfferTrendingView.as_view(), name='offer_trending'),
+    path('offers/recommended/', OfferRecommendedView.as_view(), name='offer_recommended'),
+    path('offers/similar/<int:pk>/', OfferSimilarView.as_view(), name='offer_similar'),
+    path('offers/<int:pk>/timeline/', OfferTimelineView.as_view(), name='offer_timeline'),
+    path('offers/<int:pk>/analytics/', OfferAnalyticsView.as_view(), name='offer_analytics'),
+    path('offers/<int:pk>/boost/', OfferBoostView.as_view(), name='offer_boost'),
+    path('offers/<int:pk>/match-preview/', OfferMatchPreviewView.as_view(), name='offer_match_preview'),
+    path('offers/<int:pk>/report/', OfferReportView.as_view(), name='offer_report'),
+    path('admin/offers/flagged/', AdminFlaggedOfferView.as_view(), name='admin_flagged_offers'),
+    path('admin/offers/flagged/<int:pk>/', AdminFlaggedOfferView.as_view(), name='admin_flagged_offer_action'),
+
+    # Offer Lifecycle
+    path('offers/<int:pk>/close/', OfferCloseView.as_view(), name='offer_close'),
+    path('offers/<int:pk>/reopen/', OfferReopenView.as_view(), name='offer_reopen'),
+    path('offers/<int:pk>/archive/', OfferArchiveView.as_view(), name='offer_archive'),
+
+    # Student Application Dashboard
+    path('applications/mine/', ApplicationMineView.as_view(), name='applications_mine'),
+    path('applications/pending/', ApplicationPendingView.as_view(), name='applications_pending'),
+    path('applications/accepted/', ApplicationAcceptedView.as_view(), name='applications_accepted'),
+    path('applications/<int:pk>/withdraw/', ApplicationWithdrawView.as_view(), name='application_withdraw'),
+    path('applications/<int:pk>/timeline/', ApplicationTimelineView.as_view(), name='application_timeline'),
+    
 ]

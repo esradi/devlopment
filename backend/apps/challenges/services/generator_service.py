@@ -7,7 +7,7 @@ def seed_all_challenges(speciality_filter=None):
     Generate and save challenges for all specialities using Ollama.
     Pass speciality_filter="Computer Science" to seed only one speciality.
     """
-    from challenges.models import SkillChallenge
+    from apps.challenges.models import SkillChallenge
 
     results = []
     specialities = SPECIALITY_SKILLS.items()

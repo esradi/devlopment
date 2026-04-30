@@ -54,8 +54,7 @@ INSTALLED_APPS = [
     'apps.references',
     'apps.admin_panel',
     'apps.company',
-    'apps.contact',
-    'challenges',
+    'apps.challenges',
 
 ]
 

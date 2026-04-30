@@ -43,6 +43,13 @@ def login(request):
     serializer = LoginSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.validated_data['user']
+        
+        if user.is_suspended:
+            return Response({
+                'error': 'Account Suspended',
+                'reason': user.suspension_reason or 'No reason provided.'
+            }, status=status.HTTP_403_FORBIDDEN)
+            
         tokens = get_tokens(user)
         return Response({
             'message': 'Login successful',
