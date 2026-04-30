@@ -112,3 +112,20 @@ class CompanyTeamMember(models.Model):
     def __str__(self):
         return f"{self.user.get_full_name() or self.user.email} - {self.company.company_name} ({self.role})"
 
+
+class CompanyReview(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='reviews')
+    student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE, related_name='company_reviews')
+    rating = models.IntegerField() # 1-5
+    content = models.TextField()
+    is_anonymous = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_companyreview'
+        unique_together = ('company', 'student')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Review for {self.company.company_name} by {self.student.user.get_full_name()}"
+

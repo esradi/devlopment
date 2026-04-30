@@ -40,4 +40,7 @@ urlpatterns = [
     path('team/invite/', views.CompanyTeamListView.as_view(), name='company_team_invite'),
     path('team/activity/', views.CompanyTeamActivityView.as_view(), name='company_team_activity'),
     path('team/<int:pk>/', views.CompanyTeamDetailView.as_view(), name='company_team_detail'),
+
+    # Group 11: Company Reviews
+    path('<int:company_id>/reviews/', views.CompanyReviewViewSet.as_view({'get': 'list', 'post': 'create'}), name='company_reviews'),
 ]

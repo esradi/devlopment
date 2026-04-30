@@ -5,7 +5,7 @@ from django.utils import timezone
 from .models import StudyGroup, GroupMessage
 
 
-class GroupChatConsumer(AsyncWebsocketConsumer):
+class StudyGroupConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         user = self.scope.get("user")
         
