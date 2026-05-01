@@ -24,6 +24,7 @@ class Offer(models.Model):
         ('closed', 'Closed'),
         ('draft', 'Draft'),
         ('filled', 'Filled'),
+        ('archived', 'Archived'),
     ]
     
     company = models.ForeignKey('accounts.Company', on_delete=models.CASCADE, related_name='offers')
@@ -42,6 +43,11 @@ class Offer(models.Model):
     requirements = models.TextField(blank=True, null=True)
     salary = models.CharField(max_length=100, blank=True, null=True)
     deadline = models.DateTimeField(null=True, blank=True)
+    views_count = models.PositiveIntegerField(default=0)
+    is_featured = models.BooleanField(default=False)
+    boosted_until = models.DateTimeField(null=True, blank=True)
+    report_count = models.PositiveIntegerField(default=0)
+    is_flagged = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -50,6 +56,59 @@ class Offer(models.Model):
 
     def __str__(self):
         return f"{self.title} at {self.company.company_name}"
+
+class OfferReport(models.Model):
+    # Tracking student reports on inappropriate offers
+    REASON_CHOICES = [
+        ('spam', 'Spam or Fake'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('misleading', 'Misleading Information'),
+        ('other', 'Other'),
+    ]
+    
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='reports')
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_offerreport'
+        unique_together = ('offer', 'reporter') # One report per student per offer
+
+class OfferView(models.Model):
+    # Tracks every unique student view for analytics
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='detailed_views')
+    student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_offerview'
+        unique_together = ('offer', 'student', 'timestamp') # Or just timestamp if we want total views
+
+class OfferEvent(models.Model):
+    # Tracks milestones for the offer timeline
+    EVENT_TYPES = [
+        ('created', 'Offer Created'),
+        ('first_view', 'First View'),
+        ('first_app', 'First Application'),
+        ('milestone', 'Volume Milestone'),
+        ('status_change', 'Status Change'),
+        ('deadline_ext', 'Deadline Extended'),
+    ]
+    
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='events')
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
+    description = models.TextField()
+    metadata = models.JSONField(default=dict, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_offerevent'
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.event_type} on {self.offer.title} at {self.timestamp}"
 
 
 class FavoriteOffer(models.Model):
@@ -70,6 +129,7 @@ class Application(models.Model):
         ('pending', 'Pending'),
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
+        ('withdrawn', 'Withdrawn'),
     ]
     student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE, related_name='applications')
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='applications')
@@ -141,3 +201,15 @@ class Message(models.Model):
 
     def __str__(self):
         return f"From {self.sender.email} to {self.receiver.email}"
+
+class ApplicationEvent(models.Model):
+    # Tracks the lifecycle of a specific application
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='timeline')
+    event_type = models.CharField(max_length=50) # submitted, viewed, accepted, refused, withdrawn
+    description = models.TextField()
+    data = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_applicationevent'
+        ordering = ['-created_at']

@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from challenges.services.generator_service import seed_all_challenges
+from apps.challenges.services.generator_service import seed_all_challenges
 import json
 
 class Command(BaseCommand):

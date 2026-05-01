@@ -1,20 +1,20 @@
-from rest_framework import status, generics
+from rest_framework import status, generics, viewsets, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from apps.api.permissions import IsCompany
+from apps.api.permissions import IsCompany, IsStudent
 from apps.offers.models import Offer, Application
 from apps.conventions.models import Convention
 from apps.matching.models import MatchScore
 from apps.accounts.models import Company
-from .models import CompanyDocument, Interview
+from .models import CompanyDocument, Interview, CompanyReview
 from .serializers import (
     CompanyLogoSerializer, CompanyVerificationStatusSerializer,
     CompanyApplicationListSerializer, CompanyApplicationStatusSerializer,
     CompanyApplicationNoteSerializer, InterviewSerializer, 
     InterviewScheduleSerializer, InterviewFeedbackSerializer,
     CompanyConventionListSerializer, CompanyConventionSignSerializer,
-    CompanyProfileSerializer, CompanyUpdateSerializer
+    CompanyProfileSerializer, CompanyUpdateSerializer, CompanyReviewSerializer
 )
 from django.db.models import Count, Avg, F, Q
 from django.db.models.functions import TruncMonth
@@ -349,6 +349,9 @@ class CompanyInterviewScheduleView(APIView):
                 return Response({"error": "Application does not belong to your company."}, status=status.HTTP_403_FORBIDDEN)
             
             interview = serializer.save(company=request.user.company_profile)
+            
+            from apps.notifications.services import NotificationService
+            NotificationService.notify_interview_proposed(interview)
             return Response({
                 "message": "Interview scheduled successfully.",
                 "interview": InterviewSerializer(interview).data
@@ -401,6 +404,9 @@ class CompanyInterviewManageView(APIView):
         interview = get_object_or_404(Interview, pk=pk, company=request.user.company_profile)
         interview.status = 'cancelled'
         interview.save()
+        
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_interview_cancelled(interview, cancelled_by_role='company')
         return Response({"message": "Interview cancelled successfully."}, status=status.HTTP_200_OK)
 
 class CompanyInterviewCompleteView(APIView):
@@ -746,3 +752,35 @@ class CompanyTeamActivityView(APIView):
             "message": "Team activity history (placeholder)",
             "activities": []
         })
+
+
+from rest_framework import viewsets
+
+class CompanyReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = CompanyReviewSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        company_id = self.kwargs.get('company_id')
+        if company_id:
+            return CompanyReview.objects.filter(company_id=company_id)
+        return CompanyReview.objects.all()
+
+    def perform_create(self, serializer):
+        company_id = self.kwargs.get('company_id')
+        company = get_object_or_404(Company, id=company_id)
+        
+        # Check if student is allowed to review (must have an accepted application)
+        if self.request.user.role != 'student':
+            raise serializers.ValidationError("Only students can review companies.")
+            
+        has_accepted_app = Application.objects.filter(
+            student=self.request.user.student_profile,
+            offer__company=company,
+            status='accepted'
+        ).exists()
+        
+        if not has_accepted_app:
+            raise serializers.ValidationError("You can only review a company if your application has been accepted.")
+            
+        serializer.save(student=self.request.user.student_profile, company=company)

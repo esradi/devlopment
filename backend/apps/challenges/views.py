@@ -336,11 +336,8 @@ def _unlock_badge(student, challenge):
 
 def _send_pass_notification(student, challenge, score):
     try:
-        from apps.notifications.models import Notification
-        Notification.objects.create(
-            user    = student.user,
-            type    = "challenge_passed",
-            title   = f"Challenge Passed: {challenge.skill_name}",
-            message = f"You scored {score}% and verified this skill!",
-        )
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_challenge_passed(student, challenge.skill_name, score)
+    except Exception as e:
+        print(f"Notify Error: {e}")
     except Exception as e: print(f"Notify Error: {e}")

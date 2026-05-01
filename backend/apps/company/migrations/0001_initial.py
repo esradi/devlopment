@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
                 ('label', models.CharField(max_length=100)),
                 ('sent', models.BooleanField(default=False)),
                 ('sent_at', models.DateTimeField(blank=True, null=True)),
-                ('interview', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reminders', to='companyapp.interview')),
+                ('interview', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reminders', to='company.interview')),
             ],
             options={
                 'db_table': 'api_interviewreminder',
@@ -108,7 +108,7 @@ class Migration(migrations.Migration):
                 ('comments', models.TextField(blank=True, null=True)),
                 ('suggestions', models.TextField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('interview', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='student_feedback', to='companyapp.interview')),
+                ('interview', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='student_feedback', to='company.interview')),
             ],
             options={
                 'db_table': 'api_studentinterviewfeedback',
