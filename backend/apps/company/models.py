@@ -28,8 +28,8 @@ class Interview(models.Model):
         ('in_person', 'In Person'),
     ]
     
-    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='interviews')
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='interviews')
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='company_interviews')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company_interviews')
     
     proposed_spot_1 = models.DateTimeField(null=True, blank=True)
     proposed_spot_2 = models.DateTimeField(null=True, blank=True)
@@ -56,7 +56,7 @@ class Interview(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        db_table = 'api_interview'
+        db_table = 'api_company_interview'
         ordering = ['scheduled_at']
 
     def __str__(self):

@@ -11,6 +11,29 @@ const getHeaders = (isFormData = false, includeAuth = true) => {
     }
     return headers;
 };
+const handleApiError = async (response) => {
+    let errorMessage = `API Error: ${response.status}`;
+    try {
+        const text = await response.text();
+        if (!text) throw new Error(errorMessage);
+        try {
+            const errorData = JSON.parse(text);
+            if (errorData.detail) errorMessage = errorData.detail;
+            else if (errorData.non_field_errors) errorMessage = errorData.non_field_errors[0];
+            else if (errorData.error) errorMessage = errorData.error;
+            else if (typeof errorData === 'object') {
+                const firstKey = Object.keys(errorData)[0];
+                const firstError = errorData[firstKey];
+                if (Array.isArray(firstError)) errorMessage = `${firstKey}: ${firstError[0]}`;
+                else if (typeof firstError === 'string') errorMessage = firstError;
+                else errorMessage = text;
+            } else errorMessage = text;
+        } catch (e) {
+            errorMessage = text;
+        }
+    } catch (e) { }
+    throw new Error(errorMessage);
+};
 
 export const api = {
     async get(endpoint, includeAuth = true) {
@@ -21,7 +44,7 @@ export const api = {
             if (response.status === 401) {
                 console.warn('Unauthorized access - redirecting to login');
             }
-            throw new Error(`API Error: ${response.status}`);
+            await handleApiError(response);
         }
         return response.json();
     },
@@ -34,8 +57,7 @@ export const api = {
             body: isFormData ? data : JSON.stringify(data)
         });
         if (!response.ok) {
-            const errDetails = await response.text();
-            throw new Error(`API Error: ${response.status} - ${errDetails}`);
+            await handleApiError(response);
         }
         return response.json();
     },
@@ -48,8 +70,7 @@ export const api = {
             body: isFormData ? data : JSON.stringify(data)
         });
         if (!response.ok) {
-            const errDetails = await response.text();
-            throw new Error(`API Error: ${response.status} - ${errDetails}`);
+            await handleApiError(response);
         }
         return response.json();
     },
@@ -59,7 +80,7 @@ export const api = {
             method: 'DELETE',
             headers: getHeaders()
         });
-        if (!response.ok && response.status !== 204) throw new Error(`API Error: ${response.status}`);
+        if (!response.ok && response.status !== 204) await handleApiError(response);
         return response.status === 204 ? null : response.json();
     },
 
@@ -71,8 +92,7 @@ export const api = {
             body: isFormData ? data : JSON.stringify(data)
         });
         if (!response.ok) {
-            const errDetails = await response.text();
-            throw new Error(`API Error: ${response.status} - ${errDetails}`);
+            await handleApiError(response);
         }
         return response.json();
     }
@@ -139,9 +159,9 @@ export const companyService = {
 export const conventionService = {
     getConventions: () => api.get('/conventions/'),
     getDetails: (id) => api.get(`/conventions/${id}/`),
-    signCompany: (id, webauthnResponse) => api.post(`/conventions/${id}/sign-company/`, { 
-        confirmed: true, 
-        webauthn_response: webauthnResponse 
+    signCompany: (id, webauthnResponse) => api.post(`/conventions/${id}/sign-company/`, {
+        confirmed: true,
+        webauthn_response: webauthnResponse
     }),
     download: (id) => `${API_BASE_URL}/conventions/${id}/download/`,
 };
@@ -161,6 +181,8 @@ export const applicationService = {
 export const quizService = {
     getQuiz: (id) => api.get(`/quizzes/${id}/`),
     submitQuiz: (id, answers) => api.post(`/quizzes/${id}/submit/`, { answers }),
+    getAvailableQuizzes: () => api.get('/student/quizzes/available/'),
+    getQuizDetails: (id) => api.get(`/student/quizzes/${id}/`),
 };
 
 export const messageService = {

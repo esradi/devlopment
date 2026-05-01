@@ -16,6 +16,7 @@ def create_admin():
             email=email,
             password=password,
             role='admin',
+            is_staff=True,
             email_verified=True
         )
         AdminProfile.objects.create(

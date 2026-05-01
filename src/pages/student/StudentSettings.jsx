@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { dashboardService } from '../../services/api';
+import { dashboardService, authService } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     CheckCircle2,
@@ -53,7 +53,7 @@ const StudentSettings = ({ userData }) => {
         const fetchProfile = async () => {
             try {
                 setIsLoading(true);
-                const data = await dashboardService.getMe();
+                const data = await authService.getMe();
                 if (data) {
                     setFormData({
                         firstName: data.first_name || '',
@@ -64,11 +64,16 @@ const StudentSettings = ({ userData }) => {
                         educationLevel: data.profile?.academic_year || 'Master 2',
                         specialization: data.profile?.speciality || ''
                     });
-                    
+
+                    // Load profile picture from backend
+                    if (data.profile_picture) {
+                        setProfilePic(`http://localhost:8000${data.profile_picture}`);
+                    }
+
                     // Handle complex skills objects from backend
                     const backendSkills = data.profile?.skills || [];
                     setSkills(backendSkills);
-                    
+
                     // Update match score if available
                     if (data.profile?.profile_completeness) {
                         setMatchScore(data.profile.profile_completeness);
@@ -118,19 +123,29 @@ const StudentSettings = ({ userData }) => {
         fileInputRef.current.click();
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 2 * 1024 * 1024) {
                 triggerToast("File is too large (max 2MB)");
                 return;
             }
+            // Preview local
             const reader = new FileReader();
             reader.onloadend = () => {
                 setProfilePic(reader.result);
-                triggerToast("Photo uploaded successfully");
             };
             reader.readAsDataURL(file);
+
+            // Upload to backend
+            try {
+                const formData = new FormData();
+                formData.append('profile_picture', file);
+                await dashboardService.uploadPicture(formData);
+                triggerToast("Photo uploaded successfully ✅");
+            } catch (error) {
+                triggerToast("Failed to upload photo ❌");
+            }
         }
     };
 

@@ -14,24 +14,11 @@ from apps.conventions.models import Convention
 from apps.conventions.services.convention_service import ConventionService
 from apps.admin_panel.utils import log_admin_action
 from .serializers import (
-    InternshipValidationListSerializer,
-    InternshipValidationDetailSerializer,
-    InternshipValidationApproveSerializer,
-    InternshipValidationRejectSerializer,
-    ConventionSerializer,
-    AdminUserListSerializer,
-    AdminUserStatusSerializer,
-    AdminUserVerifyIdSerializer,
-    AdminCompanyListSerializer,
-    AdminCompanyVerifySerializer,
     AdminDomainTreeSerializer,
-    PortfolioSubmissionReviewSerializer,
-    AdminPortfolioSubmissionListSerializer,
     InternshipValidationSerializer,
     AdminUserSerializer,
     AdminCompanySerializer,
     AdminActionLogSerializer
-)
 )
 
 User = get_user_model()

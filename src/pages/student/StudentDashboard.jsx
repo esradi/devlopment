@@ -30,7 +30,7 @@ import {
     Users
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { studentService, applicationService, offerService } from '../../services/api';
+import { studentService, applicationService, offerService, authService } from '../../services/api';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import StudentOffers from './StudentOffers';
 import StudentApplications from './StudentApplications';
@@ -82,7 +82,7 @@ const StudentDashboard = ({ setUserRole }) => {
             showToast(`Successfully applied to ${offer.company_name || 'this offer'}!`);
             // Refresh applications array
             const apps = await applicationService.getMine();
-            setRecentApps(apps || []);
+            setRecentApps(Array.isArray(apps) ? apps : apps?.results || apps?.data || []);
         } catch (error) {
             showToast(`Failed to apply: ${error.message || 'Unknown error'}`);
         }
@@ -124,7 +124,7 @@ const StudentDashboard = ({ setUserRole }) => {
                     recentActivity: dashboardRes?.recent_activity || [],
                     completeness: dashboardRes?.profile_completeness || 0
                 });
-                setRecentApps(appsRes || []);
+                setRecentApps(Array.isArray(appsRes) ? appsRes : appsRes?.results || appsRes?.data || []);
                 setRecommendations(dashboardRes?.recommended_offers || []);
             } catch (err) {
                 console.error("Failed to fetch dashboard data:", err);
@@ -231,9 +231,9 @@ const StudentDashboard = ({ setUserRole }) => {
                         onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                         onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                     >
-                        <img src={userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
+                        <img src={userData?.profile_picture ? `http://localhost:8000${userData.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
                         <div>
-                            <h4>{userData?.first_name || 'Guest'} {userData?.last_name || ''}</h4>
+                            <h4>{userData?.first_name || userData?.email?.split('@')[0] || 'Student'}</h4>
                             <p>Student Portal / {userData?.completeness > 80 ? 'Active Applicant' : 'New Member'}</p>
                         </div>
                     </div>
@@ -279,10 +279,28 @@ const StudentDashboard = ({ setUserRole }) => {
                 </nav>
 
                 <div className="sidebar-footer">
-                    <button className="btn-post-resume" onClick={() => showToast("Resume uploaded successfully! (Mock)")}>
+                    <button className="btn-post-resume" onClick={() => document.getElementById('cv-upload-input').click()}>
                         <Plus size={18} />
                         <span>Post Resume</span>
                     </button>
+                    <input
+                        id="cv-upload-input"
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            const formData = new FormData();
+                            formData.append('cv', file);
+                            try {
+                                await studentService.uploadCV(formData);
+                                showToast("CV uploaded successfully! ✅");
+                            } catch (err) {
+                                showToast("Failed to upload CV ❌");
+                            }
+                        }}
+                    />
                     <button onClick={handleLogout} className="nav-item logout" style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', paddingLeft: '1.5rem' }}>
                         <LogOut size={20} />
                         <span>Logout</span>
@@ -318,7 +336,7 @@ const StudentDashboard = ({ setUserRole }) => {
                         </header>
 
                         <section className="welcome-section">
-                            <h1>Welcome back, {userData?.first_name || 'Student'}! 👋</h1>
+                            <h1>Welcome back, {userData?.first_name || userData?.email?.split('@')[0] || 'Student'}! 👋</h1>
                             <p>Find the perfect internship to launch your career. Explore our latest matching opportunities.</p>
                         </section>
 

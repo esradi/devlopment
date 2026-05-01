@@ -20,7 +20,8 @@ const StudentAnalytics = () => {
                 const data = await studentService.getAnalytics();
                 setAnalyticsData(data);
             } catch (error) {
-                console.error("Failed to load analytics", error);
+                console.error("Failed to load analytics:", error.message);
+                alert("Analytics error: " + error.message);
             } finally {
                 setLoading(false);
             }
@@ -43,21 +44,26 @@ const StudentAnalytics = () => {
     }
 
     if (!analyticsData) {
-        return <div className="analytics-error">Failed to load analytics.</div>;
+        return <div className="analytics-error" style={{color:'red', padding:'20px'}}>
+            Failed to load analytics. Check console for details.
+        </div>;
     }
 
     const { 
         applications_summary, 
         monthly_applications, 
         skills_summary, 
-        match_scores_summary, 
+        match_scores, 
         challenges_summary, 
-        badges_summary 
+        badges
     } = analyticsData;
 
+    const match_scores_summary = match_scores;
+    const badges_summary = { badges: badges };
+
     const skillsData = [
-        { name: 'Verified', value: skills_summary?.verified || 0 },
-        { name: 'Unverified', value: skills_summary?.unverified || 0 }
+        { name: 'Verified', value: skills_summary?.verified_skills || 0 },
+        { name: 'Unverified', value: skills_summary?.unverified_skills || 0 }
     ];
 
     return (
