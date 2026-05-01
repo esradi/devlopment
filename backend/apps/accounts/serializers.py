@@ -127,7 +127,7 @@ class RegisterSerializer(serializers.Serializer):
         conf_password = validated_data.pop('confirmPassword')
         full_name = validated_data.pop('fullName')
         phone = validated_data.pop('phone')
-        national_id_card = validated_data.pop('national_id_card')
+        national_id_card = validated_data.pop('national_id_card', None)
 
         # Pop role-specific fields
         interest = validated_data.pop('interest', '')

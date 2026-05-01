@@ -19,6 +19,7 @@ function SignUp({ setUserRole }) {
         confirmPassword: '',
         role: '',
         code: '',
+        national_id_card: null,
 
         // Student Specific
         interest: '', // Speciality
@@ -87,11 +88,13 @@ function SignUp({ setUserRole }) {
             if (formData.role === 'student' || formData.role === 'admin') {
                 if (!formData.fullName) newErrors.fullName = 'Full Name is required';
                 if (!formData.phone) newErrors.phone = 'Phone Number is required';
+                if (!formData.national_id_card) newErrors.national_id_card = 'ID Card is required';
                 if (formData.role === 'student' && !formData.cv) newErrors.cv = 'CV upload is required';
             } else if (formData.role === 'company') {
                 if (!formData.address) newErrors.address = 'Business address is required';
                 if (!formData.registre_commerce) newErrors.registre_commerce = 'Tax/Registration number is required';
                 if (!formData.industry) newErrors.industry = 'Industry category is required';
+                if (!formData.national_id_card) newErrors.national_id_card = 'ID Card is required';
             }
         } else if (step === 4) {
             if (!formData.email) newErrors.email = 'Email is required';
@@ -125,7 +128,7 @@ function SignUp({ setUserRole }) {
 
         // Append all text fields
         Object.keys(formData).forEach(key => {
-            if (formData[key] && key !== 'cv' && key !== 'logo' && key !== 'code') {
+            if (formData[key] && key !== 'cv' && key !== 'logo' && key !== 'code' && key !== 'national_id_card') {
                 data.append(key, formData[key]);
             }
         });
@@ -136,6 +139,7 @@ function SignUp({ setUserRole }) {
         // Append files
         if (formData.cv) data.append('cv', formData.cv);
         if (formData.logo) data.append('logo', formData.logo);
+        if (formData.national_id_card) data.append('national_id_card', formData.national_id_card);
 
         try {
             console.log('Attempting registration...');
@@ -400,6 +404,17 @@ function SignUp({ setUserRole }) {
                                                 {errors.cv && <span className="error-msg">{errors.cv}</span>}
                                             </div>
                                         )}
+                                        <div className={`input-group ${errors.national_id_card ? 'error' : ''}`}>
+                                            <label>National ID Card (Image/PDF)</label>
+                                            <div className="file-upload-wrapper">
+                                                <label htmlFor="id-upload" className="file-upload-label">
+                                                    <Upload size={18} />
+                                                    <span>{formData.national_id_card ? formData.national_id_card.name : 'Upload ID Document...'}</span>
+                                                </label>
+                                                <input id="id-upload" type="file" accept="image/*,.pdf" className="hidden-file-input" name="national_id_card" onChange={handleFileChange} />
+                                            </div>
+                                            {errors.national_id_card && <span className="error-msg">{errors.national_id_card}</span>}
+                                        </div>
                                         <div className="button-group right">
                                             <button type="button" className="btn-prev" onClick={prevStep}>Back</button>
                                             <button type="submit" className="btn-next">Next Step</button>
@@ -431,6 +446,17 @@ function SignUp({ setUserRole }) {
                                                 <Globe size={18} />
                                                 <input type="url" name="website" placeholder="https://..." value={formData.website} onChange={handleInputChange} />
                                             </div>
+                                        </div>
+                                        <div className={`input-group ${errors.national_id_card ? 'error' : ''}`}>
+                                            <label>Legal Representative ID (Image/PDF)</label>
+                                            <div className="file-upload-wrapper">
+                                                <label htmlFor="company-id-upload" className="file-upload-label">
+                                                    <Upload size={18} />
+                                                    <span>{formData.national_id_card ? formData.national_id_card.name : 'Upload ID Document...'}</span>
+                                                </label>
+                                                <input id="company-id-upload" type="file" accept="image/*,.pdf" className="hidden-file-input" name="national_id_card" onChange={handleFileChange} />
+                                            </div>
+                                            {errors.national_id_card && <span className="error-msg">{errors.national_id_card}</span>}
                                         </div>
                                         <div className="button-group right">
                                             <button type="button" className="btn-prev" onClick={prevStep}>Back</button>

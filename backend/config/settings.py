@@ -19,6 +19,7 @@ DatabaseSchemaEditor._rename_field_sql = patched_rename_field_sql
 
 from django.db.backends.base.base import BaseDatabaseWrapper
 BaseDatabaseWrapper.check_database_version_supported = lambda self: None
+
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -107,7 +108,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'stagio_db',
         'USER': 'root',
-        'PASSWORD': '',  
+        'PASSWORD': 'youkiyouki2005',  
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
