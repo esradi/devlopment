@@ -143,6 +143,18 @@ const LandingPage = ({ userRole }) => {
 
 function App() {
   const [userRole, setUserRole] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        if (userData.role) {
+          return userData.role;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to parse stored user data');
+    }
+    
     return window.location.pathname.startsWith('/dashboard') ? 'student' : 'public';
   });
   const location = useLocation();

@@ -12,52 +12,41 @@ const CompanyOffers = ({ userData }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('All');
 
-    useEffect(() => {
-        const fetchOffers = async () => {
-            try {
-                const data = await companyService.getMineOffers();
-                let fetchedOffers = data?.results || data || [];
+useEffect(() => {
+    const fetchOffers = async () => {
+        try {
+            const data = await companyService.getMineOffers();
+            let fetchedOffers = data?.results || data || [];
 
-                // Mock data to match the screenshot if the API is empty
-                if (fetchedOffers.length === 0) {
-                    fetchedOffers = [
-                        {
-                            id: 1,
-                            title: 'Data Scientist Intern',
-                            status: 'ACTIVE',
-                            tags: ['PFE', '4 Months', 'Python', 'TensorFlow'],
-                            candidates: 24,
-                            avg_match: 88,
-                            posted: '2d ago'
-                        },
-                        {
-                            id: 2,
-                            title: 'Frontend UX Engineer',
-                            status: 'ACTIVE',
-                            tags: ['Internship', '3 Months', 'React', 'Tailwind CSS'],
-                            candidates: 12,
-                            avg_match: 94,
-                            posted: '5h ago'
-                        },
-                        {
-                            id: 3,
-                            title: 'Backend Security Intern',
-                            status: 'DRAFT',
-                            tags: ['Summer Program', '2 Months'],
-                            last_edited: '1 week ago'
-                        }
-                    ];
-                }
+            // Map API fields to component fields
+            fetchedOffers = fetchedOffers.map(offer => ({
+                id: offer.id,
+                title: offer.title,
+                status: offer.status?.toUpperCase() || 'ACTIVE', // normalize to uppercase
+                tags: [
+                    ...(offer.offer_types?.map(t => t.name) || []),
+                    ...(offer.durations?.map(d => `${d.months} Months`) || []),
+                    ...(offer.skills?.map(s => s.name) || []),
+                ],
+                candidates: offer.applications_count || 0,
+                avg_match: offer.avg_match_score || 0,
+                posted: offer.created_at
+                    ? new Date(offer.created_at).toLocaleDateString()
+                    : 'N/A',
+                last_edited: offer.updated_at
+                    ? new Date(offer.updated_at).toLocaleDateString()
+                    : 'N/A',
+            }));
 
-                setOffers(fetchedOffers);
-            } catch (err) {
-                console.error("Failed to fetch company offers:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchOffers();
-    }, []);
+            setOffers(fetchedOffers);
+        } catch (err) {
+            console.error("Failed to fetch company offers:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchOffers();
+}, []);
 
     const filteredOffers = offers.filter(offer => 
         offer.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -167,9 +156,6 @@ const CompanyOffers = ({ userData }) => {
                             </button>
                             <div className="icon-actions">
                                 <button className="icon-btn"><Edit2 size={16} /></button>
-                                <button className="icon-btn">
-                                    {offer.status === 'DRAFT' ? <Trash2 size={16} /> : <MoreVertical size={16} />}
-                                </button>
                             </div>
                         </div>
                     </motion.div>

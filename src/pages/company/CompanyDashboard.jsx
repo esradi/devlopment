@@ -25,13 +25,29 @@ import {
     Menu
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { companyService } from '../../services/api';
+import { companyService, authService} from '../../services/api';
 import CompanyOffers from './CompanyOffers';
 import CompanyCandidates from './CompanyCandidates';
 import CreateOffer from './CreateOffer';
 import CompanySidebar from '../../components/CompanySidebar';
 import CompanyNavbar from '../../components/Navbar/CompanyNavbar';
 import './CompanyDashboard.css';
+
+const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+};
 
 const CompanyDashboard = ({ setUserRole }) => {
     const navigate = useNavigate();
@@ -48,9 +64,13 @@ const CompanyDashboard = ({ setUserRole }) => {
     const [activeTab, setActiveTab] = useState(getTabFromPath(location.pathname));
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
+    const [dashboardStats, setDashboardStats] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
     // ★ RESPONSIVE: drives the mobile sidebar drawer (open/close)
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [recentApplications, setRecentApplications] = useState([]);
+    const [topOffers, setTopOffers] = useState([]);
+    const [weeklyApplicationsData, setWeeklyApplicationsData] = useState([]);
 
     // ★ RESPONSIVE: auto-close drawer on route change so it doesn't stay open after nav
     useEffect(() => {
@@ -66,31 +86,80 @@ const CompanyDashboard = ({ setUserRole }) => {
         setActiveTab(getTabFromPath(location.pathname));
     }, [location.pathname]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                let res = {};
-                try {
-                    res = await companyService.getDashboard();
-                } catch(e) {
-                    console.warn("Using mock data for layout");
-                    res = {
-                        first_name: 'Sonatrach',
-                        company_name: 'Sonatrach',
-                        industry: 'Energy & Oil',
-                        location: 'Algiers'
-                    };
-                }
-                setUserData(res || {});
-            } catch (err) {
-                console.error("Failed to fetch dashboard data:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+useEffect(() => {
+const fetchData = async () => {
+    try {
+        setLoading(true);
+        const meRes = await authService.getMe();
+        console.log("meRes:", meRes);
+        setUserData({ ...meRes });
+        
+        // Fetch dashboard stats and all related data
+        const dashRes = await companyService.getDashboard();
+        console.log("dashRes:", dashRes);
+       // setDashboardStats(dashRes.stats || dashRes);
+       setDashboardStats(dashRes); 
+        
+        // Extract and set recent applications from dashboard
+        if (dashRes.recent_applications) {
+            setRecentApplications(dashRes.recent_applications);
+        }
+   
+        // Extract and set top offers from dashboard
+        // if (dashRes.top_offers) {
+        //     setTopOffers(dashRes.top_offers);
+        // }
+        if (dashRes.top_offers_by_applications) {
+           setTopOffers(dashRes.top_offers_by_applications);
+        } 
+        
+        // Generate weekly data from applications
+        if (dashRes.recent_applications) {
+            generateWeeklyData(dashRes.recent_applications);
+        }
+    } catch (err) {
+        console.error("Failed to fetch dashboard:", err);
+        showToast("Failed to load dashboard data");
+    } finally {
+        setLoading(false);
+    }
+};
+fetchData();
+}, []);
+
+// Function to generate weekly application data
+const generateWeeklyData = (applications) => {
+    const today = new Date();
+    const weekData = {};
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // Initialize week with 0 counts
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - (6 - i));
+        const dayKey = daysOfWeek[date.getDay()];
+        weekData[dayKey] = 0;
+    }
+    
+    // Count applications for each day
+    applications.forEach(app => {
+        const appDate = new Date(app.applied_at);
+        const dayDiff = Math.floor((today - appDate) / (1000 * 60 * 60 * 24));
+        
+        if (dayDiff >= 0 && dayDiff < 7) {
+            const dayKey = daysOfWeek[appDate.getDay()];
+            weekData[dayKey]++;
+        }
+    });
+    
+    // Convert to array format for chart
+    const chartData = daysOfWeek.map(day => ({
+        day,
+        h: Math.min(weekData[day] * 10, 80) // Scale height (max 80px)
+    }));
+    
+    setWeeklyApplicationsData(chartData);
+};
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -141,8 +210,8 @@ const CompanyDashboard = ({ setUserRole }) => {
                             {/* Summary Header */}
                             <header className="dashboard-summary-header">
                                 <div className="welcome-section">
-                                    <h2>Welcome back, {userData?.company_name || 'Partner'}! 👋</h2>
-                                    <p>You have <strong>3 new applications</strong> today.</p>
+                                    <h2>Welcome back, {userData?.profile?.company_name || 'Partner'}! 👋</h2>
+                                    <p>You have <strong>{dashboardStats?.stats?.total_applications || 0} total applications</strong> today.</p>
                                 </div>
                                 <button className="post-offer-btn" onClick={() => navigate('/dashboard/company/offer/create')}>
                                     <Plus size={20} />
@@ -157,10 +226,10 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <div className="icon-box" style={{ background: 'rgba(158, 89, 255, 0.15)', color: '#9e59ff' }}>
                                             <Briefcase size={24} />
                                         </div>
-                                        <span className="trend-badge">+1 this week</span>
+                                        <span className="trend-badge">+{dashboardStats?.active_offers   || 0}</span>
                                     </div>
                                     <span className="stat-label">Active Offers</span>
-                                    <span className="stat-value">4</span>
+                                    <span className="stat-value">{dashboardStats?.stats?.active_offers || 0}</span>
                                 </div>
                                 <div className="stat-pille">
                                     <div className="stat-icon-row">
@@ -170,7 +239,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <span className="trend-badge" style={{ color: '#ff1b90', background: 'rgba(255, 27, 144, 0.1)' }}>Across all offers</span>
                                     </div>
                                     <span className="stat-label">Total Applications</span>
-                                    <span className="stat-value">23</span>
+                                    <span className="stat-value">{dashboardStats?.stats?.total_applications || 0}</span>
                                 </div>
                                 <div className="stat-pille">
                                     <div className="stat-icon-row">
@@ -180,7 +249,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <span className="trend-badge" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>To process</span>
                                     </div>
                                     <span className="stat-label">Pending Review</span>
-                                    <span className="stat-value">12</span>
+                                    <span className="stat-value">{dashboardStats?.stats?.applications_pending || 0}</span>
                                 </div>
                                 <div className="stat-pille">
                                     <div className="stat-icon-row">
@@ -190,7 +259,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <span className="trend-badge" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' }}>This month</span>
                                     </div>
                                     <span className="stat-label">Accepted</span>
-                                    <span className="stat-value">5</span>
+                                    <span className="stat-value">{dashboardStats?.stats?.applications_accepted || 0}</span>
                                 </div>
                             </div>
 
@@ -202,7 +271,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                                 <div className="applications-chart">
                               
                                    <div className="chart-placeholder-box" style={{ alignItems: 'flex-end', padding: '20px 24px 0 24px' }}>
-                                   {[
+                                   {(weeklyApplicationsData.length > 0 ? weeklyApplicationsData : [
                                      { day: 'Sun', h: 30 },
                                      { day: 'Mon', h: 45 },
                                      { day: 'Tue', h: 25 },
@@ -210,7 +279,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                                      { day: 'Thu', h: 80 },
                                      { day: 'Fri', h: 50 },
                                      { day: 'Sat', h: 40 },
-                                    ].map((item, i) => (
+                                    ]).map((item, i) => (
                                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1 }}>
                                    <div style={{
                                     width: '100%',
@@ -238,49 +307,35 @@ const CompanyDashboard = ({ setUserRole }) => {
                                     </Link>
                                 </div>
                                 <div className="offers-list-vertical">
-                                    <div className="offer-wide-card">
-                                        <div className="offer-main-info">
-                                            <div className="offer-title-row">
-                                                <h4>Data Scientist Intern</h4>
-                                                <span className="status-badge active">Active</span>
+                                    {topOffers && topOffers.length > 0 ? (
+                                        topOffers.map((offer, idx) => (
+                                            <div key={idx} className="offer-wide-card">
+                                                <div className="offer-main-info">
+                                                    <div className="offer-title-row">
+                                                        <h4>{offer.offer_title}</h4>
+                                                        <span className={`status-badge ${offer.pending_count > 0 ? 'active' : 'closed'}`}>
+                                                            {offer.pending_count > 0 ? 'Active' : 'Closed'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="offer-tags">
+                                                        {/* Add relevant tags if available in backend */}
+                                                    </div>
+                                                    <div className="offer-stats-row">
+                                                        <span><Users size={12} /> {offer.applications_count} candidates</span>
+                                                        <span><TrendingUp size={12} /> {Math.round(offer.acceptance_rate)}% acceptance</span>
+                                                    </div>
+                                                </div>
+                                                <div className="offer-actions">
+                                                    <button className="btn-secondary-outline" onClick={() => navigate(`/dashboard/company/offer/${offer.offer_id}/candidates`)}>View Candidates</button>
+                                                    <button className="btn-secondary-outline" onClick={() => navigate(`/dashboard/company/offer/${offer.offer_id}/edit`)}>Edit</button>
+                                                </div>
                                             </div>
-                                            <div className="offer-tags">
-                                                <span className="tag-pill">PFE</span>
-                                                <span className="tag-pill">4 Months</span>
-                                                <span className="tag-pill">Python, SQL</span>
-                                            </div>
-                                            <div className="offer-stats-row">
-                                                <span><Users size={12} /> 12 candidates</span>
-                                                <span><TrendingUp size={12} /> Posted 2d ago</span>
-                                            </div>
+                                        ))
+                                    ) : (
+                                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            No offers yet. <Link to="/dashboard/company/offer/create">Create one</Link>
                                         </div>
-                                        <div className="offer-actions">
-                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/1/candidates')}>View Candidates</button>
-                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/1/edit')}>Edit</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="offer-wide-card">
-                                        <div className="offer-main-info">
-                                            <div className="offer-title-row">
-                                                <h4>Full Stack Dev (MERN)</h4>
-                                                <span className="status-badge closed">Closed</span>
-                                            </div>
-                                            <div className="offer-tags">
-                                                <span className="tag-pill">PFE</span>
-                                                <span className="tag-pill">6 Months</span>
-                                                <span className="tag-pill">React, Node.js</span>
-                                            </div>
-                                            <div className="offer-stats-row">
-                                                <span><Users size={12} /> 45 candidates</span>
-                                                <span><TrendingUp size={12} /> Expired 1w ago</span>
-                                            </div>
-                                        </div>
-                                        <div className="offer-actions">
-                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/2/candidates')}>View Talent</button>
-                                            <button className="btn-secondary-outline" onClick={() => navigate('/dashboard/company/offer/2/edit')}>Edit</button>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </section>
 
@@ -297,52 +352,68 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <thead>
                                             <tr>
                                                 <th>Candidate</th>
-                                                <th>University</th>
-                                                <th>Skills</th>
+                                                <th>Offer</th>
+                                                <th>Match Score</th>
                                                 <th>Status</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {[
-                                                { name: 'Amira Benali', univ: 'ESI Alger', skills: ['React', 'Tailwind'], status: 'Pending', time: '2h ago' },
-                                                { name: 'Yacine Meziane', univ: 'USTHB Alger', skills: ['Python', 'Django'], status: 'Pending', time: '5h ago' },
-                                                { name: 'Sara Ould Ali', univ: 'University of Tlemcen', skills: ['UI/UX', 'Figma'], status: 'Accepted', time: 'Yesterday' }
-                                            ].map((cand, i) => (
-                                                <tr key={i}>
-                                                    <td>
-                                                        <div className="candidate-cell">
-                                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, #333, #555)' }}></div>
-                                                            <div className="candidate-name-wrap">
-                                                                <h5>{cand.name}</h5>
-                                                                <p>Applied {cand.time}</p>
+                                            {recentApplications && recentApplications.length > 0 ? (
+                                                recentApplications.slice(0, 5).map((app, i) => (
+                                                    <tr key={i}>
+                                                        <td>
+                                                            <div className="candidate-cell">
+                                                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, #333, #555)', backgroundImage: app.student_photo ? `url(${app.student_photo})` : '', backgroundSize: 'cover' }}></div>
+                                                                <div className="candidate-name-wrap">
+                                                                    <h5>{app.student_name}</h5>
+                                                                    <p>Applied {formatTime(app.applied_at)}</p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{cand.univ}</td>
-                                                    <td>
-                                                        <div className="skill-list">
-                                                            {cand.skills.map((s, j) => <span key={j} className="skill-tag">{s}</span>)}
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span className={`status-text ${cand.status.toLowerCase()}`}>{cand.status}</span>
-                                                    </td>
-                                                    <td>
-                                                        <div className="action-circles">
-                                                            <button 
-                                                                className="btn-view-app" 
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    navigate(`/dashboard/company/offer/1/application/${i + 1}`);
-                                                                }}
-                                                            >
-                                                                View
-                                                            </button>
-                                                        </div>
+                                                        </td>
+                                                        <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{app.offer_title}</td>
+                                                        <td>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <div style={{
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    borderRadius: '50%',
+                                                                    background: `conic-gradient(var(--accent-primary) 0% ${app.match_score}%, rgba(255,255,255,0.1) ${app.match_score}% 100%)`,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    fontSize: '11px',
+                                                                    fontWeight: '600'
+                                                                }}>
+                                                                    {Math.round(app.match_score)}%
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span className={`status-text ${app.status.toLowerCase()}`}>{app.status}</span>
+                                                        </td>
+                                                        <td>
+                                                            <div className="action-circles">
+                                                                <button 
+                                                                    className="btn-view-app" 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        navigate(`/dashboard/company/application/${app.id}`);
+                                                                    }}
+                                                                >
+                                                                    View
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                                        No applications yet
                                                     </td>
                                                 </tr>
-                                            ))}
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

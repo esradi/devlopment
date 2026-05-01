@@ -90,8 +90,8 @@ export const studentService = {
 
 export const companyService = {
     getDashboard: () => api.get('/company/dashboard/'),
-    getOffers: () => api.get('/offers/mine/'),
-    createOffer: (data) => api.post('/offers/create/', data),
+    getMineOffers: () => api.get('/offers/mine/'),
+    createOffer: (data) => api.post('/offers/', data),
     getOfferOptions: () => api.get('/offers/options/'),
     getOfferApplicants: (offerId) => api.get(`/applications/offer/${offerId}/`),
     updateApplicationStatus: (id, status) => api.post(`/applications/${id}/update-status/`, { status }),

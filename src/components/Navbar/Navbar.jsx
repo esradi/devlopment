@@ -19,6 +19,21 @@ const Navbar = ({ role, setUserRole }) => {
         return () => window.removeEventListener('scroll', updateScroll);
     }, []);
 
+    // Sync role from localStorage on mount and when role changes
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser && role === 'public') {
+            try {
+                const userData = JSON.parse(storedUser);
+                if (userData.role) {
+                    setUserRole(userData.role);
+                }
+            } catch (err) {
+                console.warn('Failed to parse stored user data');
+            }
+        }
+    }, []);
+
     // Close dropdowns on route change
     useEffect(() => {
         setIsProfileOpen(false);
@@ -98,16 +113,48 @@ const Navbar = ({ role, setUserRole }) => {
     };
 
     const getProfileLink = () => {
-        switch (role) {
-            case 'student': return '/student/profile';
-            case 'company': return '/CompanyProfile';
+        let currentRole = role;
+       
+        if (currentRole === 'public' || !currentRole) {
+            try {
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    const userData = JSON.parse(storedUser);
+                    if (userData.role) {
+                        currentRole = userData.role;
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to retrieve role from localStorage');
+            }
+        }
+
+        switch (currentRole) {
+            case 'student': return '/dashboard/student/complete-profile';
+            case 'company': return '/dashboard/company/profile';
             case 'admin': return '/admin/profile';
             default: return '/profile';
         }
     };
 
     const getProfileColor = () => {
-        switch (role) {
+        let currentRole = role;
+
+        if (currentRole === 'public' || !currentRole) {
+            try {
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    const userData = JSON.parse(storedUser);
+                    if (userData.role) {
+                        currentRole = userData.role;
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to retrieve role from localStorage');
+            }
+        }
+
+        switch (currentRole) {
             case 'student': return '#3b82f6';
             case 'company': return '#10b981';
             case 'admin': return '#f59e0b';
@@ -116,7 +163,23 @@ const Navbar = ({ role, setUserRole }) => {
     };
 
     const getProfileName = () => {
-        switch (role) {
+        let currentRole = role;
+        
+        if (currentRole === 'public' || !currentRole) {
+            try {
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    const userData = JSON.parse(storedUser);
+                    if (userData.role) {
+                        currentRole = userData.role;
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to retrieve role from localStorage');
+            }
+        }
+
+        switch (currentRole) {
             case 'student': return 'AB';
             case 'company': return 'Tech';
             case 'admin': return 'Admin';
@@ -238,7 +301,7 @@ const Navbar = ({ role, setUserRole }) => {
                             {role !== 'public' && (
                                 <>
                                     <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%', margin: '10px 0' }} />
-                                    <li><Link to={getProfileLink()} onClick={() => setIsMobileMenuOpen(false)}>Profile</Link></li>
+                                    <li><Link to={getProfileLink()}>Profile</Link></li>
                                     <li><button onClick={handleLogout} className="mobile-logout-link">Logout</button></li>
                                 </>
                             )}

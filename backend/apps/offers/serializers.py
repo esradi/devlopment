@@ -61,18 +61,9 @@ class OfferSerializer(serializers.ModelSerializer):
             'is_featured', 'boosted_until', 'report_count', 'is_flagged',
             'wilaya', 'created_at', 'updated_at'
         ]
-
-class OfferReportSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OfferReport
-        fields = ['id', 'offer', 'reason', 'description', 'created_at']
-        read_only_fields = ['reporter']
-        read_only_fields = ['company', 'created_at', 'updated_at']
-
-class ApplicationEventSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ApplicationEvent
-        fields = ['id', 'event_type', 'description', 'data', 'created_at']
+        extra_kwargs = {
+        'company': {'read_only': True} 
+    }
 
     def get_is_favorite(self, obj):
         user = self.context.get('request').user if self.context.get('request') else None
@@ -92,6 +83,18 @@ class ApplicationEventSerializer(serializers.ModelSerializer):
             except Exception:
                 pass
         return 0
+
+
+class OfferReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfferReport
+        fields = ['id', 'offer', 'reason', 'description', 'created_at']
+        read_only_fields = ['company', 'created_at', 'updated_at']
+
+class ApplicationEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicationEvent
+        fields = ['id', 'event_type', 'description', 'data', 'created_at']
 
 class FavoriteOfferSerializer(serializers.ModelSerializer):
     offer_details = OfferSerializer(source='offer', read_only=True)
