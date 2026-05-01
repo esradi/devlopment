@@ -233,6 +233,9 @@ const CompanyDashboard = ({ setUserRole }) => {
                                     <h2>Welcome back, {userData?.profile?.company_name || 'Partner'}! 👋</h2>
                                     <p>You have <strong>{dashboardStats?.stats?.total_applications || 0} total applications</strong> today.</p>
                                 </div>
+                                <button className="btn-primary-pink" onClick={() => navigate('/dashboard/company/offer/create')}>
+                                    <Plus size={18} /> Post an Offer
+                                </button>
                             </header>
 
                             {/* Stat Cards */}
