@@ -79,6 +79,15 @@ class AdminActionLogSerializer(serializers.ModelSerializer):
         model = AdminActionLog
         fields = ['id', 'action_type', 'target_model', 'target_id', 'ip_address', 'metadata', 'timestamp']
 
+class AdminPortfolioReviewSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.user.get_full_name', read_only=True)
+    skill_name = serializers.CharField(source='skill.name', read_only=True)
+
+    class Meta:
+        model = PortfolioSubmission
+        fields = ['id', 'student_name', 'skill_name', 'portfolio_url', 'status', 'feedback', 'submitted_at']
+        read_only_fields = ['id', 'student_name', 'skill_name', 'portfolio_url', 'submitted_at']
+
 class AdminDomainTreeSerializer(serializers.ModelSerializer):
     specialities = SpecialityDetailSerializer(many=True, read_only=True)
     class Meta:

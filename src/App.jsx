@@ -155,7 +155,7 @@ function App() {
     } catch (err) {
       console.warn('Failed to parse stored user data');
     }
-
+    
     return window.location.pathname.startsWith('/dashboard') ? 'student' : 'public';
   });
   const location = useLocation();

@@ -207,17 +207,30 @@ export const notificationService = {
 
 export const adminService = {
     getDashboard: () => api.get('/admin/dashboard/'),
-    getUsers: () => api.get('/admin/users/'),
-    updateUserStatus: (id, data) => api.patch(`/admin/users/${id}/status/`, data),
+    getUsers: (role) => api.get(role ? `/admin/users/?role=${role}` : '/admin/users/'),
+    getUserActivity: (id) => api.get(`/admin/users/${id}/activity/`),
+    verifyUser: (id) => api.post(`/admin/users/${id}/verify/`),
+    updateUserStatus: (id, data) => api.post(`/admin/users/${id}/status/`, data),
+    
     getCompanies: () => api.get('/admin/companies/'),
-    verifyCompany: (id, data) => api.patch(`/admin/companies/${id}/verify/`, data),
-    getValidations: () => api.get('/admin/validations/'),
+    verifyCompany: (id) => api.post(`/admin/companies/${id}/verify/`),
+    rejectCompany: (id, reason) => api.post(`/admin/companies/${id}/reject/`, { reason }),
+    
+    getValidations: (status) => api.get(status ? `/admin/internships/?status=${status}` : '/admin/internships/'),
     getValidationDetails: (id) => api.get(`/admin/validations/${id}/`),
-    approveValidation: (id, data) => api.post(`/admin/validations/${id}/approve/`, data),
-    rejectValidation: (id, data) => api.post(`/admin/validations/${id}/reject/`),
-    getPortfolios: () => api.get('/admin/portfolios/'),
-    reviewPortfolio: (id, data) => api.post(`/admin/portfolio/${id}/review/`, data),
+    approveValidation: (id, data) => api.post(`/admin/internships/${id}/validate/`, { ...data, status: 'approved' }),
+    rejectValidation: (id, data) => api.post(`/admin/internships/${id}/validate/`, { ...data, status: 'rejected' }),
+    
+    getPortfolios: (status) => api.get(status ? `/admin/portfolios/?status=${status}` : '/admin/portfolios/'),
+    reviewPortfolio: (id, data) => api.post(`/admin/portfolios/${id}/review/`, data),
+    
+    getAnalytics: () => api.get('/admin/analytics/'),
+    getAlerts: () => api.get('/admin/alerts/'),
+    getActivityFeed: () => api.get('/admin/activities/'),
     getSpecialities: () => api.get('/admin/specialities/'),
+    
+    exportUsers: (role) => api.get(role ? `/admin/users/export/?role=${role}` : '/admin/users/export/'),
 };
 
+// Alias for backwards compatibility if needed
 export const dashboardService = studentService;

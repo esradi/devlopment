@@ -13,13 +13,16 @@ from apps.accounts.models import Company
 from apps.conventions.models import Convention
 from apps.conventions.services.convention_service import ConventionService
 from apps.admin_panel.utils import log_admin_action
-from .serializers import (
-    AdminDomainTreeSerializer,
+from apps.admin_panel.serializers import (
+    AdminDashboardSerializer,
+    AdminActionLogSerializer,
     InternshipValidationSerializer,
     AdminUserSerializer,
     AdminCompanySerializer,
-    AdminActionLogSerializer
+    AdminPortfolioReviewSerializer,
+    AdminDomainTreeSerializer
 )
+from apps.notifications.services import NotificationService
 
 User = get_user_model()
 
@@ -139,8 +142,11 @@ class InternshipValidationViewSet(BaseAdminViewSet):
         log_admin_action(request, f'internship_{decision}', val)
         
         if decision == 'approved':
-            try: ConventionService.generate_convention(app)
-            except: pass # Log failed PDF but continue
+            try: 
+                ConventionService.generate_convention(app)
+                NotificationService.notify_convention_validated(val)
+            except Exception as e:
+                print(f"Error in post-validation: {e}")
             
         return Response({"status": decision})
 
@@ -255,7 +261,50 @@ class AdminCompanyViewSet(BaseAdminViewSet):
         company.save()
         
         log_admin_action(request, 'company_rejected', company, {'reason': reason})
+        
+        # Notify Company
+        NotificationService.create_and_send_notification(
+            user=company.user,
+            notif_type='company_rejected',
+            title='Vérification de compte refusée',
+            message=f"La vérification de votre compte a été refusée pour la raison suivante : {reason}",
+            priority='high'
+        )
+        
         return Response({'status': 'rejected'})
+
+class AdminPortfolioViewSet(BaseAdminViewSet):
+    """Review student skill portfolio submissions"""
+    from apps.specialities.models import PortfolioSubmission
+    queryset = PortfolioSubmission.objects.select_related('student__user', 'skill').all()
+    serializer_class = AdminPortfolioReviewSerializer
+
+    @action(detail=True, methods=['post'])
+    def review(self, request, pk=None):
+        submission = self.get_object()
+        status_choice = request.data.get('status')
+        feedback = request.data.get('feedback', '')
+
+        if status_choice not in ['approved', 'rejected']:
+            return Response({"error": "Status must be approved or rejected"}, status=400)
+
+        submission.status = status_choice
+        submission.feedback = feedback
+        submission.reviewed_by = request.user
+        submission.save()
+
+        if status_choice == 'approved':
+            # Mark the actual StudentSkill as verified
+            from apps.accounts.models import StudentSkill
+            ss = StudentSkill.objects.filter(student=submission.student, skill=submission.skill).first()
+            if ss:
+                ss.is_verified = True
+                ss.save()
+            
+            NotificationService.notify_skill_verified(submission.student, submission.skill.name)
+        
+        log_admin_action(request, f'portfolio_{status_choice}', submission)
+        return Response({'status': status_choice})
 
 class AdminActionLogViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAdminUser]

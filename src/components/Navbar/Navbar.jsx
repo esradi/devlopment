@@ -115,7 +115,7 @@ const Navbar = ({ role, setUserRole }) => {
 
     const getProfileLink = () => {
         let currentRole = role;
-
+        
         if (currentRole === 'public' || !currentRole) {
             try {
                 const storedUser = localStorage.getItem('user');
@@ -165,7 +165,7 @@ const Navbar = ({ role, setUserRole }) => {
 
     const getProfileName = () => {
         let currentRole = role;
-
+        
         if (currentRole === 'public' || !currentRole) {
             try {
                 const storedUser = localStorage.getItem('user');
@@ -231,8 +231,8 @@ const Navbar = ({ role, setUserRole }) => {
                 <div className="actions-section">
                     {role !== 'public' ? (
                         <div className="auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Link
-                                to={role === 'student' ? '/dashboard/student/messages' : role === 'company' ? '/dashboard/company/messages' : '/dashboard/admin/messages'}
+                            <Link 
+                                to={role === 'student' ? '/dashboard/student/messages' : role === 'company' ? '/dashboard/company/messages' : '/dashboard/admin/messages'} 
                                 className="nav-action-btn"
                                 title="Messages"
                             >

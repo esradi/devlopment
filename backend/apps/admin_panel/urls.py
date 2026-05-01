@@ -6,6 +6,7 @@ from apps.admin_panel.views import (
     InternshipValidationViewSet,
     AdminUserViewSet,
     AdminCompanyViewSet,
+    AdminPortfolioViewSet,
     AdminAnalyticsView,
     AdminAlertsView,
     AdminActivityFeedView
@@ -16,6 +17,7 @@ router.register(r'logs', AdminActionLogViewSet, basename='admin-logs')
 router.register(r'internships', InternshipValidationViewSet, basename='admin-internships')
 router.register(r'users', AdminUserViewSet, basename='admin-users')
 router.register(r'companies', AdminCompanyViewSet, basename='admin-companies')
+router.register(r'portfolios', AdminPortfolioViewSet, basename='admin-portfolios')
 
 urlpatterns = [
     path('dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
