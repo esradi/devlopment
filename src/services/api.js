@@ -1,45 +1,77 @@
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
-const getHeaders = () => {
+const getHeaders = (isFormData = false, includeAuth = true) => {
     const token = localStorage.getItem('access_token');
-    return {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    };
+    const headers = {};
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+    if (includeAuth && token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+};
+const handleApiError = async (response) => {
+    let errorMessage = `API Error: ${response.status}`;
+    try {
+        const text = await response.text();
+        if (!text) throw new Error(errorMessage);
+        try {
+            const errorData = JSON.parse(text);
+            if (errorData.detail) errorMessage = errorData.detail;
+            else if (errorData.non_field_errors) errorMessage = errorData.non_field_errors[0];
+            else if (errorData.error) errorMessage = errorData.error;
+            else if (typeof errorData === 'object') {
+                const firstKey = Object.keys(errorData)[0];
+                const firstError = errorData[firstKey];
+                if (Array.isArray(firstError)) errorMessage = `${firstKey}: ${firstError[0]}`;
+                else if (typeof firstError === 'string') errorMessage = firstError;
+                else errorMessage = text;
+            } else errorMessage = text;
+        } catch (e) {
+            errorMessage = text;
+        }
+    } catch (e) { }
+    throw new Error(errorMessage);
 };
 
 export const api = {
-    async get(endpoint) {
+    async get(endpoint, includeAuth = true) {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            headers: getHeaders()
+            headers: getHeaders(false, includeAuth)
         });
         if (!response.ok) {
             if (response.status === 401) {
                 console.warn('Unauthorized access - redirecting to login');
-                // Optional: handle redirection or token refresh here
             }
-            throw new Error(`API Error: ${response.status}`);
+            await handleApiError(response);
         }
         return response.json();
     },
 
-    async post(endpoint, data) {
+    async post(endpoint, data, includeAuth = true) {
+        const isFormData = data instanceof FormData;
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(data)
+            headers: getHeaders(isFormData, includeAuth),
+            body: isFormData ? data : JSON.stringify(data)
         });
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        if (!response.ok) {
+            await handleApiError(response);
+        }
         return response.json();
     },
 
     async put(endpoint, data) {
+        const isFormData = data instanceof FormData;
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify(data)
+            headers: getHeaders(isFormData),
+            body: isFormData ? data : JSON.stringify(data)
         });
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        if (!response.ok) {
+            await handleApiError(response);
+        }
         return response.json();
     },
 
@@ -48,15 +80,30 @@ export const api = {
             method: 'DELETE',
             headers: getHeaders()
         });
-        if (!response.ok && response.status !== 204) throw new Error(`API Error: ${response.status}`);
+        if (!response.ok && response.status !== 204) await handleApiError(response);
         return response.status === 204 ? null : response.json();
+    },
+
+    async patch(endpoint, data) {
+        const isFormData = data instanceof FormData;
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: 'PATCH',
+            headers: getHeaders(isFormData),
+            body: isFormData ? data : JSON.stringify(data)
+        });
+        if (!response.ok) {
+            await handleApiError(response);
+        }
+        return response.json();
     }
 };
 
 export const authService = {
-    login: (credentials) => api.post('/auth/login/', credentials),
-    signup: (userData) => api.post('/auth/signup/', userData),
+    login: (credentials) => api.post('/login/', credentials, false),
+    signup: (userData) => api.post('/register/', userData, false),
+    verifyEmail: (data) => api.post('/verify-email/', data, false),
     getMe: () => api.get('/auth/me/'),
+    updateMe: (data) => api.patch('/auth/me/', data),
 };
 
 export const studentService = {
@@ -65,7 +112,7 @@ export const studentService = {
     getDashboard: () => api.get('/student/dashboard/'),
     getAnalytics: () => api.get('/student/analytics/'),
     getRecommendations: () => api.get('/student/recommendations/'),
-    getCompetencies: () => api.get('/student/competencies/'),
+    getCompetencies: () => api.get('/student/skills/'),
     uploadCV: (formData) => {
         const token = localStorage.getItem('access_token');
         return fetch(`${API_BASE_URL}/student/profile/upload-cv/`, {
@@ -93,8 +140,30 @@ export const companyService = {
     getMineOffers: () => api.get('/offers/mine/'),
     createOffer: (data) => api.post('/offers/', data),
     getOfferOptions: () => api.get('/offers/options/'),
+    getOfferDetails: (id) => api.get(`/offers/${id}/`),
+    updateOffer: (id, data) => api.put(`/offers/${id}/`),
+    deleteOffer: (id) => api.delete(`/offers/${id}/`),
     getOfferApplicants: (offerId) => api.get(`/applications/offer/${offerId}/`),
-    updateApplicationStatus: (id, status) => api.post(`/applications/${id}/update-status/`, { status }),
+    getApplications: (params = {}) => api.get('/applications/company/list/', params),
+    getApplicationDetails: (id) => api.get(`/applications/${id}/company/detail/`),
+    updateApplicationStatus: (id, status) => {
+        if (status === 'accepted') return api.post(`/applications/${id}/accept/`);
+        if (status === 'rejected') return api.post(`/applications/${id}/refuse/`);
+        return api.post(`/applications/${id}/view/`);
+    },
+    getProfile: () => api.get('/profile/'),
+    updateProfile: (data) => api.patch('/profile/update/', data),
+    generateConvention: (id) => api.post(`/applications/${id}/generate-convention/`),
+};
+
+export const conventionService = {
+    getConventions: () => api.get('/conventions/'),
+    getDetails: (id) => api.get(`/conventions/${id}/`),
+    signCompany: (id, webauthnResponse) => api.post(`/conventions/${id}/sign-company/`, {
+        confirmed: true,
+        webauthn_response: webauthnResponse
+    }),
+    download: (id) => `${API_BASE_URL}/conventions/${id}/download/`,
 };
 
 export const offerService = {
@@ -104,15 +173,51 @@ export const offerService = {
 };
 
 export const applicationService = {
-    apply: (offerId) => api.post('/offers/applications/', { offer: offerId }),
-    getMine: () => api.get('/applications/'),
+    apply: (offerId, coverLetter) => api.post('/applications/', { offer: offerId, cover_letter: coverLetter }),
+    getMine: () => api.get('/applications/mine/'),
     getDetails: (id) => api.get(`/applications/${id}/`),
 };
 
 export const quizService = {
     getQuiz: (id) => api.get(`/quizzes/${id}/`),
     submitQuiz: (id, answers) => api.post(`/quizzes/${id}/submit/`, { answers }),
+    getAvailableQuizzes: () => api.get('/student/quizzes/available/'),
+    getQuizDetails: (id) => api.get(`/student/quizzes/${id}/`),
 };
 
-// Alias for backwards compatibility if needed
+export const messageService = {
+    getAll: () => api.get('/messages/'),
+    create: (data) => api.post('/messages/', data),
+};
+
+export const interviewService = {
+    getAll: () => api.get('/interviews/'),
+    getDetails: (id) => api.get(`/interviews/${id}/`),
+    create: (data) => api.post('/interviews/', data),
+    update: (id, data) => api.put(`/interviews/${id}/`, data),
+    delete: (id) => api.delete(`/interviews/${id}/`),
+};
+
+export const notificationService = {
+    getAll: () => api.get('/notifications/'),
+    getUnreadCount: () => api.get('/notifications/unread_count/'),
+    markRead: (id) => api.post(`/notifications/${id}/mark_read/`),
+    markAllRead: () => api.post('/notifications/mark_all_read/'),
+};
+
+export const adminService = {
+    getDashboard: () => api.get('/admin/dashboard/'),
+    getUsers: () => api.get('/admin/users/'),
+    updateUserStatus: (id, data) => api.patch(`/admin/users/${id}/status/`, data),
+    getCompanies: () => api.get('/admin/companies/'),
+    verifyCompany: (id, data) => api.patch(`/admin/companies/${id}/verify/`, data),
+    getValidations: () => api.get('/admin/validations/'),
+    getValidationDetails: (id) => api.get(`/admin/validations/${id}/`),
+    approveValidation: (id, data) => api.post(`/admin/validations/${id}/approve/`, data),
+    rejectValidation: (id, data) => api.post(`/admin/validations/${id}/reject/`),
+    getPortfolios: () => api.get('/admin/portfolios/'),
+    reviewPortfolio: (id, data) => api.post(`/admin/portfolio/${id}/review/`, data),
+    getSpecialities: () => api.get('/admin/specialities/'),
+};
+
 export const dashboardService = studentService;

@@ -8,19 +8,43 @@ import { useNavigate } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
 import './CompanyInterviews.css';
 
+import { interviewService } from '../../services/api';
+
 const CompanyCalendar = () => {
     const navigate = useNavigate();
     const [currentMonth, setCurrentMonth] = useState('April 2026');
+    const [interviews, setInterviews] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock days for the calendar view
+    useEffect(() => {
+        const fetchInterviews = async () => {
+            try {
+                const data = await interviewService.getAll();
+                setInterviews(data);
+            } catch (err) {
+                console.error("Failed to fetch interviews for calendar:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchInterviews();
+    }, []);
+
+    // Helper to get day from date string
+    const getDayFromDate = (dateStr) => {
+        const date = new Date(dateStr);
+        return date.getDate();
+    };
+
+    // Mock days for the calendar view (for now keeping it 30 days)
     const days = Array.from({ length: 30 }, (_, i) => i + 1);
     
-    const events = [
-        { day: 15, time: '14:30', title: 'Amira Benali', type: 'video' },
-        { day: 15, time: '16:00', title: 'Sofiane B.', type: 'onsite' },
-        { day: 16, time: '09:00', title: 'Ryad Mansouri', type: 'onsite' },
-        { day: 18, time: '11:00', title: 'Testing Round', type: 'video' },
-    ];
+    const events = interviews.map(i => ({
+        day: getDayFromDate(i.date),
+        time: i.time.substring(0, 5),
+        title: i.student_name,
+        type: i.method === 'video' ? 'video' : 'onsite'
+    }));
 
     return (
         <div className="company-interviews-dashboard">

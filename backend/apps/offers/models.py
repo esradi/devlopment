@@ -148,6 +148,60 @@ class Application(models.Model):
         return f"{self.student} -> {self.offer.title} ({self.get_status_display()})"
 
 
+class Interview(models.Model):
+    """Interview for an application"""
+    STATUS_CHOICES = [
+        ('proposed', 'Proposed'),
+        ('confirmed', 'Confirmed'),
+        ('cancelled', 'Cancelled'),
+        ('completed', 'Completed'),
+    ]
+    METHOD_CHOICES = [
+        ('video', 'Video Call'),
+        ('onsite', 'On-site'),
+        ('phone', 'Phone Call'),
+    ]
+    
+    application = models.OneToOneField(Application, on_delete=models.CASCADE, related_name='interview')
+    company = models.ForeignKey('accounts.Company', on_delete=models.CASCADE, related_name='interviews')
+    student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE, related_name='interviews')
+    
+    date = models.DateField()
+    time = models.TimeField()
+    duration = models.IntegerField(default=45) # in minutes
+    
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES, default='video')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='proposed')
+    
+    join_url = models.URLField(blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'api_interview'
+
+    def __str__(self):
+        return f"Interview: {self.student} - {self.date} at {self.time}"
+
+
+class Message(models.Model):
+    """Simple message between users"""
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_messages')
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_message'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"From {self.sender.email} to {self.receiver.email}"
+
 class ApplicationEvent(models.Model):
     # Tracks the lifecycle of a specific application
     application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='timeline')

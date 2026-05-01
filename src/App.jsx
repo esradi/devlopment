@@ -31,6 +31,7 @@ import CompanySettings from './pages/company/CompanySettings';
 import CompanyCompleteProfile from './pages/company/CompanyCompleteProfile';
 import HelpCenter from './pages/help/HelpCenter';
 import EditOffer from './pages/company/EditOffer';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import './App.css';
 
 const LandingPage = ({ userRole }) => {
@@ -192,6 +193,7 @@ function App() {
         <Route path="/dashboard/company/settings" element={<CompanySettings />} />
         <Route path="/dashboard/company/complete-profile" element={<CompanyCompleteProfile />} />
         <Route path="/dashboard/company/*" element={<CompanyDashboard setUserRole={setUserRole} />} />
+        <Route path="/dashboard/admin/*" element={<AdminDashboard setUserRole={setUserRole} />} />
       </Routes>
 
       {!hideLayout && !isDashboard && <Footer />}

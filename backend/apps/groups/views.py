@@ -115,7 +115,11 @@ class StudyGroupJoinView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        StudyGroupMember.objects.create(group=group, student=student)
+        membership = StudyGroupMember.objects.create(group=group, student=student)
+        
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_group_joined(membership)
+        
         return Response(
             {'detail': 'Joined group successfully'},
             status=status.HTTP_201_CREATED
@@ -261,6 +265,10 @@ class GroupResourceListCreateView(APIView):
             context={'request': request}
         )
         if serializer.is_valid():
-            serializer.save(group=group, uploaded_by=request.user)
+            resource = serializer.save(group=group, uploaded_by=request.user)
+            
+            from apps.notifications.services import NotificationService
+            NotificationService.notify_group_resource_shared(resource)
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -21,13 +21,15 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 django_asgi_app = get_asgi_application()
 
 import apps.notifications.routing
+import apps.groups.routing
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
     "websocket": AllowedHostsOriginValidator(
         JWTAuthMiddleware(
             URLRouter(
-                apps.notifications.routing.websocket_urlpatterns
+                apps.notifications.routing.websocket_urlpatterns +
+                apps.groups.routing.websocket_urlpatterns
             )
         )
     ),

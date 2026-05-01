@@ -95,16 +95,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(
-                os.environ.get('REDIS_HOST', '127.0.0.1'),
-                int(os.environ.get('REDIS_PORT', 6379))
-            )],
-            "symmetric_encryption_keys": [
-                os.environ.get('CHANNEL_LAYER_SECRET', 'your-secret-key-here')
-            ],
-        },
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
 
@@ -112,6 +103,7 @@ CHANNEL_LAYERS = {
 # Database
 DATABASES = {
     'default': {
+        
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'stagio_db',
         'USER': 'root',
@@ -122,6 +114,7 @@ DATABASES = {
             'charset': 'utf8mb4',
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
+        
     }
 }
 
@@ -173,9 +166,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:8080",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
+    "http://127.0.0.1:8080",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

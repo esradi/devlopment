@@ -2,7 +2,7 @@ from rest_framework import serializers
 from apps.accounts.models import Company
 from apps.offers.models import Application
 from apps.matching.models import MatchScore
-from .models import CompanyDocument, Interview
+from .models import CompanyDocument, Interview, CompanyReview
 from django.utils import timezone
 
 class CompanyLogoSerializer(serializers.ModelSerializer):
@@ -21,15 +21,27 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
 
+    average_rating = serializers.SerializerMethodField()
+    total_reviews = serializers.SerializerMethodField()
+
     class Meta:
         model = Company
         fields = [
             'id', 'user_id', 'user_email', 'company_name', 'company_type', 
             'country', 'city', 'address', 'postal_code', 'website', 
             'nif', 'registre_commerce', 'industry', 'company_size', 
-            'description', 'logo', 'referral_source', 'verification_status'
+            'description', 'logo', 'referral_source', 'verification_status',
+            'average_rating', 'total_reviews'
         ]
         read_only_fields = ['id', 'user_id', 'user_email', 'verification_status']
+
+    def get_average_rating(self, obj):
+        from django.db.models import Avg
+        avg = obj.reviews.aggregate(Avg('rating'))['rating__avg']
+        return round(avg, 1) if avg else 0.0
+
+    def get_total_reviews(self, obj):
+        return obj.reviews.count()
 
 class CompanyUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -170,3 +182,20 @@ class CompanyTeamMemberSerializer(serializers.ModelSerializer):
             'can_invite_team_members', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class CompanyReviewSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.user.get_full_name', read_only=True)
+    student_photo = serializers.ImageField(source='student.profile_picture', read_only=True)
+
+    class Meta:
+        model = CompanyReview
+        fields = ['id', 'company', 'student', 'student_name', 'student_photo', 'rating', 'content', 'is_anonymous', 'created_at']
+        read_only_fields = ['id', 'company', 'student', 'created_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.is_anonymous:
+            data['student_name'] = "Anonymous Student"
+            data['student_photo'] = None
+        return data

@@ -25,19 +25,20 @@ import {
     Menu
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { companyService, authService} from '../../services/api';
+import { companyService, authService } from '../../services/api';
 import CompanyOffers from './CompanyOffers';
 import CompanyCandidates from './CompanyCandidates';
 import CreateOffer from './CreateOffer';
 import CompanySidebar from '../../components/CompanySidebar';
 import CompanyNavbar from '../../components/Navbar/CompanyNavbar';
+import NotificationBell from '../../components/NotificationBell';
 import './CompanyDashboard.css';
 
 const formatTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
-    
+
     if (seconds < 60) return 'just now';
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes}m ago`;
@@ -86,80 +87,80 @@ const CompanyDashboard = ({ setUserRole }) => {
         setActiveTab(getTabFromPath(location.pathname));
     }, [location.pathname]);
 
-useEffect(() => {
-const fetchData = async () => {
-    try {
-        setLoading(true);
-        const meRes = await authService.getMe();
-        console.log("meRes:", meRes);
-        setUserData({ ...meRes });
-        
-        // Fetch dashboard stats and all related data
-        const dashRes = await companyService.getDashboard();
-        console.log("dashRes:", dashRes);
-       // setDashboardStats(dashRes.stats || dashRes);
-       setDashboardStats(dashRes); 
-        
-        // Extract and set recent applications from dashboard
-        if (dashRes.recent_applications) {
-            setRecentApplications(dashRes.recent_applications);
-        }
-   
-        // Extract and set top offers from dashboard
-        // if (dashRes.top_offers) {
-        //     setTopOffers(dashRes.top_offers);
-        // }
-        if (dashRes.top_offers_by_applications) {
-           setTopOffers(dashRes.top_offers_by_applications);
-        } 
-        
-        // Generate weekly data from applications
-        if (dashRes.recent_applications) {
-            generateWeeklyData(dashRes.recent_applications);
-        }
-    } catch (err) {
-        console.error("Failed to fetch dashboard:", err);
-        showToast("Failed to load dashboard data");
-    } finally {
-        setLoading(false);
-    }
-};
-fetchData();
-}, []);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const meRes = await authService.getMe();
+                console.log("meRes:", meRes);
+                setUserData({ ...meRes });
 
-// Function to generate weekly application data
-const generateWeeklyData = (applications) => {
-    const today = new Date();
-    const weekData = {};
-    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    // Initialize week with 0 counts
-    for (let i = 0; i < 7; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - (6 - i));
-        const dayKey = daysOfWeek[date.getDay()];
-        weekData[dayKey] = 0;
-    }
-    
-    // Count applications for each day
-    applications.forEach(app => {
-        const appDate = new Date(app.applied_at);
-        const dayDiff = Math.floor((today - appDate) / (1000 * 60 * 60 * 24));
-        
-        if (dayDiff >= 0 && dayDiff < 7) {
-            const dayKey = daysOfWeek[appDate.getDay()];
-            weekData[dayKey]++;
+                // Fetch dashboard stats and all related data
+                const dashRes = await companyService.getDashboard();
+                console.log("dashRes:", dashRes);
+                // setDashboardStats(dashRes.stats || dashRes);
+                setDashboardStats(dashRes);
+
+                // Extract and set recent applications from dashboard
+                if (dashRes.recent_applications) {
+                    setRecentApplications(dashRes.recent_applications);
+                }
+
+                // Extract and set top offers from dashboard
+                // if (dashRes.top_offers) {
+                //     setTopOffers(dashRes.top_offers);
+                // }
+                if (dashRes.top_offers_by_applications) {
+                    setTopOffers(dashRes.top_offers_by_applications);
+                }
+
+                // Generate weekly data from applications
+                if (dashRes.recent_applications) {
+                    generateWeeklyData(dashRes.recent_applications);
+                }
+            } catch (err) {
+                console.error("Failed to fetch dashboard:", err);
+                showToast("Failed to load dashboard data");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    // Function to generate weekly application data
+    const generateWeeklyData = (applications) => {
+        const today = new Date();
+        const weekData = {};
+        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        // Initialize week with 0 counts
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - (6 - i));
+            const dayKey = daysOfWeek[date.getDay()];
+            weekData[dayKey] = 0;
         }
-    });
-    
-    // Convert to array format for chart
-    const chartData = daysOfWeek.map(day => ({
-        day,
-        h: Math.min(weekData[day] * 10, 80) // Scale height (max 80px)
-    }));
-    
-    setWeeklyApplicationsData(chartData);
-};
+
+        // Count applications for each day
+        applications.forEach(app => {
+            const appDate = new Date(app.applied_at);
+            const dayDiff = Math.floor((today - appDate) / (1000 * 60 * 60 * 24));
+
+            if (dayDiff >= 0 && dayDiff < 7) {
+                const dayKey = daysOfWeek[appDate.getDay()];
+                weekData[dayKey]++;
+            }
+        });
+
+        // Convert to array format for chart
+        const chartData = daysOfWeek.map(day => ({
+            day,
+            h: Math.min(weekData[day] * 10, 80) // Scale height (max 80px)
+        }));
+
+        setWeeklyApplicationsData(chartData);
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -171,12 +172,34 @@ const generateWeeklyData = (applications) => {
 
     if (loading) {
         return (
-            <div className="company-dashboard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100vw' }}>
-                <div className="custom-loader"></div>
+            <div className="company-dashboard" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100vw',
+                height: '100vh',
+                backgroundColor: '#080a0c',
+                color: '#fff',
+                zIndex: 9999,
+                position: 'fixed',
+                top: 0,
+                left: 0
+            }}>
+                <div className="custom-loader" style={{
+                    width: '50px',
+                    height: '50px',
+                    border: '4px solid rgba(158, 89, 255, 0.1)',
+                    borderTop: '4px solid #9e59ff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                }}></div>
+                <h3 style={{ marginTop: '24px', color: '#fff', fontSize: '18px', fontWeight: '600' }}>Loading Dashboard...</h3>
+                <p style={{ marginTop: '8px', color: '#8b92a5', fontSize: '14px' }}>Connecting to secure server at localhost:8000</p>
             </div>
         );
     }
-    
+
     return (
         <div className="company-dashboard">
             {/* ★ RESPONSIVE: hamburger button — CSS hides it on desktop, shows it ≤900px */}
@@ -208,35 +231,36 @@ const generateWeeklyData = (applications) => {
                     {activeTab === 'dashboard' ? (
                         <>
                             {/* Summary Header */}
-                            <header className="dashboard-summary-header">
+                            <header className="dashboard-summary-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div className="welcome-section">
                                     <h2>Welcome back, {userData?.profile?.company_name || 'Partner'}! 👋</h2>
                                     <p>You have <strong>{dashboardStats?.stats?.total_applications || 0} total applications</strong> today.</p>
                                 </div>
-                                <button className="post-offer-btn" onClick={() => navigate('/dashboard/company/offer/create')}>
-                                    <Plus size={20} />
-                                    <span>Post an Offer</span>
-                                </button>
                             </header>
 
                             {/* Stat Cards */}
-                            <div className="stats-row">
-                                <div className="stat-pille">
+                            <motion.div
+                                className="stats-row"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.1 }}
+                            >
+                                <motion.div className="stat-pille" whileHover={{ translateY: -5 }}>
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(158, 89, 255, 0.15)', color: '#9e59ff' }}>
                                             <Briefcase size={24} />
                                         </div>
-                                        <span className="trend-badge">+{dashboardStats?.active_offers   || 0}</span>
+                                        <span className="trend-badge">+{dashboardStats?.active_offers || 0}</span>
                                     </div>
                                     <span className="stat-label">Active Offers</span>
                                     <span className="stat-value">{dashboardStats?.stats?.active_offers || 0}</span>
-                                </div>
+                                </motion.div>
                                 <div className="stat-pille">
                                     <div className="stat-icon-row">
                                         <div className="icon-box" style={{ background: 'rgba(255, 27, 144, 0.15)', color: '#ff1b90' }}>
                                             <Users size={24} />
                                         </div>
-                                        <span className="trend-badge" style={{ color: '#ff1b90', background: 'rgba(255, 27, 144, 0.1)' }}>Across all offers</span>
+                                        <span className="trend-badge" style={{ color: '#ff1b90', background: 'rgba(255, 27, 144, 0.1)' }}>Total</span>
                                     </div>
                                     <span className="stat-label">Total Applications</span>
                                     <span className="stat-value">{dashboardStats?.stats?.total_applications || 0}</span>
@@ -246,7 +270,7 @@ const generateWeeklyData = (applications) => {
                                         <div className="icon-box" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
                                             <FileText size={24} />
                                         </div>
-                                        <span className="trend-badge" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>To process</span>
+                                        <span className="trend-badge" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>Pending</span>
                                     </div>
                                     <span className="stat-label">Pending Review</span>
                                     <span className="stat-value">{dashboardStats?.stats?.applications_pending || 0}</span>
@@ -256,47 +280,47 @@ const generateWeeklyData = (applications) => {
                                         <div className="icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
                                             <CheckCircle2 size={24} />
                                         </div>
-                                        <span className="trend-badge" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' }}>This month</span>
+                                        <span className="trend-badge" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' }}>Hired</span>
                                     </div>
                                     <span className="stat-label">Accepted</span>
                                     <span className="stat-value">{dashboardStats?.stats?.applications_accepted || 0}</span>
                                 </div>
-                            </div>
+                            </motion.div>
 
-                         {/*Applications This Week*/}
-                             <section className="applications-chart-section">
+                            {/*Applications This Week*/}
+                            <section className="applications-chart-section">
                                 <div className="section-header">
                                     <h3>Applications This Week</h3>
                                 </div>
                                 <div className="applications-chart">
-                              
-                                   <div className="chart-placeholder-box" style={{ alignItems: 'flex-end', padding: '20px 24px 0 24px' }}>
-                                   {(weeklyApplicationsData.length > 0 ? weeklyApplicationsData : [
-                                     { day: 'Sun', h: 30 },
-                                     { day: 'Mon', h: 45 },
-                                     { day: 'Tue', h: 25 },
-                                     { day: 'Wed', h: 60 },
-                                     { day: 'Thu', h: 80 },
-                                     { day: 'Fri', h: 50 },
-                                     { day: 'Sat', h: 40 },
-                                    ]).map((item, i) => (
-                                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1 }}>
-                                   <div style={{
-                                    width: '100%',
-                                    maxWidth: '40px',
-                                    height: `${item.h * 1.2}px`,   // ← fixed pixel height, scales to 96px max
-                                    background: i === 4 ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
-                                    borderRadius: '6px 6px 0 0',
-                                    transition: 'background 0.3s',
-                                   }} />
-                                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', paddingBottom: '12px' }}>
-                                   {item.day}
-                                 </span>
+
+                                    <div className="chart-placeholder-box" style={{ alignItems: 'flex-end', padding: '20px 24px 0 24px' }}>
+                                        {(weeklyApplicationsData.length > 0 ? weeklyApplicationsData : [
+                                            { day: 'Sun', h: 30 },
+                                            { day: 'Mon', h: 45 },
+                                            { day: 'Tue', h: 25 },
+                                            { day: 'Wed', h: 60 },
+                                            { day: 'Thu', h: 80 },
+                                            { day: 'Fri', h: 50 },
+                                            { day: 'Sat', h: 40 },
+                                        ]).map((item, i) => (
+                                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                                <div style={{
+                                                    width: '100%',
+                                                    maxWidth: '40px',
+                                                    height: `${item.h * 1.2}px`,   // ← fixed pixel height, scales to 96px max
+                                                    background: i === 4 ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                                    borderRadius: '6px 6px 0 0',
+                                                    transition: 'background 0.3s',
+                                                }} />
+                                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', paddingBottom: '12px' }}>
+                                                    {item.day}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                             ))}
-                                </div>
-                               </div>
-                            </section>   
+                            </section>
 
                             {/* Recent Offers */}
                             <section className="recent-offers-section">
@@ -343,7 +367,7 @@ const generateWeeklyData = (applications) => {
                             <section className="recent-applications-section">
                                 <div className="section-header">
                                     <h3>Recent Applications</h3>
-                                    <Link to="/dashboard/company/offer/1/candidates" className="view-all-link">
+                                    <Link to="/dashboard/company/candidates" className="view-all-link">
                                         View all <ChevronRight size={16} />
                                     </Link>
                                 </div>
@@ -394,8 +418,8 @@ const generateWeeklyData = (applications) => {
                                                         </td>
                                                         <td>
                                                             <div className="action-circles">
-                                                                <button 
-                                                                    className="btn-view-app" 
+                                                                <button
+                                                                    className="btn-view-app"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         navigate(`/dashboard/company/application/${app.id}`);
@@ -431,10 +455,10 @@ const generateWeeklyData = (applications) => {
                             <p style={{ color: 'var(--text-secondary)' }}>We are working hard to bring you more company features.</p>
                         </div>
                     )}
-   
+
                 </main>
             </div>
- 
+
             <AnimatePresence>
                 {toastMessage && (
                     <motion.div

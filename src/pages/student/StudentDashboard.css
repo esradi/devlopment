@@ -19,7 +19,9 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .student-dashboard {
@@ -34,93 +36,117 @@
 
 /* Sidebar */
 .dashboard-sidebar {
-    width: 260px;
-    background: rgba(15, 15, 20, 0.8);
-    backdrop-filter: blur(20px);
+    width: 280px;
+    flex-shrink: 0;
+    background: rgba(8, 8, 12, 0.7);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
-    padding: 110px 24px 24px 24px;
-    position: sticky;
-    top: 0;
+    padding: 110px 20px 24px;
     height: 100vh;
+    z-index: 100;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.dashboard-sidebar::-webkit-scrollbar {
+    display: none;
 }
 
 .sidebar-header {
-    margin-bottom: 24px;
-}
-
-.logo-text {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #9e59ff;
-    letter-spacing: -0.5px;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
 }
 
 .user-context {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
+    gap: 14px;
+    padding: 16px;
     background: rgba(255, 255, 255, 0.03);
-    border-radius: 12px;
+    border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-context:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(158, 89, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
 .user-avatar-mini {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
     object-fit: cover;
+    border: 2px solid rgba(158, 89, 255, 0.3);
 }
 
 .user-context h4 {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
     margin: 0;
 }
 
 .user-context p {
-    font-size: 10px;
-    color: #8892b0;
+    font-size: 11px;
+    color: #8b949e;
     margin: 4px 0 0;
 }
 
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    color: #8892b0;
+    gap: 14px;
+    padding: 12px 18px;
+    border-radius: 14px;
+    color: #8b949e;
     text-decoration: none;
-    transition: all 0.3s ease;
-    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-weight: 600;
+    font-size: 14px;
+    position: relative;
+    border: 1px solid transparent;
 }
 
-.nav-item:hover,
+.nav-item:not(.active):hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: #fff;
+    padding-left: 22px;
+}
+
 .nav-item.active {
     background: rgba(158, 89, 255, 0.1);
     color: #fff;
+    border: 1px solid rgba(158, 89, 255, 0.2);
 }
 
-.nav-item.active {
-    border-left: 3px solid #9e59ff;
-    background: linear-gradient(90deg, rgba(158, 89, 255, 0.15) 0%, transparent 100%);
+.nav-item.active::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    width: 6px;
+    height: 6px;
+    background: #9e59ff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #9e59ff;
 }
 
 .sidebar-footer {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     margin-top: auto;
     padding-top: 24px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -131,26 +157,32 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background: linear-gradient(to right, #9e59ff, #ff1b90);
+    background: linear-gradient(135deg, #9e59ff 0%, #ff1b90 100%);
     border: none;
     color: #fff;
-    padding: 14px;
-    border-radius: 50px;
-    font-weight: 700;
+    padding: 16px;
+    border-radius: 18px;
+    font-weight: 800;
     font-size: 14px;
     cursor: pointer;
-    margin-bottom: 12px;
-    box-shadow: 0 4px 15px rgba(255, 27, 144, 0.2);
-    transition: transform 0.2s;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 16px rgba(255, 27, 144, 0.2);
+    transition: all 0.3s ease;
 }
 
 .btn-post-resume:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(255, 27, 144, 0.3);
+}
+
+.nav-item.logout {
+    margin-top: 4px;
 }
 
 .nav-item.logout:hover {
     background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
 }
 
 /* Main Content */
@@ -242,25 +274,62 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top right, rgba(158, 89, 255, 0.1), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+
+.stat-card:hover::before {
+    opacity: 1;
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
     background: rgba(255, 255, 255, 0.04);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    border-color: rgba(158, 89, 255, 0.2);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(158, 89, 255, 0.05);
+}
+
+.stat-card.highlight {
+    background: linear-gradient(135deg, rgba(158, 89, 255, 0.1) 0%, rgba(255, 27, 144, 0.1) 100%);
+    border: 1px solid rgba(158, 89, 255, 0.2);
+}
+
+.text-glow {
+    text-shadow: 0 0 15px rgba(158, 89, 255, 0.5);
+    background: linear-gradient(to right, #fff, #9e59ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .stat-header {
     display: flex;
     justify-content: space-between;
     color: #8892b0;
-    font-size: 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .stat-value {
-    font-size: 28px;
-    font-weight: 700;
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
 }
 
 .stat-change {
@@ -268,14 +337,23 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    color: #6b7280;
 }
 
 .stat-change.positive {
     color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    width: fit-content;
 }
 
 .stat-change.negative {
     color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    width: fit-content;
 }
 
 /* Dashboard Layout Two Columns */

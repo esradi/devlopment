@@ -26,6 +26,7 @@ class StudyGroupTests(APITestCase):
         # Create test users
         self.student1_user = User.objects.create_user(
             email="student1@test.com",
+            username="student1",
             password="testpass123",
             role="student"
         )
@@ -37,6 +38,7 @@ class StudyGroupTests(APITestCase):
 
         self.student2_user = User.objects.create_user(
             email="student2@test.com",
+            username="student2",
             password="testpass123",
             role="student"
         )
@@ -134,6 +136,7 @@ class StudyGroupTests(APITestCase):
         for i in range(7):
             user = User.objects.create_user(
                 email=f"student{i+3}@test.com",
+                username=f"student{i+3}",
                 password="testpass123",
                 role="student"
             )
@@ -281,9 +284,13 @@ class StudyGroupTests(APITestCase):
         StudyGroupMember.objects.create(group=group, student=self.student1)
 
         self.client.force_authenticate(user=self.student1_user)
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        file_content = b"fake pdf content"
+        uploaded_file = SimpleUploadedFile("tutorial.pdf", file_content, content_type="application/pdf")
+        
         data = {
             'title': 'Python Tutorial',
-            'file': 'https://example.com/python-tutorial.pdf'
+            'file': uploaded_file
         }
         response = self.client.post(f'/api/groups/{group.id}/resources/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

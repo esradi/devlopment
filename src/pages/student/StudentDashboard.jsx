@@ -26,10 +26,11 @@ import {
     Loader2,
     Plus,
     Target,
-    BarChart3
+    BarChart3,
+    Users
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { studentService, applicationService, offerService,authService } from '../../services/api';
+import { studentService, applicationService, offerService, authService } from '../../services/api';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import StudentOffers from './StudentOffers';
 import StudentApplications from './StudentApplications';
@@ -39,6 +40,8 @@ import StudentSettings from './StudentSettings';
 import CompleteProfile from './CompleteProfile';
 import StudentChallenges from './StudentChallenges';
 import StudentAnalytics from './StudentAnalytics';
+import StudentGroups from './StudentGroups';
+import NotificationBell from '../../components/NotificationBell';
 import './StudentDashboard.css';
 
 const formatDate = (dateString) => {
@@ -50,7 +53,7 @@ const formatDate = (dateString) => {
 const StudentDashboard = ({ setUserRole }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    
+
     // Sync activeTab with URL
     const getTabFromPath = (path) => {
         const parts = path.split('/');
@@ -79,7 +82,7 @@ const StudentDashboard = ({ setUserRole }) => {
             showToast(`Successfully applied to ${offer.company_name || 'this offer'}!`);
             // Refresh applications array
             const apps = await applicationService.getMine();
-            setRecentApps(apps || []);
+            setRecentApps(Array.isArray(apps) ? apps : apps?.results || apps?.data || []);
         } catch (error) {
             showToast(`Failed to apply: ${error.message || 'Unknown error'}`);
         }
@@ -104,35 +107,35 @@ const StudentDashboard = ({ setUserRole }) => {
         setActiveTab(getTabFromPath(location.pathname));
     }, [location.pathname]);
 
-useEffect(() => {
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [profileRes, dashboardRes, appsRes] = await Promise.all([
-                authService.getMe(),          // ← change from studentService.getProfile()
-                studentService.getDashboard(),
-                applicationService.getMine()
-            ]);
-            
-            setUserData({
-                ...profileRes,
-                dashboardStats: dashboardRes?.stats || {},
-                recentActivity: dashboardRes?.recent_activity || [],
-                completeness: dashboardRes?.profile_completeness || 0
-            });
-            setRecentApps(appsRes || []);
-            setRecommendations(dashboardRes?.recommended_offers || []);
-        } catch (err) {
-            console.error("Failed to fetch dashboard data:", err);
-            if (err.message.includes('401')) {
-                handleLogout();
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const [profileRes, dashboardRes, appsRes] = await Promise.all([
+                    authService.getMe(),          // ← change from studentService.getProfile()
+                    studentService.getDashboard(),
+                    applicationService.getMine()
+                ]);
+
+                setUserData({
+                    ...profileRes,
+                    dashboardStats: dashboardRes?.stats || {},
+                    recentActivity: dashboardRes?.recent_activity || [],
+                    completeness: dashboardRes?.profile_completeness || 0
+                });
+                setRecentApps(appsRes || []);
+                setRecommendations(dashboardRes?.recommended_offers || []);
+            } catch (err) {
+                console.error("Failed to fetch dashboard data:", err);
+                if (err.message.includes('401')) {
+                    handleLogout();
+                }
+            } finally {
+                setLoading(false);
             }
-        } finally {
-            setLoading(false);
-        }
-    };
-    fetchData();
-}, []);
+        };
+        fetchData();
+    }, []);
 
     const fetchBreakdown = async (offerId) => {
         // Now using actual DB breakdown if possible
@@ -141,7 +144,7 @@ useEffect(() => {
         if (recommendation && recommendation.score_breakdown) {
             setMatchBreakdown(recommendation.score_breakdown);
         } else {
-             setMatchBreakdown(null);
+            setMatchBreakdown(null);
         }
     };
 
@@ -227,9 +230,9 @@ useEffect(() => {
                         onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                         onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                     >
-                        <img src={userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
+                        <img src={userData?.profile_picture ? `http://localhost:8000${userData.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
                         <div>
-                            <h4>{userData?.first_name || 'Guest'} {userData?.last_name || ''}</h4>
+                            <h4>{userData?.first_name || userData?.email?.split('@')[0] || 'Student'}</h4>
                             <p>Student Portal / {userData?.completeness > 80 ? 'Active Applicant' : 'New Member'}</p>
                         </div>
                     </div>
@@ -264,6 +267,10 @@ useEffect(() => {
                         <MessageSquare size={20} />
                         <span>Messages</span>
                     </Link>
+                    <Link to="/dashboard/student/groups" className={`nav-item ${activeTab === 'groups' ? 'active' : ''}`}>
+                        <Users size={20} />
+                        <span>Study Groups</span>
+                    </Link>
                     <Link to="/dashboard/student/settings" className={`nav-item ${activeTab === 'settings' || activeTab === 'complete-profile' ? 'active' : ''}`}>
                         <Settings size={20} />
                         <span>Settings</span>
@@ -271,10 +278,28 @@ useEffect(() => {
                 </nav>
 
                 <div className="sidebar-footer">
-                    <button className="btn-post-resume" onClick={() => showToast("Resume uploaded successfully! (Mock)")}>
+                    <button className="btn-post-resume" onClick={() => document.getElementById('cv-upload-input').click()}>
                         <Plus size={18} />
                         <span>Post Resume</span>
                     </button>
+                    <input
+                        id="cv-upload-input"
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            const formData = new FormData();
+                            formData.append('cv', file);
+                            try {
+                                await studentService.uploadCV(formData);
+                                showToast("CV uploaded successfully! ✅");
+                            } catch (err) {
+                                showToast("Failed to upload CV ❌");
+                            }
+                        }}
+                    />
                     <button onClick={handleLogout} className="nav-item logout" style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', paddingLeft: '1.5rem' }}>
                         <LogOut size={20} />
                         <span>Logout</span>
@@ -287,7 +312,7 @@ useEffect(() => {
             </aside>
 
             {/* Main Content */}
-            <main className="dashboard-main" style={['offers', 'applications', 'favorites', 'messages', 'settings', 'complete-profile', 'challenges', 'analytics'].includes(activeTab) ? { padding: '110px 0 0 0' } : {}}>
+            <main className="dashboard-main" style={['offers', 'applications', 'favorites', 'messages', 'settings', 'complete-profile', 'challenges', 'analytics', 'groups'].includes(activeTab) ? { padding: '110px 0 0 0' } : {}}>
                 {activeTab === 'dashboard' ? (
                     <>
                         <header className="dashboard-header">
@@ -301,10 +326,16 @@ useEffect(() => {
                                     }}
                                 />
                             </div>
+                            <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                <NotificationBell />
+                                <div className="user-profile-toggle" onClick={() => navigate('/dashboard/student/settings')} style={{ cursor: 'pointer' }}>
+                                    <img src={userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="User" style={{ width: '35px', height: '35px', borderRadius: '50%', border: '2px solid rgba(158, 89, 255, 0.3)' }} />
+                                </div>
+                            </div>
                         </header>
 
                         <section className="welcome-section">
-                            <h1>Welcome back, {userData?.first_name || 'Student'}! 👋</h1>
+                            <h1>Welcome back, {userData?.first_name || userData?.email?.split('@')[0] || 'Student'}! 👋</h1>
                             <p>Find the perfect internship to launch your career. Explore our latest matching opportunities.</p>
                         </section>
 
@@ -316,12 +347,12 @@ useEffect(() => {
                             animate="visible"
                         >
                             {stats.map((stat, index) => (
-                                <motion.div key={index} className="stat-card" variants={itemVariants}>
+                                <motion.div key={index} className={`stat-card ${stat.label === 'MATCH SCORE' ? 'highlight' : ''}`} variants={itemVariants}>
                                     <div className="stat-header">
                                         <span>{stat.label}</span>
                                         {stat.icon}
                                     </div>
-                                    <div className="stat-value">{stat.value}</div>
+                                    <div className={`stat-value ${stat.label === 'MATCH SCORE' ? 'text-glow' : ''}`}>{stat.value}</div>
                                     <div className={`stat-change ${stat.positive ? 'positive' : 'negative'}`}>
                                         {stat.change}
                                     </div>
@@ -454,7 +485,7 @@ useEffect(() => {
                                         <Link to="/dashboard/student/applications" className="view-all">View all</Link>
                                     </div>
                                     <div className="pipeline-container">
-                                        {(recentApps || []).slice(0,4).map((app) => {
+                                        {(recentApps || []).slice(0, 4).map((app) => {
                                             const states = ['Applied', 'Review', 'Interview', 'Offer'];
                                             let currentIndex = 0;
                                             if (app.status === 'under review') currentIndex = 1;
@@ -518,20 +549,24 @@ useEffect(() => {
                         userData={userData}
                     />
                 ) : activeTab === 'challenges' ? (
-                    <StudentChallenges 
-                        userData={userData} 
+                    <StudentChallenges
+                        userData={userData}
                     />
                 ) : activeTab === 'analytics' ? (
-                    <StudentAnalytics 
-                        userData={userData} 
+                    <StudentAnalytics
+                        userData={userData}
+                    />
+                ) : activeTab === 'groups' ? (
+                    <StudentGroups
+                        userData={userData}
                     />
                 ) : activeTab === 'settings' ? (
                     <StudentSettings
                         userData={userData}
                     />
                 ) : activeTab === 'complete-profile' ? (
-                    <CompleteProfile 
-                        userData={userData} 
+                    <CompleteProfile
+                        userData={userData}
                         onSave={() => navigate('/dashboard/student')}
                     />
                 ) : (

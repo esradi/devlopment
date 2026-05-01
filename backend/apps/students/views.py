@@ -146,13 +146,23 @@ class StudentProfileView(APIView):
             )
     
     def put(self, request):
-        #Update the authenticated student's profile fields
         try:
             student = Student.objects.get(user=request.user)
             serializer = StudentProfileSerializer(student, data=request.data, partial=True)
             
             if serializer.is_valid():
                 serializer.save()
+                
+                # Save first_name and last_name to User model
+                user = request.user
+                if 'first_name' in request.data:
+                    user.first_name = request.data['first_name']
+                if 'last_name' in request.data:
+                    user.last_name = request.data['last_name']
+                if 'phone' in request.data:
+                    user.phone = request.data.get('phone', user.phone)
+                user.save()
+                
                 return Response(
                     {"message": "Profile updated successfully", "data": serializer.data},
                     status=status.HTTP_200_OK

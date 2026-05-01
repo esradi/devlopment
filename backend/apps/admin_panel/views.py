@@ -13,7 +13,8 @@ from apps.accounts.models import Company
 from apps.conventions.models import Convention
 from apps.conventions.services.convention_service import ConventionService
 from apps.admin_panel.utils import log_admin_action
-from apps.admin_panel.serializers import (
+from .serializers import (
+    AdminDomainTreeSerializer,
     InternshipValidationSerializer,
     AdminUserSerializer,
     AdminCompanySerializer,

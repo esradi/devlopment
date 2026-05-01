@@ -1,0 +1,118 @@
+.global-admin-sidebar {
+    width: 280px;
+    background-color: #08080c;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    padding: 110px 20px 24px 20px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    z-index: 1000;
+}
+
+.global-admin-sidebar::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.admin-logo {
+    padding: 0 12px 32px 12px;
+}
+
+.admin-logo h2 {
+    color: #ff1b90;
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0 0 4px 0;
+    font-family: 'Inter', sans-serif;
+}
+
+.admin-logo span {
+    color: #9ca3af;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.sidebar-main-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-main-nav .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #9ca3af;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-main-nav .nav-item:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sidebar-main-nav .nav-item.active {
+    background: linear-gradient(90deg, #9e59ff 0%, #ff1b90 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(158, 89, 255, 0.25);
+}
+
+.sidebar-main-nav .nav-item.active svg {
+    color: #fff;
+}
+
+.admin-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-top: 24px;
+}
+
+.admin-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #333;
+}
+
+.admin-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.admin-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-info h4 {
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.admin-info span {
+    color: #9ca3af;
+    font-size: 12px;
+}

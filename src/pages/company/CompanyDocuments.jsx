@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
     LayoutDashboard, Briefcase, Send, MessageSquare, Settings, Calendar,
@@ -7,14 +7,16 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
+import { conventionService } from '../../services/api';
 import './CompanyDocuments.css';
 
 const StatusPill = ({ status }) => {
-    const s = status.toLowerCase();
+    const s = status.toLowerCase().replace(/_/g, '-');
+    const label = status.replace(/_/g, ' ');
     return (
         <div className={`doc-status-pill ${s}`}>
             <div className="dot"></div>
-            {status}
+            {label}
         </div>
     );
 };
@@ -22,13 +24,25 @@ const StatusPill = ({ status }) => {
 const CompanyDocuments = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Conventions');
+    const [documents, setDocuments] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const documents = [
-        { id: 1, student: { name: 'Jordan Henderson', university: 'Stanford University', avatar: 'https://i.pravatar.cc/150?u=jordan' }, offer: { title: 'UX Research Trainee', details: '6 Months • Full-time' }, status: 'Signed', date: 'Oct 12, 2023', updated: '2h ago' },
-        { id: 2, student: { name: 'Elena Rodriguez', university: 'MIT • Computer Science', avatar: 'https://i.pravatar.cc/150?u=elena' }, offer: { title: 'Software Eng Intern', details: '3 Months • Remote' }, status: 'Sent', date: 'Nov 05, 2023', updated: '1d ago' },
-        { id: 3, student: { name: 'Lucas Fischer', university: 'ETH Zurich', avatar: 'https://i.pravatar.cc/150?u=lucas' }, offer: { title: 'Machine Learning Trainee', details: '6 Months • On-site' }, status: 'Finalized', date: 'Sep 28, 2023', updated: '2w ago' },
-        { id: 4, student: { name: 'Maya Patel', university: 'LSE • Economics', avatar: 'https://i.pravatar.cc/150?u=maya' }, offer: { title: 'Product Management Intern', details: '4 Months • Hybrid' }, status: 'Draft', date: 'Just now', updated: 'In progress' },
-    ];
+    useEffect(() => {
+        const fetchDocs = async () => {
+            try {
+                const data = await conventionService.getConventions();
+                setDocuments(data);
+            } catch (err) {
+                console.error("Failed to fetch documents:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDocs();
+    }, []);
+
+    if (loading) return <div className="loading-container" style={{ height: '100vh', background: '#0A0C10' }}><div className="custom-loader" /></div>;
+
 
     return (
         <div className="company-documents-dashboard">
@@ -98,42 +112,45 @@ const CompanyDocuments = () => {
                         <tbody>
                             {documents.map(doc => (
                                 <tr key={doc.id}>
-                                    <td>
-                                        <div className="doc-student-cell">
-                                            <img src={doc.student.avatar} alt="avatar" className="doc-s-avatar" />
-                                            <div className="doc-s-info">
-                                                <h4>{doc.student.name}</h4>
-                                                <p>{doc.student.university}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="doc-offer-cell">
-                                            <h5>{doc.offer.title}</h5>
-                                            <p>{doc.offer.details}</p>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <StatusPill status={doc.status} />
-                                    </td>
-                                    <td>
-                                        <div className="doc-gen-cell">
-                                            <h6>{doc.date}</h6>
-                                            <p>Updated {doc.updated}</p>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="doc-actions">
-                                            {doc.status === 'Finalized' ? (
-                                                <button className="doc-action-btn"><Download size={18} /></button>
-                                            ) : doc.status === 'Draft' ? (
-                                                <button className="doc-action-btn"><Edit3 size={18} /></button>
-                                            ) : (
-                                                <button className="doc-action-btn" style={{opacity: 0.3}}><Download size={18} /></button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
+                                     <td>
+                                         <div className="doc-student-cell">
+                                             <img src={doc.student?.profile_picture || "https://ui-avatars.com/api/?name=" + (doc.student?.first_name || 'Student')} alt="avatar" className="doc-s-avatar" />
+                                             <div className="doc-s-info">
+                                                 <h4>{doc.student?.first_name} {doc.student?.last_name}</h4>
+                                                 <p>{doc.student?.university}</p>
+                                             </div>
+                                         </div>
+                                     </td>
+                                     <td>
+                                         <div className="doc-offer-cell">
+                                             <h5>{doc.offer?.title}</h5>
+                                             <p>{doc.offer_type} • {doc.duration} months</p>
+                                         </div>
+                                     </td>
+                                     <td>
+                                         <StatusPill status={doc.status} />
+                                     </td>
+                                     <td>
+                                         <div className="doc-gen-cell">
+                                             <h6>{new Date(doc.created_at).toLocaleDateString()}</h6>
+                                             <p>Updated {new Date(doc.updated_at).toLocaleDateString()}</p>
+                                         </div>
+                                     </td>
+                                     <td>
+                                         <div className="doc-actions">
+                                             {doc.pdf_file ? (
+                                                 <a href={conventionService.download(doc.id)} className="doc-action-btn" download>
+                                                     <Download size={18} />
+                                                 </a>
+                                             ) : (
+                                                 <button className="doc-action-btn" disabled style={{ opacity: 0.3 }}><Download size={18} /></button>
+                                             )}
+                                             <button className="doc-action-btn" onClick={() => navigate(`/dashboard/company/conventions/${doc.id}`)}>
+                                                 <Edit3 size={18} />
+                                             </button>
+                                         </div>
+                                     </td>
+                                 </tr>
                             ))}
                         </tbody>
                     </table>

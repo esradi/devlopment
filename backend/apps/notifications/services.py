@@ -303,3 +303,118 @@ class NotificationService:
             related_object_type='convention',
             related_object_id=convention.id
         )
+
+    # --- Helpers: Interviews ---
+
+    @staticmethod
+    def notify_interview_proposed(interview):
+        student_user = interview.application.student.user
+        comp_name = interview.company.company_name
+        return NotificationService.create_and_send_notification(
+            user=student_user,
+            notif_type="interview_proposed",
+            title="Interview Proposed",
+            message=f"{comp_name} has proposed an interview for '{interview.application.offer.title}'. Please select a time slot.",
+            action_url=f"/student/interviews/{interview.id}",
+            priority="high",
+            related_object_type="interview",
+            related_object_id=interview.id
+        )
+
+    @staticmethod
+    def notify_interview_confirmed(interview):
+        company_user = interview.company.user
+        student_name = interview.application.student.user.get_full_name()
+        return NotificationService.create_and_send_notification(
+            user=company_user,
+            notif_type="interview_confirmed",
+            title="Interview Confirmed",
+            message=f"{student_name} has confirmed the interview for {interview.scheduled_at.strftime('%d/%m/%Y %H:%M')}.",
+            action_url=f"/company/interviews/{interview.id}",
+            priority="normal",
+            related_object_type="interview",
+            related_object_id=interview.id
+        )
+
+    @staticmethod
+    def notify_interview_cancelled(interview, cancelled_by_role):
+        if cancelled_by_role == 'student':
+            target_user = interview.company.user
+            subject = f"Student {interview.application.student.user.get_full_name()}"
+        else:
+            target_user = interview.application.student.user
+            subject = f"Company {interview.company.company_name}"
+            
+        return NotificationService.create_and_send_notification(
+            user=target_user,
+            notif_type="interview_cancelled",
+            title="Interview Cancelled",
+            message=f"{subject} has cancelled the interview scheduled for {interview.scheduled_at.strftime('%d/%m/%Y %H:%M')}.",
+            action_url=f"/{cancelled_by_role}/interviews/{interview.id}",
+            priority="high",
+            related_object_type="interview",
+            related_object_id=interview.id
+        )
+
+    @staticmethod
+    def notify_interview_reschedule_requested(interview):
+        company_user = interview.company.user
+        student_name = interview.application.student.user.get_full_name()
+        return NotificationService.create_and_send_notification(
+            user=company_user,
+            notif_type="interview_reschedule_requested",
+            title="Interview Reschedule Requested",
+            message=f"{student_name} has requested to reschedule the interview for '{interview.application.offer.title}'.",
+            action_url=f"/company/interviews/{interview.id}",
+            priority="normal",
+            related_object_type="interview",
+            related_object_id=interview.id
+        )
+
+    # --- Helpers: Groups ---
+
+    @staticmethod
+    def notify_group_resource_shared(resource):
+        group = resource.group
+        # Notify all members except the uploader
+        members = group.members.exclude(student__user=resource.uploaded_by)
+        for member in members:
+            NotificationService.create_and_send_notification(
+                user=member.student.user,
+                notif_type="new_resource",
+                title="New Resource Shared",
+                message=f"A new resource '{resource.title}' has been shared in your group '{group.name}'.",
+                action_url=f"/groups/{group.id}/resources",
+                priority="normal",
+                related_object_type="group_resource",
+                related_object_id=resource.id
+            )
+
+    @staticmethod
+    def notify_group_joined(membership):
+        group = membership.group
+        student_name = membership.student.user.get_full_name()
+        
+        # Notify creator
+        NotificationService.create_and_send_notification(
+            user=group.creator,
+            notif_type="group_member_joined",
+            title="New Group Member",
+            message=f"{student_name} has joined your group '{group.name}'.",
+            action_url=f"/groups/{group.id}/members",
+            priority="normal",
+            related_object_type="group_member",
+            related_object_id=membership.id
+        )
+        
+        # Notify the student who joined (Welcome message)
+        NotificationService.create_and_send_notification(
+            user=membership.student.user,
+            notif_type="group_joined",
+            title=f"Welcome to {group.name}!",
+            message=f"You are now a member of '{group.name}'. Start chatting with your peers!",
+            action_url=f"/groups/{group.id}/chat",
+            priority="normal",
+            related_object_type="group",
+            related_object_id=group.id
+        )

@@ -12,27 +12,57 @@ const EditCompanyProfile = () => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
     const [logoPreview, setLogoPreview] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
-        name: 'Sonatrach',
-        industry: 'Energy & Petroleum',
-        location: 'Algiers, Algeria',
-        website: 'https://sonatrach.com',
-        email: 'hr@sonatrach.dz',
-        size: '5000+ employees',
-        description: 'Sonatrach is the national state-owned oil company of Algeria. It is the largest company in Africa and one of the largest gas and oil producers in the world.',
-        culture: 'technical excellence, sustainability, and national commitment',
-        mentorship: true,
-        realWorldProjects: true,
-        careerPath: true,
-        certifiedTraining: true
+        company_name: '',
+        industry: '',
+        location: '',
+        website: '',
+        contact_email: '',
+        size_range: '',
+        description: '',
+        mission: '',
+        values: ''
     });
 
-    const handleSave = (e) => {
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const data = await companyService.getProfile();
+                setFormData({
+                    company_name: data.company_name || '',
+                    industry: data.industry || '',
+                    location: data.location || '',
+                    website: data.website || '',
+                    contact_email: data.contact_email || '',
+                    size_range: data.size_range || '',
+                    description: data.description || '',
+                    mission: data.mission || '',
+                    values: data.values || ''
+                });
+                setLogoPreview(data.logo);
+                setLoading(false);
+            } catch (err) {
+                console.error("Failed to fetch profile:", err);
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    const handleSave = async (e) => {
         e.preventDefault();
-        // Mock save logic
-        setTimeout(() => {
+        setSaving(true);
+        try {
+            await companyService.updateProfile(formData);
             navigate('/dashboard/company/profile');
-        }, 1500);
+        } catch (err) {
+            console.error("Failed to save profile:", err);
+            alert("Error saving profile changes.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleLogoClick = () => {
@@ -102,8 +132,8 @@ const EditCompanyProfile = () => {
                                         <label>Company Name</label>
                                         <input 
                                             type="text" 
-                                            value={formData.name} 
-                                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                            value={formData.company_name} 
+                                            onChange={(e) => setFormData({...formData, company_name: e.target.value})}
                                         />
                                     </div>
                                     <div className="form-group-modern">
@@ -127,8 +157,8 @@ const EditCompanyProfile = () => {
                                             <label><Mail size={12} /> HR Email</label>
                                             <input 
                                                 type="email" 
-                                                value={formData.email} 
-                                                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                                value={formData.contact_email} 
+                                                onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
                                             />
                                         </div>
                                     </div>
@@ -149,16 +179,17 @@ const EditCompanyProfile = () => {
                                     <div className="form-group-modern">
                                         <label>Number of Employees</label>
                                         <select 
-                                            value={formData.size} 
-                                            onChange={(e) => setFormData({...formData, size: e.target.value})}
+                                            value={formData.size_range} 
+                                            onChange={(e) => setFormData({...formData, size_range: e.target.value})}
                                         >
-                                            <option>1-10 employees</option>
-                                            <option>11-50 employees</option>
-                                            <option>51-200 employees</option>
-                                            <option>201-500 employees</option>
-                                            <option>501-1000 employees</option>
-                                            <option>1001-5000 employees</option>
-                                            <option>5000+ employees</option>
+                                            <option value="">Select size</option>
+                                            <option value="1-10">1-10 employees</option>
+                                            <option value="11-50">11-50 employees</option>
+                                            <option value="51-200">51-200 employees</option>
+                                            <option value="201-500">201-500 employees</option>
+                                            <option value="501-1000">501-1000 employees</option>
+                                            <option value="1001-5000">1001-5000 employees</option>
+                                            <option value="5000+">5000+ employees</option>
                                         </select>
                                     </div>
                                 </section>
@@ -179,44 +210,28 @@ const EditCompanyProfile = () => {
                                         ></textarea>
                                     </div>
                                     <div className="form-group-modern">
-                                        <label>Culture Keywords</label>
+                                        <label>Our Mission</label>
+                                        <textarea 
+                                            rows="3"
+                                            value={formData.mission}
+                                            onChange={(e) => setFormData({...formData, mission: e.target.value})}
+                                        ></textarea>
+                                    </div>
+                                    <div className="form-group-modern">
+                                        <label>Company Values (comma separated)</label>
                                         <input 
                                             type="text" 
                                             placeholder="e.g. innovation, collaboration"
-                                            value={formData.culture}
-                                            onChange={(e) => setFormData({...formData, culture: e.target.value})}
+                                            value={formData.values}
+                                            onChange={(e) => setFormData({...formData, values: e.target.value})}
                                         />
-                                    </div>
-                                </section>
-
-                                <section className="edit-section">
-                                    <div className="section-label">
-                                        <Heart size={16} /> BENEFITS & INTERNSHIPS
-                                    </div>
-                                    <div className="checkbox-grid-modern">
-                                        <label className="checkbox-item-modern">
-                                            <input type="checkbox" checked={formData.mentorship} onChange={() => setFormData({...formData, mentorship: !formData.mentorship})} />
-                                            <span>Mentorship Program</span>
-                                        </label>
-                                        <label className="checkbox-item-modern">
-                                            <input type="checkbox" checked={formData.realWorldProjects} onChange={() => setFormData({...formData, realWorldProjects: !formData.realWorldProjects})} />
-                                            <span>Real-world Projects</span>
-                                        </label>
-                                        <label className="checkbox-item-modern">
-                                            <input type="checkbox" checked={formData.careerPath} onChange={() => setFormData({...formData, careerPath: !formData.careerPath})} />
-                                            <span>Career Path</span>
-                                        </label>
-                                        <label className="checkbox-item-modern">
-                                            <input type="checkbox" checked={formData.certifiedTraining} onChange={() => setFormData({...formData, certifiedTraining: !formData.certifiedTraining})} />
-                                            <span>Certified Training</span>
-                                        </label>
                                     </div>
                                 </section>
 
                                 <div className="edit-actions-modern">
                                     <button type="button" className="btn-cancel-modern" onClick={() => navigate(-1)}>Cancel</button>
-                                    <button type="submit" className="btn-save-modern">
-                                        <Save size={18} /> Save Changes
+                                    <button type="submit" className="btn-save-modern" disabled={saving}>
+                                        <Save size={18} /> {saving ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
                             </div>

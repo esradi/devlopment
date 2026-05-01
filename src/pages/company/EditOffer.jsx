@@ -16,30 +16,44 @@ const EditOffer = () => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     
-    // Form State (Pre-filled with dummy data for now)
+    // Form State
     const [formData, setFormData] = useState({
-        title: 'Data Scientist Intern',
-        description: 'We are looking for a Data Science intern to help our team build predictive models for energy consumption...',
-        wilaya: 'Algiers',
-        salary: '30,000 DZD / month',
-        requirements: 'Knowledge of Python, SQL and basic ML libraries.',
-        domain_ids: [1],
-        location_ids: [1],
-        offer_type_ids: [1],
-        duration_ids: [1],
-        skill_ids: [1, 2]
+        title: '',
+        description: '',
+        wilaya: '',
+        salary: '',
+        requirements: '',
+        domain_ids: [],
+        location_ids: [],
+        offer_type_ids: [],
+        duration_ids: [],
+        skill_ids: []
     });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch options
-                const opts = await companyService.getOfferOptions();
+                // Fetch options and offer simultaneously
+                const [opts, offerData] = await Promise.all([
+                    companyService.getOfferOptions(),
+                    companyService.getOfferDetails(offerId)
+                ]);
+                
                 setOptions(opts);
-
-                // Mock fetching the specific offer data based on offerId
-                // In a real app: const offerData = await companyService.getOffer(offerId);
-                // setFormData(offerData);
+                
+                // Map the nested objects/IDs from the backend to the flat form structure
+                setFormData({
+                    title: offerData.title || '',
+                    description: offerData.description || '',
+                    wilaya: offerData.wilaya || '',
+                    salary: offerData.salary || '',
+                    requirements: offerData.requirements || '',
+                    domain_ids: offerData.domains?.map(d => d.id) || [],
+                    location_ids: offerData.locations?.map(l => l.id) || [],
+                    offer_type_ids: offerData.offer_types?.map(t => t.id) || [],
+                    duration_ids: offerData.durations?.map(d => d.id) || [],
+                    skill_ids: offerData.skills?.map(s => s.id) || []
+                });
                 
             } catch (err) {
                 console.error("Failed to fetch data:", err);
@@ -57,7 +71,7 @@ const EditOffer = () => {
 
     const toggleSelection = (field, id) => {
         setFormData(prev => {
-            const current = prev[field];
+            const current = prev[field] || [];
             if (current.includes(id)) {
                 return { ...prev, [field]: current.filter(i => i !== id) };
             } else {
@@ -70,9 +84,8 @@ const EditOffer = () => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            // Mock Update
-            // await companyService.updateOffer(offerId, formData);
-            console.log("Updating offer:", offerId, formData);
+            await companyService.updateOffer(offerId, formData);
+            alert("Offer updated successfully!");
             navigate('/dashboard/company/offers');
         } catch (err) {
             console.error("Failed to update offer:", err);
@@ -175,6 +188,23 @@ const EditOffer = () => {
                                 />
                             </div>
                         </div>
+
+                        <div className="co-selector-group full-width">
+                            <label>Work Mode</label>
+                            <div className="co-chip-cloud">
+                                {options?.locations?.map(loc => (
+                                    <button 
+                                        type="button"
+                                        key={loc.id}
+                                        className={`co-chip ${formData.location_ids.includes(loc.id) ? 'active' : ''}`}
+                                        onClick={() => toggleSelection('location_ids', loc.id)}
+                                    >
+                                        <CheckCircle2 size={14} className="co-check-icon" />
+                                        {loc.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </motion.div>
 
@@ -186,7 +216,58 @@ const EditOffer = () => {
                     </div>
                     <div className="co-card-body">
                          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>Select skills and domains to refine the matching algorithm.</p>
-                         <div className="co-selector-group">
+                         
+                         <div className="co-grid-2">
+                            <div className="co-selector-group">
+                                <label>Activity Domains</label>
+                                <div className="co-chip-cloud">
+                                    {options?.domains?.map(domain => (
+                                        <button 
+                                            type="button"
+                                            key={domain.id}
+                                            className={`co-chip ${formData.domain_ids.includes(domain.id) ? 'active' : ''}`}
+                                            onClick={() => toggleSelection('domain_ids', domain.id)}
+                                        >
+                                            {domain.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="co-selector-group">
+                                <label>Internship Type</label>
+                                <div className="co-chip-cloud">
+                                    {options?.offer_types?.map(type => (
+                                        <button 
+                                            type="button"
+                                            key={type.id}
+                                            className={`co-chip ${formData.offer_type_ids.includes(type.id) ? 'active' : ''}`}
+                                            onClick={() => toggleSelection('offer_type_ids', type.id)}
+                                        >
+                                            {type.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="co-selector-group mt-4">
+                            <label>Desired Duration</label>
+                            <div className="co-chip-cloud">
+                                {options?.durations?.map(dur => (
+                                    <button 
+                                        type="button"
+                                        key={dur.id}
+                                        className={`co-chip ${formData.duration_ids.includes(dur.id) ? 'active' : ''}`}
+                                        onClick={() => toggleSelection('duration_ids', dur.id)}
+                                    >
+                                        {dur.months} Months
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                         <div className="co-selector-group mt-4">
                             <label className="co-pink-label"><Code size={16} /> Technical Skills</label>
                             <div className="co-chip-cloud">
                                 {options?.skills?.map(skill => (

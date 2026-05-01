@@ -1,0 +1,10 @@
+﻿UU backend/apps/admin_panel/urls.py
+M  backend/apps/company/models.py
+M  backend/create_university_admin.py
+M  status.txt
+?? backend/check_output.txt
+?? conflict_files.txt
+?? head_views.py
+?? head_views_utf8.py
+?? pop_status.txt
+?? status_utf8.txt

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
     LayoutDashboard, Briefcase, Send, MessageSquare, Settings, Calendar,
@@ -7,11 +7,35 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
+import { interviewService } from '../../services/api';
 import './CompanyInterviews.css';
 
 const CompanyInterviews = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Upcoming');
+    const [interviews, setInterviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchInterviews = async () => {
+            try {
+                const data = await interviewService.getAll();
+                setInterviews(data);
+            } catch (err) {
+                console.error("Failed to fetch interviews:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchInterviews();
+    }, []);
+
+    const filteredInterviews = interviews.filter(i => {
+        if (activeTab === 'All') return true;
+        if (activeTab === 'Upcoming') return i.status !== 'completed' && i.status !== 'cancelled';
+        if (activeTab === 'Past') return i.status === 'completed';
+        return true;
+    });
 
     return (
         <div className="company-interviews-dashboard">
@@ -66,109 +90,53 @@ const CompanyInterviews = () => {
 
                     {/* Interviews List */}
                     <div className="i-list">
-                        
-                        {/* Card 1 */}
-                        <div className="i-card">
-                            <div className="i-time-info">
-                                <span className="i-date-indicator"><div className="dot"></div> TODAY</span>
-                                <span className="i-time-main">Tue, 15 Apr</span>
-                                <span className="i-time-sub">14:30 • 45 min</span>
-                                <span className="i-status-pill confirmed">CONFIRMED</span>
-                                <div className="i-method-indicator">
-                                    <Video size={14} /> Video call
+                        {loading ? (
+                            <div className="i-loading"><div className="custom-loader" /></div>
+                        ) : filteredInterviews.length === 0 ? (
+                            <div className="i-empty">
+                                <Calendar size={48} />
+                                <p>No {activeTab.toLowerCase()} interviews found.</p>
+                            </div>
+                        ) : filteredInterviews.map(interview => (
+                            <div className="i-card" key={interview.id}>
+                                <div className="i-time-info">
+                                    <span className="i-time-main">{new Date(interview.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                                    <span className="i-time-sub">{interview.time.substring(0, 5)} • {interview.duration} min</span>
+                                    <span className={`i-status-pill ${interview.status}`}>{interview.status.toUpperCase()}</span>
+                                    <div className="i-method-indicator">
+                                        {interview.method === 'video' ? <Video size={14} /> : <MapPin size={14} />} 
+                                        {interview.method === 'video' ? ' Video call' : ' On-site'}
+                                    </div>
+                                </div>
+                                <div className="i-candidate-info">
+                                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(interview.student_name)}&background=random&color=fff&size=100`} alt={interview.student_name} className="i-avatar" />
+                                    <div className="i-candidate-details">
+                                        <h4>{interview.student_name}</h4>
+                                        <p>{interview.offer_title}</p>
+                                    </div>
+                                </div>
+                                <div className="i-offer-info">
+                                    <h5>{interview.offer_title}</h5>
+                                    <p>{interview.location || 'Remote'}</p>
+                                </div>
+                                <div className="i-actions">
+                                    {interview.join_url && (
+                                        <button 
+                                            className="btn-i-action primary"
+                                            onClick={() => window.open(interview.join_url, '_blank')}
+                                        >
+                                            Join
+                                        </button>
+                                    )}
+                                    <button 
+                                        className="btn-i-action"
+                                        onClick={() => navigate(`/dashboard/company/offer/0/application/${interview.application}`)}
+                                    >
+                                        View
+                                    </button>
                                 </div>
                             </div>
-                            <div className="i-candidate-info">
-                                <img src="https://ui-avatars.com/api/?name=Amira+Benali&background=0d1117&color=ff1b90&size=100" alt="Amira" className="i-avatar" />
-                                <div className="i-candidate-details">
-                                    <h4>Amira Benali</h4>
-                                    <p>Data Scientist Intern</p>
-                                </div>
-                            </div>
-                            <div className="i-offer-info">
-                                <h5>PFE Internship</h5>
-                                <p>Algiers, DZ</p>
-                            </div>
-                            <div className="i-actions">
-                                <button 
-                                    className="btn-i-action primary"
-                                    onClick={() => window.open('https://meet.google.com/xyz-abc-123', '_blank')}
-                                >
-                                    Join
-                                </button>
-                                <button className="btn-icon-only"><MoreVertical size={16} /></button>
-                            </div>
-                        </div>
-
-                        {/* Card 2 */}
-                        <div className="i-card">
-                            <div className="i-time-info">
-                                <span className="i-time-main">Wed, 16 Apr</span>
-                                <span className="i-time-sub">09:00 • 60 min</span>
-                                <span className="i-status-pill proposed">PROPOSED</span>
-                                <div className="i-method-indicator">
-                                    <MapPin size={14} /> On-site
-                                </div>
-                            </div>
-                            <div className="i-candidate-info">
-                                <img src="https://ui-avatars.com/api/?name=Ryad+Mansouri&background=4f46e5&color=fff&size=100" alt="Ryad" className="i-avatar" />
-                                <div className="i-candidate-details">
-                                    <h4>Ryad Mansouri</h4>
-                                    <p>Full-stack Developer</p>
-                                </div>
-                            </div>
-                            <div className="i-offer-info">
-                                <h5>Summer Internship</h5>
-                                <p>Remote, Algiers</p>
-                            </div>
-                            <div className="i-actions">
-                                <button 
-                                    className="btn-i-action"
-                                    onClick={() => navigate('/dashboard/company/offer/1/application/2')}
-                                >
-                                    View
-                                </button>
-                                <button className="btn-icon-only"><MoreVertical size={16} /></button>
-                            </div>
-                        </div>
-
-                        {/* Card 3 */}
-                        <div className="i-card">
-                            <div className="i-time-info">
-                                <span className="i-time-main">Thu, 17 Apr</span>
-                                <span className="i-time-sub">11:15 • 30 min</span>
-                                <span className="i-status-pill cancelled">CANCELLED</span>
-                                <div className="i-method-indicator">
-                                    <Video size={14} /> Video call
-                                </div>
-                            </div>
-                            <div className="i-candidate-info">
-                                <img src="https://ui-avatars.com/api/?name=Karim+Lahlou&background=ea580c&color=fff&size=100" alt="Karim" className="i-avatar" />
-                                <div className="i-candidate-details">
-                                    <h4>Karim Lahlou</h4>
-                                    <p>Product Designer</p>
-                                </div>
-                            </div>
-                            <div className="i-offer-info">
-                                <h5>Senior PFE</h5>
-                                <p>Oran, DZ</p>
-                            </div>
-                            <div className="i-actions">
-                                <button 
-                                    className="btn-i-action"
-                                    onClick={() => navigate('/dashboard/company/interviews/1/reschedule')}
-                                >
-                                    Reschedule
-                                </button>
-                                <button 
-                                    className="btn-icon-only"
-                                    onClick={() => window.confirm('Are you sure you want to cancel this interview?') && alert('Interview cancelled.')}
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        </div>
-
+                        ))}
                     </div>
 
                     <div className="i-load-more">
@@ -188,42 +156,35 @@ const CompanyInterviews = () => {
                 <div className="i-schedule-widget">
                     <div className="i-widget-header">
                         <h3>Today's schedule</h3>
-                        <span className="i-live-badge">3 LIVE</span>
+                        <span className="i-live-badge">{interviews.filter(i => new Date(i.date).toDateString() === new Date().toDateString()).length} TODAY</span>
                     </div>
 
                     <div className="i-timeline">
-                        {/* Active Event */}
-                        <div className="i-timeline-event active">
-                            <div className="i-timeline-time">14:30</div>
-                            <div className="i-timeline-marker"></div>
-                            <div className="i-timeline-card">
-                                <div className="i-t-cand-row">
-                                    <h5>Amira Benali</h5>
-                                    <Video size={14} color="#8892b0" />
+                        {interviews.filter(i => new Date(i.date).toDateString() === new Date().toDateString()).length > 0 ? (
+                            interviews.filter(i => new Date(i.date).toDateString() === new Date().toDateString()).map(i => (
+                                <div className="i-timeline-event active" key={i.id}>
+                                    <div className="i-timeline-time">{i.time.substring(0, 5)}</div>
+                                    <div className="i-timeline-marker"></div>
+                                    <div className="i-timeline-card">
+                                        <div className="i-t-cand-row">
+                                            <h5>{i.student_name}</h5>
+                                            <Video size={14} color="#8892b0" />
+                                        </div>
+                                        <div className="i-t-job">{i.offer_title}</div>
+                                        {i.join_url && (
+                                            <button 
+                                                className="btn-i-join-now"
+                                                onClick={() => window.open(i.join_url, '_blank')}
+                                            >
+                                                JOIN NOW
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="i-t-job">DATA SCIENTIST</div>
-                                <button 
-                                    className="btn-i-join-now"
-                                    onClick={() => window.open('https://meet.google.com/xyz-abc-123', '_blank')}
-                                >
-                                    JOIN NOW
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Upcoming Event */}
-                        <div className="i-timeline-event">
-                            <div className="i-timeline-time">16:00</div>
-                            <div className="i-timeline-marker"></div>
-                            <div className="i-timeline-card">
-                                <div className="i-t-cand-row">
-                                    <h5>Sofiane B.</h5>
-                                    <MapPin size={14} color="#8892b0" />
-                                </div>
-                                <div className="i-t-job">BACKEND ENGINEER</div>
-                                <div className="i-t-time-left">Starts in 2h 15m</div>
-                            </div>
-                        </div>
+                            ))
+                        ) : (
+                            <div className="i-timeline-empty">No interviews today.</div>
+                        )}
                     </div>
 
                     <div className="i-view-calendar" onClick={() => navigate('/dashboard/company/interviews/calendar')}>
@@ -237,32 +198,22 @@ const CompanyInterviews = () => {
                     
                     <div className="i-flow-row">
                         <div className="i-flow-labels">
-                            <span>Interview Success</span>
-                            <strong>82%</strong>
+                            <span>Interview Completion</span>
+                            <strong>{interviews.length > 0 ? Math.round((interviews.filter(i => i.status === 'completed').length / interviews.length) * 100) : 0}%</strong>
                         </div>
                         <div className="i-flow-bar-bg">
-                            <div className="i-flow-bar-fill fill-purple" style={{width: '82%'}}></div>
-                        </div>
-                    </div>
-
-                    <div className="i-flow-row">
-                        <div className="i-flow-labels">
-                            <span>Offer Acceptance</span>
-                            <strong>64%</strong>
-                        </div>
-                        <div className="i-flow-bar-bg">
-                            <div className="i-flow-bar-fill fill-pink" style={{width: '64%'}}></div>
+                            <div className="i-flow-bar-fill fill-purple" style={{width: `${interviews.length > 0 ? (interviews.filter(i => i.status === 'completed').length / interviews.length) * 100 : 0}%`}}></div>
                         </div>
                     </div>
 
                     <div className="i-flow-stats-row">
                         <div className="i-flow-stat-box">
                             <span>TOTAL</span>
-                            <div className="val">128</div>
+                            <div className="val">{interviews.length}</div>
                         </div>
                         <div className="i-flow-stat-box">
-                            <span>HIRED</span>
-                            <div className="val pink">32</div>
+                            <span>SCHEDULED</span>
+                            <div className="val pink">{interviews.filter(i => i.status === 'scheduled').length}</div>
                         </div>
                     </div>
                 </div>

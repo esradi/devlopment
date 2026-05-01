@@ -1,0 +1,20 @@
+﻿On branch main
+Your branch and 'origin/main' have diverged,
+and have 3 and 4 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   backend/apps/admin_panel/urls.py
+	modified:   backend/apps/companyapp/models.py
+	modified:   backend/create_university_admin.py
+	modified:   status.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	backend/apps/accounts/migrations/0011_company_rejection_reason_company_verified_at_and_more.py
+	backend/check_output.txt
+	status_utf8.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")

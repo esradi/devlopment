@@ -107,6 +107,9 @@ class StudentInterviewConfirmView(BaseStudentInterviewView):
         interview.student_confirmed_at = timezone.now()
         interview.save()
         
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_interview_confirmed(interview)
+        
         return Response({
             "message": "Participation confirmée",
             "confirmed": True,
@@ -123,7 +126,8 @@ class StudentInterviewCancelView(BaseStudentInterviewView):
         interview.cancellation_reason = reason
         interview.save()
         
-        # notify company here...
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_interview_cancelled(interview, cancelled_by_role='student')
         
         return Response({
             "message": "Entretien annulé",
@@ -143,7 +147,8 @@ class StudentInterviewRequestRescheduleView(BaseStudentInterviewView):
         interview.reschedule_preferred_dates = preferred_dates
         interview.save()
         
-        # notify company here...
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_interview_reschedule_requested(interview)
         
         return Response({
             "message": "Demande de report envoyée à l'entreprise",
