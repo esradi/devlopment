@@ -115,7 +115,7 @@ const Navbar = ({ role, setUserRole }) => {
 
     const getProfileLink = () => {
         let currentRole = role;
-       
+
         if (currentRole === 'public' || !currentRole) {
             try {
                 const storedUser = localStorage.getItem('user');
@@ -155,7 +155,7 @@ const Navbar = ({ role, setUserRole }) => {
             }
         }
 
-        switch (currentRole) {
+        switch (currentRole?.toLowerCase()) {
             case 'student': return '#3b82f6';
             case 'company': return '#10b981';
             case 'admin': return '#f59e0b';
@@ -165,7 +165,7 @@ const Navbar = ({ role, setUserRole }) => {
 
     const getProfileName = () => {
         let currentRole = role;
-        
+
         if (currentRole === 'public' || !currentRole) {
             try {
                 const storedUser = localStorage.getItem('user');
@@ -180,7 +180,7 @@ const Navbar = ({ role, setUserRole }) => {
             }
         }
 
-        switch (currentRole) {
+        switch (currentRole?.toLowerCase()) {
             case 'student': return 'AB';
             case 'company': return 'Tech';
             case 'admin': return 'Admin';
@@ -210,29 +210,29 @@ const Navbar = ({ role, setUserRole }) => {
                 </div>
 
                 {/* CENTRAL MENU */}
-                    <ul className="menu-list">
-                        {publicLinks.map((link) => (
-                            <li key={link.id}>
-                                <a
-                                    href={`/#${link.id}`}
-                                    className="nav-link"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        scrollToSection(link.id);
-                                    }}
-                                >
-                                    {link.label}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
+                <ul className="menu-list">
+                    {publicLinks.map((link) => (
+                        <li key={link.id}>
+                            <a
+                                href={`/#${link.id}`}
+                                className="nav-link"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    scrollToSection(link.id);
+                                }}
+                            >
+                                {link.label}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
 
                 {/* RIGHT ACTIONS */}
                 <div className="actions-section">
                     {role !== 'public' ? (
                         <div className="auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Link 
-                                to={role === 'student' ? '/dashboard/student/messages' : role === 'company' ? '/dashboard/company/messages' : '/dashboard/admin/messages'} 
+                            <Link
+                                to={role === 'student' ? '/dashboard/student/messages' : role === 'company' ? '/dashboard/company/messages' : '/dashboard/admin/messages'}
                                 className="nav-action-btn"
                                 title="Messages"
                             >

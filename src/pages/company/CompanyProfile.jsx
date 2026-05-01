@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { 
+import React, { useState, useRef, useEffect } from 'react';
+import {
     LayoutDashboard, Briefcase, User, MessageSquare, Settings, Calendar,
     Folder, Search, MapPin, Globe, Users, Edit3, Camera, PlayCircle, Users2,
     CheckCircle2, PlusCircle, PenTool, CheckCircle, Search as SearchIcon, Bell, BadgeCheck, Activity, Info, Target
@@ -7,6 +7,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
 import './CompanyProfile.css';
+import { companyService } from '../../services/api';
 
 const CompanyProfile = () => {
     const navigate = useNavigate();
@@ -62,7 +63,7 @@ const CompanyProfile = () => {
 
             {/* 2. MAIN CONTAINER */}
             <main className="profile-main-content">
-                
+
                 {/* 2A. LEFT COLUMN (Content) */}
                 <div className="profile-content-col">
                     <div className="profile-header">
@@ -70,7 +71,7 @@ const CompanyProfile = () => {
                             <h1>Company Profile</h1>
                             <p>Manage how students see your company on Stag.io.</p>
                         </div>
-                        <button 
+                        <button
                             className="btn-edit-profile"
                             onClick={() => navigate('/dashboard/company/complete-profile')}
                         >
@@ -87,10 +88,10 @@ const CompanyProfile = () => {
                                     {profile.company_name?.[0] || 'C'}
                                 </div>
                             )}
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                style={{ display: 'none' }} 
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
                                 accept="image/*"
                                 onChange={handleLogoChange}
                             />
@@ -103,7 +104,7 @@ const CompanyProfile = () => {
                             <div className="industry-label">
                                 <CheckCircle2 size={14} /> {profile.industry?.toUpperCase() || 'GENERAL'}
                             </div>
-                            
+
                             <div className="info-grid">
                                 <div className="info-item">
                                     <MapPin className="info-icon" size={18} />
@@ -147,7 +148,7 @@ const CompanyProfile = () => {
                         <p>
                             {profile.description || "No description provided yet. Complete your profile to tell students about your company culture and missions."}
                         </p>
-                        
+
                         {profile.mission && (
                             <>
                                 <div className="card-subtitle">Our Mission</div>
@@ -192,7 +193,7 @@ const CompanyProfile = () => {
 
                 {/* 2B. RIGHT COLUMN (Sidebar metrics) */}
                 <div className="profile-right-col">
-                    
+
                     <div className="side-card">
                         <h3>Profile Strength</h3>
                         <div className="strength-gauge-wrap">
@@ -218,8 +219,8 @@ const CompanyProfile = () => {
                                 </div>
                             </div>
                         </div>
-                        <button 
-                            className="btn-view-analytics" 
+                        <button
+                            className="btn-view-analytics"
                             style={{ width: '100%', marginTop: '20px' }}
                             onClick={() => navigate('/dashboard/company/complete-profile')}
                         >
@@ -258,7 +259,7 @@ const CompanyProfile = () => {
                                 <div className="activity-right">{profile.stats?.applications_count || 0}</div>
                             </div>
                         </div>
-                        <button 
+                        <button
                             className="btn-view-analytics"
                             onClick={() => navigate('/dashboard/company/analytics')}
                         >

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
     LayoutDashboard, Briefcase, Send, MessageSquare, Settings, Calendar,
     Search, MapPin, ChevronRight, CheckCircle2, ChevronLeft,
     Eye, Users, Award, XCircle, Download, ArrowUpRight, Check,
@@ -21,10 +21,10 @@ const MatchScoreRing = ({ score }) => {
         <div className="match-score-ring">
             <svg width="36" height="36" viewBox="0 0 36 36">
                 <circle cx="18" cy="18" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
-                <circle 
-                    cx="18" cy="18" r={radius} fill="none" stroke={color} strokeWidth="3" 
-                    strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} 
-                    strokeLinecap="round" transform="rotate(-90 18 18)" 
+                <circle
+                    cx="18" cy="18" r={radius} fill="none" stroke={color} strokeWidth="3"
+                    strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round" transform="rotate(-90 18 18)"
                 />
             </svg>
             <span className="score-text" style={{ color }}>{score}%</span>
@@ -67,19 +67,19 @@ const CompanyCandidates = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                
+
                 let apps = [];
                 if (offerId) {
                     const offerData = await offerService.getDetails(offerId);
                     setOfferDetails(offerData);
-                    
+
                     const data = await companyService.getOfferApplicants(offerId);
                     apps = data?.results || data || [];
                 } else {
                     const data = await companyService.getApplications();
                     apps = data?.results || data || [];
                 }
-                
+
                 setApplicants(apps);
 
                 // Calculate Pipeline Counts
@@ -108,11 +108,11 @@ const CompanyCandidates = () => {
         if (days === 0) return 'Today';
         if (days === 1) return 'Yesterday';
         if (days > 365) return '1 year ago';
-        if (days > 30) return `${Math.floor(days/30)} months ago`;
-        if (days > 7) return `${Math.floor(days/7)} weeks ago`;
+        if (days > 30) return `${Math.floor(days / 30)} months ago`;
+        if (days > 7) return `${Math.floor(days / 7)} weeks ago`;
         return `${days} days ago`;
     };
-    
+
     // Filtering
     let filteredApplicants = applicants;
     if (activeFilter === 'Applied') {
@@ -121,7 +121,7 @@ const CompanyCandidates = () => {
         filteredApplicants = filteredApplicants.filter(a => ['in review', 'under review'].includes(a.status?.toLowerCase()));
     }
     if (searchTerm) {
-        filteredApplicants = filteredApplicants.filter(a => 
+        filteredApplicants = filteredApplicants.filter(a =>
             (a.student?.first_name + ' ' + a.student?.last_name).toLowerCase().includes(searchTerm.toLowerCase())
         );
     }
@@ -145,7 +145,7 @@ const CompanyCandidates = () => {
                         <ChevronRight size={14} />
                         <span className="current">APPLICATIONS</span>
                     </div>
-                    
+
                     <div className="header-flex">
                         <div>
                             <h1>Applications – {offerDetails?.title || 'All Opportunities'}</h1>
@@ -153,7 +153,7 @@ const CompanyCandidates = () => {
                         </div>
                         <div className="header-actions">
                             <span className="status-badge-active"><div className="dot"></div> {offerDetails?.status?.toUpperCase() || 'ACTIVE'}</span>
-                            <button 
+                            <button
                                 className="btn-view-offer"
                                 onClick={() => navigate(`/dashboard/company/offer/${offerId || 1}/edit`)}
                             >
@@ -169,7 +169,7 @@ const CompanyCandidates = () => {
                             <h3>{offerDetails?.title || 'All Positions'}</h3>
                             <div className="stat-pills">
                                 <span className="pill-type">{offerDetails?.offer_types?.map(t => t.name).join(', ') || 'Various'}</span>
-                                <span className="pill-location"><MapPin size={12}/> {offerDetails?.wilaya || 'Algeria'}</span>
+                                <span className="pill-location"><MapPin size={12} /> {offerDetails?.wilaya || 'Algeria'}</span>
                             </div>
                         </div>
                         <div className="stat-block bordered center">
@@ -184,7 +184,7 @@ const CompanyCandidates = () => {
                         </div>
                         <div className="stat-block center">
                             <div className="stat-value text-pink flex-center">
-                                {applicants.filter(a => new Date(a.created_at) > new Date(Date.now() - 7 * 86400000)).length} <ArrowUpRight size={20} style={{marginLeft: '4px'}}/>
+                                {applicants.filter(a => new Date(a.created_at) > new Date(Date.now() - 7 * 86400000)).length} <ArrowUpRight size={20} style={{ marginLeft: '4px' }} />
                             </div>
                             <span className="stat-label">NEW THIS WEEK</span>
                         </div>
@@ -194,8 +194,8 @@ const CompanyCandidates = () => {
                     <div className="filter-row">
                         <div className="filter-tabs">
                             {['All', 'Applied', 'In Review'].map(tab => (
-                                <button 
-                                    key={tab} 
+                                <button
+                                    key={tab}
                                     className={`filter-tab ${activeFilter === tab ? 'active' : ''}`}
                                     onClick={() => setActiveFilter(tab)}
                                 >
@@ -203,13 +203,13 @@ const CompanyCandidates = () => {
                                 </button>
                             ))}
                         </div>
-                        
+
                         <div className="filter-controls">
                             <div className="search-box">
                                 <Search size={16} />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search candidates..." 
+                                <input
+                                    type="text"
+                                    placeholder="Search candidates..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -234,19 +234,19 @@ const CompanyCandidates = () => {
                             </thead>
                             <tbody>
                                 {filteredApplicants.map(app => (
-                                    <motion.tr 
-                                        key={app.id} 
+                                    <motion.tr
+                                        key={app.id}
                                         onClick={() => navigate(`/dashboard/company/offer/${offerId || 1}/application/${app.id}`)}
                                         style={{ cursor: 'pointer' }}
-                                        initial={{ opacity: 0, y: 10 }} 
-                                        animate={{ opacity: 1, y: 0 }} 
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
                                         whileHover={{ backgroundColor: 'rgba(255,255,255,0.02)' }}
                                     >
                                         <td>
                                             <div className="candidate-cell">
-                                                <img 
-                                                    src={app.student?.profile_picture || `https://ui-avatars.com/api/?name=${app.student?.first_name}+${app.student?.last_name}&background=9e59ff&color=fff`} 
-                                                    alt="avatar" 
+                                                <img
+                                                    src={app.student?.profile_picture || `https://ui-avatars.com/api/?name=${app.student?.first_name}+${app.student?.last_name}&background=9e59ff&color=fff`}
+                                                    alt="avatar"
                                                     className="avatar-img"
                                                 />
                                                 <div className="candidate-name-info">
@@ -273,7 +273,7 @@ const CompanyCandidates = () => {
                                             <StatusPill status={app.status} />
                                         </td>
                                         <td>
-                                            <button 
+                                            <button
                                                 className="btn-view-app"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -287,7 +287,7 @@ const CompanyCandidates = () => {
                                 ))}
                             </tbody>
                         </table>
-                        
+
                         <div className="table-footer">
                             <span className="showing-text">Showing {filteredApplicants.length} of {applicants.length} candidates</span>
                             <div className="pagination">
@@ -304,37 +304,37 @@ const CompanyCandidates = () => {
                 <div className="pipeline-card">
                     <h3>Offer Pipeline</h3>
                     <div className="pipeline-steps">
-                        
+
                         <div className="p-step">
                             <div className="step-icon-bg"><Download size={14} /></div>
                             <span className="step-label">Applied</span>
                             <span className="step-count">{pipelineCounts.applied}</span>
                         </div>
-                        
+
                         <div className="p-step">
                             <div className="step-icon-bg purple"><Eye size={14} /></div>
                             <span className="step-label">In Review</span>
                             <span className="step-count">{pipelineCounts.inReview}</span>
                         </div>
-                        
+
                         <div className="p-step">
                             <div className="step-icon-bg purple-light"><Users size={14} /></div>
                             <span className="step-label">Interview</span>
                             <span className="step-count">{pipelineCounts.interview}</span>
                         </div>
-                        
+
                         <div className="p-step">
                             <div className="step-icon-bg green-light"><Award size={14} /></div>
                             <span className="step-label">Offer</span>
                             <span className="step-count">{pipelineCounts.offer}</span>
                         </div>
-                        
+
                         <div className="p-step">
                             <div className="step-icon-bg red"><XCircle size={14} /></div>
                             <span className="step-label">Refused</span>
                             <span className="step-count">{pipelineCounts.refused}</span>
                         </div>
-                        
+
                         <div className="p-step accepted-final">
                             <div className="step-icon-bg green-solid"><Check size={14} strokeWidth={3} /></div>
                             <span className="step-label text-white">Accepted</span>

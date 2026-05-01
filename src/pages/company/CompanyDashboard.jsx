@@ -104,14 +104,11 @@ const CompanyDashboard = ({ setUserRole }) => {
                 // Extract and set recent applications from dashboard
                 if (dashRes.recent_applications) {
                     setRecentApplications(dashRes.recent_applications);
+                    generateWeeklyData(dashRes.recent_applications);
                 }
 
-                // Extract and set top offers from dashboard
-                // if (dashRes.top_offers) {
-                //     setTopOffers(dashRes.top_offers);
-                // }
-                if (dashRes.top_offers_by_applications) {
-                    setTopOffers(dashRes.top_offers_by_applications);
+                if (dashRes.recent_offers) {
+                    setTopOffers(dashRes.recent_offers);
                 }
 
                 // Generate weekly data from applications
@@ -144,7 +141,7 @@ const CompanyDashboard = ({ setUserRole }) => {
 
         // Count applications for each day
         applications.forEach(app => {
-            const appDate = new Date(app.applied_at);
+            const appDate = new Date(app.created_at);
             const dayDiff = Math.floor((today - appDate) / (1000 * 60 * 60 * 24));
 
             if (dayDiff >= 0 && dayDiff < 7) {
@@ -273,7 +270,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <span className="trend-badge" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>Pending</span>
                                     </div>
                                     <span className="stat-label">Pending Review</span>
-                                    <span className="stat-value">{dashboardStats?.stats?.applications_pending || 0}</span>
+                                    <span className="stat-value">{dashboardStats?.stats?.pending_review || 0}</span>
                                 </div>
                                 <div className="stat-pille">
                                     <div className="stat-icon-row">
@@ -283,7 +280,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                                         <span className="trend-badge" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' }}>Hired</span>
                                     </div>
                                     <span className="stat-label">Accepted</span>
-                                    <span className="stat-value">{dashboardStats?.stats?.applications_accepted || 0}</span>
+                                    <span className="stat-value">{dashboardStats?.stats?.accepted_applications || 0}</span>
                                 </div>
                             </motion.div>
 
@@ -336,9 +333,9 @@ const CompanyDashboard = ({ setUserRole }) => {
                                             <div key={idx} className="offer-wide-card">
                                                 <div className="offer-main-info">
                                                     <div className="offer-title-row">
-                                                        <h4>{offer.offer_title}</h4>
-                                                        <span className={`status-badge ${offer.pending_count > 0 ? 'active' : 'closed'}`}>
-                                                            {offer.pending_count > 0 ? 'Active' : 'Closed'}
+                                                        <h4>{offer.title}</h4>
+                                                        <span className={`status-badge ${offer.status === 'active' ? 'active' : 'closed'}`}>
+                                                            {offer.status}
                                                         </span>
                                                     </div>
                                                     <div className="offer-tags">
@@ -350,8 +347,8 @@ const CompanyDashboard = ({ setUserRole }) => {
                                                     </div>
                                                 </div>
                                                 <div className="offer-actions">
-                                                    <button className="btn-secondary-outline" onClick={() => navigate(`/dashboard/company/offer/${offer.offer_id}/candidates`)}>View Candidates</button>
-                                                    <button className="btn-secondary-outline" onClick={() => navigate(`/dashboard/company/offer/${offer.offer_id}/edit`)}>Edit</button>
+                                                    <button className="btn-secondary-outline" onClick={() => navigate(`/dashboard/company/offer/${offer.id}/candidates`)}>View Candidates</button>
+                                                    <button className="btn-secondary-outline" onClick={() => navigate(`/dashboard/company/offer/${offer.id}/edit`)}>Edit</button>
                                                 </div>
                                             </div>
                                         ))
@@ -391,7 +388,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                                                                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, #333, #555)', backgroundImage: app.student_photo ? `url(${app.student_photo})` : '', backgroundSize: 'cover' }}></div>
                                                                 <div className="candidate-name-wrap">
                                                                     <h5>{app.student_name}</h5>
-                                                                    <p>Applied {formatTime(app.applied_at)}</p>
+                                                                    <p>Applied {formatTime(app.created_at)}</p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -445,8 +442,6 @@ const CompanyDashboard = ({ setUserRole }) => {
                         </>
                     ) : activeTab === 'offers' ? (
                         <CompanyOffers userData={userData} />
-                    ) : activeTab === 'candidates' ? (
-                        <CompanyCandidates userData={userData} />
                     ) : activeTab === 'create-offer' ? (
                         <CreateOffer userData={userData} onSuccess={() => navigate('/dashboard/company/offers')} />
                     ) : (

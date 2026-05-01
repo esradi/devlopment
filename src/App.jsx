@@ -155,7 +155,7 @@ function App() {
     } catch (err) {
       console.warn('Failed to parse stored user data');
     }
-    
+
     return window.location.pathname.startsWith('/dashboard') ? 'student' : 'public';
   });
   const location = useLocation();
@@ -188,6 +188,8 @@ function App() {
         <Route path="/dashboard/company/messages" element={<CompanyMessages />} />
         <Route path="/dashboard/company/profile" element={<CompanyProfile />} />
         <Route path="/dashboard/company/profile/edit" element={<EditCompanyProfile />} />
+        <Route path="/dashboard/company/candidates" element={<CompanyCandidates />} />
+        <Route path="/dashboard/company/offer/:offerId/candidates" element={<CompanyCandidates />} />
         <Route path="/dashboard/company/analytics" element={<CompanyAnalytics />} />
         <Route path="/dashboard/company/billing" element={<CompanyBilling />} />
         <Route path="/dashboard/company/settings" element={<CompanySettings />} />

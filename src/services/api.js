@@ -151,8 +151,8 @@ export const companyService = {
         if (status === 'rejected') return api.post(`/applications/${id}/refuse/`);
         return api.post(`/applications/${id}/view/`);
     },
-    getProfile: () => api.get('/profile/'),
-    updateProfile: (data) => api.patch('/profile/update/', data),
+    getProfile: () => api.get('/company/profile/'),
+    updateProfile: (data) => api.patch('/company/profile/update/', data),
     generateConvention: (id) => api.post(`/applications/${id}/generate-convention/`),
 };
 
