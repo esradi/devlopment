@@ -11,7 +11,7 @@ def send_verification_email(email, code):
     """Send verification code via email."""
     subject = 'Your Verification Code'
     message = f'Your 6-digit verification code is: {code}'
-    email_from = settings.EMAIL_HOST_USER
+    email_from = settings.DEFAULT_FROM_EMAIL
     recipient_list = [email]
     
     try:
@@ -25,7 +25,7 @@ def send_password_reset_email(email, token):
     """Send password reset link/code."""
     subject = 'Password Reset Request'
     message = f'Your password reset token is: {token}'
-    email_from = settings.EMAIL_HOST_USER
+    email_from = settings.DEFAULT_FROM_EMAIL
     recipient_list = [email]
     
     try:
@@ -44,7 +44,7 @@ def send_team_invite_email(email, company_name, temp_password):
         f"Your temporary password: {temp_password}\n\n"
         "Please log in to the platform and change your password immediately."
     )
-    email_from = settings.EMAIL_HOST_USER
+    email_from = settings.DEFAULT_FROM_EMAIL
     recipient_list = [email]
     
     try:

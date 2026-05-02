@@ -115,7 +115,7 @@ const Navbar = ({ role, setUserRole }) => {
 
     const getProfileLink = () => {
         let currentRole = role;
-        
+
         if (currentRole === 'public' || !currentRole) {
             try {
                 const storedUser = localStorage.getItem('user');
@@ -133,7 +133,7 @@ const Navbar = ({ role, setUserRole }) => {
         switch (currentRole) {
             case 'student': return '/dashboard/student/complete-profile';
             case 'company': return '/dashboard/company/profile';
-            case 'admin': return '/admin/profile';
+            case 'admin': return '/dashboard/admin/settings';
             default: return '/profile';
         }
     };
@@ -165,7 +165,7 @@ const Navbar = ({ role, setUserRole }) => {
 
     const getProfileName = () => {
         let currentRole = role;
-        
+
         if (currentRole === 'public' || !currentRole) {
             try {
                 const storedUser = localStorage.getItem('user');
@@ -182,9 +182,23 @@ const Navbar = ({ role, setUserRole }) => {
 
         switch (currentRole?.toLowerCase()) {
             case 'student': return 'AB';
-            case 'company': return 'Tech';
-            case 'admin': return 'Admin';
-            default: return 'User';
+            case 'company': return 'TC';
+            case 'admin': {
+                try {
+                    const storedUser = localStorage.getItem('user');
+                    if (storedUser) {
+                        const userData = JSON.parse(storedUser);
+                        if (userData.first_name) {
+                            return userData.first_name.charAt(0).toUpperCase();
+                        }
+                        if (userData.email) {
+                            return userData.email.charAt(0).toUpperCase();
+                        }
+                    }
+                } catch (err) { }
+                return 'A';
+            }
+            default: return 'U';
         }
     };
 
@@ -231,13 +245,21 @@ const Navbar = ({ role, setUserRole }) => {
                 <div className="actions-section">
                     {role !== 'public' ? (
                         <div className="auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Link 
-                                to={role === 'student' ? '/dashboard/student/messages' : role === 'company' ? '/dashboard/company/messages' : '/dashboard/admin/messages'} 
-                                className="nav-action-btn"
+                            <Link
+                                to={role === 'student' ? '/dashboard/student' : role === 'company' ? '/dashboard/company' : '/dashboard/admin'}
+                                className="nav-action-btn dashboard-btn"
+                                title="Dashboard"
+                            >
+                                <LayoutDashboard size={20} />
+                            </Link>
+
+                            <Link
+                                to={role === 'student' ? '/dashboard/student/messages' : role === 'company' ? '/dashboard/company/messages' : '/dashboard/admin/messages'}
+                                className="nav-action-btn messages-btn"
                                 title="Messages"
                             >
                                 <MessageSquare size={20} />
-                                <span className="action-badge">2</span>
+                                <span className="action-badge">1</span>
                             </Link>
 
                             <NotificationCenter role={role} />
@@ -247,7 +269,21 @@ const Navbar = ({ role, setUserRole }) => {
                                     <div className="profile-avatar" style={{ backgroundColor: '#9e59ff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
                                         {getProfileName()}
                                     </div>
-                                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>Ahmed B.</span>
+                                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>
+                                        {(() => {
+                                            try {
+                                                const storedUser = localStorage.getItem('user');
+                                                if (storedUser) {
+                                                    const userData = JSON.parse(storedUser);
+                                                    if (userData.first_name || userData.last_name) {
+                                                        return `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+                                                    }
+                                                    return userData.email.split('@')[0];
+                                                }
+                                            } catch (e) { }
+                                            return role === 'admin' ? 'Admin' : 'User';
+                                        })()}
+                                    </span>
                                 </div>
 
                                 <AnimatePresence>
@@ -324,3 +360,4 @@ const Navbar = ({ role, setUserRole }) => {
 };
 
 export default Navbar;
+

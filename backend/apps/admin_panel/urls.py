@@ -9,7 +9,8 @@ from apps.admin_panel.views import (
     AdminPortfolioViewSet,
     AdminAnalyticsView,
     AdminAlertsView,
-    AdminActivityFeedView
+    AdminActivityFeedView,
+    GlobalSearchView
 )
 
 router = DefaultRouter()
@@ -24,5 +25,6 @@ urlpatterns = [
     path('analytics/', AdminAnalyticsView.as_view(), name='admin-analytics'),
     path('dashboard/alerts/', AdminAlertsView.as_view(), name='admin-alerts'),
     path('dashboard/activity-feed/', AdminActivityFeedView.as_view(), name='admin-activity-feed'),
+    path('search/', GlobalSearchView.as_view(), name='admin-global-search'),
     path('', include(router.urls)),
 ]

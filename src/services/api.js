@@ -230,6 +230,7 @@ export const adminService = {
     getSpecialities: () => api.get('/admin/specialities/'),
     
     exportUsers: (role) => api.get(role ? `/admin/users/export/?role=${role}` : '/admin/users/export/'),
+    search: (query) => api.get(`/admin/search/?q=${query}`),
 };
 
 // Alias for backwards compatibility if needed

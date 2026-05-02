@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,7 +9,7 @@ from datetime import timedelta
 from itertools import chain
 
 from apps.admin_panel.models import InternshipValidation, AdminActionLog
-from apps.accounts.models import Company
+from apps.accounts.models import Company, Student
 from apps.conventions.models import Convention
 from apps.conventions.services.convention_service import ConventionService
 from apps.admin_panel.utils import log_admin_action
@@ -23,6 +23,7 @@ from apps.admin_panel.serializers import (
     AdminDomainTreeSerializer
 )
 from apps.notifications.services import NotificationService
+from apps.api.permissions import IsUniversityAdmin
 
 User = get_user_model()
 
@@ -31,83 +32,123 @@ class AdminDashboardView(APIView):
     
     def get(self, request):
         from apps.accounts.models import Student, Company, User
-        from apps.offers.models import Offer, Application
+        from apps.offers.models import Offer, Application, Interview
         from apps.conventions.models import Convention
-        from apps.company.models import Interview
-        from apps.admin_panel.serializers import AdminUserSerializer, AdminCompanySerializer
+        from apps.admin_panel.models import AdminActionLog
+        from apps.admin_panel.serializers import AdminUserSerializer, AdminCompanySerializer, AdminActionLogSerializer
         from django.utils import timezone
         from datetime import timedelta
 
         now = timezone.now()
-        start_of_week = now - timedelta(days=now.weekday())
+        start_of_week = now - timedelta(days=now.weekday() or 0)
         start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+        # Helper to safely count or return 0
+        def safe_count(queryset):
+            try: return queryset.count()
+            except: return 0
 
         # 1. Core Totals
-        total_students = Student.objects.count()
-        students_with_internship = Convention.objects.filter(status='validated').values('student').distinct().count()
+        total_students = safe_count(Student.objects.all())
+        students_with_internship = 0
+        try:
+            students_with_internship = Convention.objects.filter(status='validated').values('student').distinct().count()
+        except: pass
         
-        # 2. Verification Queue (Actionable)
-        pending_id_verifications = User.objects.filter(role='student', id_verified=False).exclude(Q(national_id_card='') | Q(national_id_card__isnull=True)).count()
-        pending_company_validations = Company.objects.filter(verification_status='pending').count()
+        # 2. Verification Queue
+        pending_id_verifications = safe_count(User.objects.filter(role='student', id_verified=False).exclude(Q(national_id_card='') | Q(national_id_card__isnull=True)))
+        pending_company_validations = safe_count(Company.objects.filter(verification_status='pending'))
 
         # 3. Offer Health
-        offers_with_no_apps = Offer.objects.annotate(app_count=Count('applications')).filter(app_count=0).count()
-        expired_active_offers = Offer.objects.filter(status='active', deadline__lt=now).count()
+        offers_with_no_apps = safe_count(Offer.objects.annotate(app_count=Count('applications')).filter(app_count=0))
+        expired_active_offers = safe_count(Offer.objects.filter(status='active', deadline__lt=now))
 
-        # 4. Convention Progress
-        waiting_student = Convention.objects.filter(status='pending_student_signature').count()
-        waiting_company = Convention.objects.filter(status='pending_company_signature').count()
-
-        # 5. Document Completeness
-        students_no_cv = Student.objects.filter(Q(cv='') | Q(cv__isnull=True)).count()
-        companies_no_logo = Company.objects.filter(Q(logo='') | Q(logo__isnull=True)).count()
-
-        # 6. Heartbeat
-        interviews_this_week = Interview.objects.filter(scheduled_at__range=(start_of_week, end_of_week)).count()
+        # 4. Heartbeat
+        interviews_this_week = 0
+        try:
+            interviews_this_week = Interview.objects.filter(created_at__gte=start_of_week).count()
+        except: pass
 
         return Response({
             "stats": {
-                "general": {
-                    "companies_count": Company.objects.count(),
-                    "students_count": total_students,
-                    "offers_count": Offer.objects.count(),
-                    "applications_count": Application.objects.count(),
-                    "students_with_internship": students_with_internship,
-                    "students_without_internship": total_students - students_with_internship,
+                "users": {
+                    "total": safe_count(User.objects.all()),
+                    "students": total_students,
+                    "companies": safe_count(Company.objects.all()),
+                    "pending_id_verifications": pending_id_verifications
                 },
-                "verification_queue": {
-                    "pending_student_ids": pending_id_verifications,
-                    "pending_company_validations": pending_company_validations,
+                "offers": {
+                    "total": safe_count(Offer.objects.all()),
+                    "active": safe_count(Offer.objects.filter(status='active')),
+                    "expired": expired_active_offers,
+                    "with_no_apps": offers_with_no_apps
                 },
-                "offer_health": {
-                    "offers_with_zero_applications": offers_with_no_apps,
-                    "expired_active_offers": expired_active_offers,
+                "validations": {
+                    "pending": pending_company_validations,
+                    "company": pending_company_validations,
+                    "student_id": pending_id_verifications
                 },
-                "signature_progress": {
-                    "waiting_for_student": waiting_student,
-                    "waiting_for_company": waiting_company,
+                "applications": {
+                    "total": safe_count(Application.objects.all()),
+                    "accepted": students_with_internship,
+                    "pending": safe_count(Application.objects.filter(status='pending'))
                 },
-                "completeness": {
-                    "students_missing_cv": students_no_cv,
-                    "companies_missing_logo": companies_no_logo,
+                "distribution": {
+                    "searching": total_students - students_with_internship,
+                    "internship": students_with_internship,
+                    "completed": 0 
                 },
                 "heartbeat": {
-                    "interviews_this_week": interviews_this_week,
+                    "interviews_this_week": interviews_this_week
                 }
             },
             "recent_companies": AdminCompanySerializer(Company.objects.order_by('-id')[:10], many=True).data,
             "recent_students": AdminUserSerializer(User.objects.filter(role='student').order_by('-id')[:10], many=True).data,
-            "shortcuts": {
-                "manage_users": "/api/admin/users/",
-                "manage_companies": "/api/admin/companies/",
-                "internship_validations": "/api/admin/internships/?status=pending"
-            }
+            "recent_activities": AdminActionLogSerializer(
+                AdminActionLog.objects.exclude(target_model='system').order_by('-timestamp')[:10], 
+                many=True
+            ).data if safe_count(AdminActionLog.objects.exclude(target_model='system')) > 0 else []
+        })
+
+class GlobalSearchView(APIView):
+    permission_classes = [IsUniversityAdmin]
+
+    def get(self, request):
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response({'users': [], 'companies': [], 'students': []})
+
+        # Search Users
+        users = User.objects.filter(
+            Q(email__icontains=query) | 
+            Q(first_name__icontains=query) | 
+            Q(last_name__icontains=query)
+        ).exclude(role='admin')[:5]
+        
+        # Search Companies
+        companies = Company.objects.filter(
+            Q(company_name__icontains=query) | 
+            Q(industry__icontains=query)
+        )[:5]
+        
+        # Search Students (name, university, speciality)
+        students = Student.objects.filter(
+            Q(user__first_name__icontains=query) | 
+            Q(user__last_name__icontains=query) |
+            Q(university__icontains=query) | 
+            Q(speciality__icontains=query)
+        ).select_related('user')[:5]
+
+        return Response({
+            'users': AdminUserSerializer(users, many=True).data,
+            'companies': AdminCompanySerializer(companies, many=True).data,
+            'students': [{'id': s.id, 'name': s.user.get_full_name() if s.user else "Unknown", 'email': s.user.email if s.user else "", 'spec': s.speciality, 'uni': s.university} for s in students]
         })
 
 class BaseAdminViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
-
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    
     def perform_update(self, serializer):
         instance = serializer.save()
         log_admin_action(self.request, f"{instance._meta.model_name}_update", instance, serializer.validated_data)
@@ -153,6 +194,22 @@ class InternshipValidationViewSet(BaseAdminViewSet):
 class AdminUserViewSet(BaseAdminViewSet):
     serializer_class = AdminUserSerializer
     queryset = User.objects.all()
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role = self.request.query_params.get('role')
+        search = self.request.query_params.get('search')
+        verified = self.request.query_params.get('verified')
+        
+        if role: qs = qs.filter(role=role)
+        if verified: qs = qs.filter(id_verified=(verified.lower() == 'true'))
+        if search:
+            qs = qs.filter(
+                Q(email__icontains=search) | 
+                Q(first_name__icontains=search) | 
+                Q(last_name__icontains=search)
+            )
+        return qs
 
     @action(detail=True, methods=['post'])
     def verify(self, request, pk=None):
@@ -237,6 +294,21 @@ class AdminUserViewSet(BaseAdminViewSet):
 class AdminCompanyViewSet(BaseAdminViewSet):
     serializer_class = AdminCompanySerializer
     queryset = Company.objects.all()
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status = self.request.query_params.get('status')
+        industry = self.request.query_params.get('industry')
+        search = self.request.query_params.get('search')
+        
+        if status: qs = qs.filter(verification_status=status)
+        if industry: qs = qs.filter(industry__icontains=industry)
+        if search:
+            qs = qs.filter(
+                Q(company_name__icontains=search) | 
+                Q(description__icontains=search)
+            )
+        return qs
 
     @action(detail=True, methods=['post'])
     def verify(self, request, pk=None):

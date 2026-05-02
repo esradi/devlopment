@@ -4,8 +4,8 @@
     border-right: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
     display: flex;
     flex-direction: column;
-    padding: 32px 20px 24px 20px; /* adjusted padding matching the image top padding */
-    height: calc(100vh - 80px); /* Assuming global layout has a navbar */
+    padding: 80px 20px 24px 20px; /* Increased to match Admin sidebar spacing */
+    height: 100vh;
     overflow-y: auto;
     z-index: 100;
 }
@@ -26,7 +26,7 @@
 .sidebar-main-nav {
     display: flex;
     flex-direction: column;
-    gap: 12px; /* A bit more spacious like in the screenshot */
+    gap: 14px; /* Increased for better legibility and aesthetics */
 }
 
 .nav-item {

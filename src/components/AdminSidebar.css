@@ -1,58 +1,78 @@
 .global-admin-sidebar {
     width: 280px;
-    background-color: #08080c;
+    background-color: #050505;
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
-    padding: 110px 20px 24px 20px;
+    padding: 80px 20px 24px 20px; /* Increased top padding to clear the close button area */
     height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(-100%);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-sizing: border-box;
     overflow-y: auto;
     scrollbar-width: none; /* Firefox */
-    z-index: 1000;
+    z-index: 1100;
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
 }
 
-.global-admin-sidebar::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+.global-admin-sidebar.open {
+    transform: translateX(0);
 }
 
-.admin-logo {
-    padding: 0 12px 32px 12px;
+/* Sidebar Overlay */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
 }
 
-.admin-logo h2 {
-    color: #ff1b90;
-    font-size: 24px;
-    font-weight: 800;
-    margin: 0 0 4px 0;
-    font-family: 'Inter', sans-serif;
+.sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
 }
 
-.admin-logo span {
-    color: #9ca3af;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+/* Close Trigger inside Sidebar */
+.sidebar-close-trigger {
+    position: absolute;
+    top: 24px;
+    right: 20px;
+    color: #8892b0;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 8px;
+    border-radius: 50%;
+}
+
+.sidebar-close-trigger:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    transform: rotate(90deg);
 }
 
 .sidebar-main-nav {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 20px; /* Increased gap for a more premium, spacious look */
 }
 
 .sidebar-main-nav .nav-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 14px 20px;
     border-radius: 12px;
     text-decoration: none;
     color: #9ca3af;
@@ -84,6 +104,13 @@
     background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     margin-top: 24px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
+}
+
+.admin-profile-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
 }
 
 .admin-avatar {

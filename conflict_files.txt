@@ -1,5 +1,0 @@
-﻿backend/apps/admin_panel/serializers.py
-backend/apps/admin_panel/urls.py
-backend/apps/admin_panel/views.py
-backend/apps/offers/views.py
-backend/config/settings.py

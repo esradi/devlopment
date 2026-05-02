@@ -1,19 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, FileText, X, Download } from 'lucide-react';
+import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile } from 'lucide-react';
 import { messageService } from '../../services/api';
-import './CompanyMessages.css';
+import './AdminMessages.css';
 
-const CompanyMessages = ({ userData }) => {
+const AdminMessages = ({ userData }) => {
     const [conversations, setConversations] = useState([]);
     const [activeConvId, setActiveConvId] = useState(null);
     const [messageInput, setMessageInput] = useState('');
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [showCVModal, setShowCVModal] = useState(false);
     const messagesEndRef = useRef(null);
 
-    const myId = userData?.user_id || userData?.id;
+    // Robust ID detection
+    const getMyId = () => {
+        if (userData?.id) return userData.id;
+        if (userData?.user_id) return userData.user_id;
+        try {
+            const storedUser = JSON.parse(localStorage.getItem('user'));
+            return storedUser?.id || storedUser?.user_id;
+        } catch (e) { return null; }
+    };
+    const myId = getMyId();
 
     const groupIntoConversations = (msgs, currentUserId) => {
         const convMap = {};
@@ -44,7 +51,42 @@ const CompanyMessages = ({ userData }) => {
     const fetchData = async () => {
         try {
             const msgData = await messageService.getAll();
-            const msgs = Array.isArray(msgData) ? msgData : msgData?.results || msgData?.messages || [];
+            let msgs = Array.isArray(msgData) ? msgData : msgData?.results || msgData?.messages || [];
+            
+            // Add a fake conversation for demonstration
+            if (msgs.length === 0) {
+                const now = new Date().toISOString();
+                msgs = [
+                    {
+                        id: 'mock-1',
+                        sender: 999,
+                        sender_name: 'Sarah Connor',
+                        receiver: myId,
+                        receiver_name: 'Admin',
+                        content: 'Hello! I need some help with my internship validation.',
+                        created_at: now
+                    },
+                    {
+                        id: 'mock-2',
+                        sender: myId,
+                        sender_name: 'Admin',
+                        receiver: 999,
+                        receiver_name: 'Sarah Connor',
+                        content: 'Sure Sarah, I can help with that. What seems to be the issue?',
+                        created_at: now
+                    },
+                    {
+                        id: 'mock-3',
+                        sender: 999,
+                        sender_name: 'Sarah Connor',
+                        receiver: myId,
+                        receiver_name: 'Admin',
+                        content: 'My company supervisor hasn\'t received the evaluation link yet.',
+                        created_at: now
+                    }
+                ];
+            }
+
             const convs = groupIntoConversations(msgs, myId);
             setConversations(convs);
             if (convs.length > 0 && !activeConvId) setActiveConvId(convs[0].id);
@@ -76,30 +118,18 @@ const CompanyMessages = ({ userData }) => {
         }
     };
 
-    const handleDownloadCV = () => {
-        const blob = new Blob(["Mock CV Content"], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'Resume.txt';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    };
-
     const activeConv = conversations.find(c => c.id === activeConvId);
     const filteredConversations = conversations.filter(c => 
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    if (loading) return <div className="messages-loading">Loading...</div>;
+    if (loading) return <div className="admin-messages-loading">Loading...</div>;
 
     return (
-        <div className="messages-container">
-            <div className="messages-sidebar">
+        <div className="admin-messages-container">
+            <div className="admin-messages-sidebar">
                 <div className="messages-sidebar-header">
-                    <h2>Messaging</h2>
+                    <h2>Messages</h2>
                     <div className="messages-search">
                         <Search size={18} />
                         <input 
@@ -134,7 +164,7 @@ const CompanyMessages = ({ userData }) => {
                 </div>
             </div>
 
-            <div className="messages-main">
+            <div className="admin-messages-main">
                 {activeConv ? (
                     <>
                         <div className="chat-header">
@@ -142,15 +172,10 @@ const CompanyMessages = ({ userData }) => {
                                 <img src={activeConv.avatar} alt={activeConv.name} className="chat-avatar" />
                                 <div>
                                     <h3>{activeConv.name}</h3>
-                                    <span className="online-status">Candidate</span>
+                                    <span className="online-status">Online</span>
                                 </div>
                             </div>
-                            <div className="chat-header-actions">
-                                <button className="chat-btn-secondary" onClick={() => setShowCVModal(true)}>
-                                    <FileText size={18} /> View CV
-                                </button>
-                                <button className="chat-options-btn"><MoreVertical size={20} /></button>
-                            </div>
+                            <button className="chat-options-btn"><MoreVertical size={20} /></button>
                         </div>
                         <div className="chat-messages">
                             {activeConv.messages.map((msg, idx) => {
@@ -187,31 +212,12 @@ const CompanyMessages = ({ userData }) => {
                 ) : (
                     <div className="no-chat-selected">
                         <MessageSquare size={64} />
-                        <h3>Select a candidate to start chatting</h3>
+                        <h3>Select a conversation to start chatting</h3>
                     </div>
                 )}
             </div>
-
-            <AnimatePresence>
-                {showCVModal && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="cv-modal-overlay" onClick={() => setShowCVModal(false)}>
-                        <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="cv-modal-content" onClick={(e) => e.stopPropagation()}>
-                            <header className="cv-modal-header">
-                                <h3>CV Viewer</h3>
-                                <div className="cv-header-actions">
-                                    <button className="btn-cv-action" onClick={handleDownloadCV}><Download size={18} /> Download</button>
-                                    <button className="btn-cv-close" onClick={() => setShowCVModal(false)}><X size={20} /></button>
-                                </div>
-                            </header>
-                            <div className="cv-pdf-viewer">
-                                <p style={{ color: 'white', textAlign: 'center', marginTop: '2rem' }}>Candidate Resume Preview</p>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };
 
-export default CompanyMessages;
+export default AdminMessages;

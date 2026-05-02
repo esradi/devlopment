@@ -27,7 +27,9 @@ import {
     Plus,
     Target,
     BarChart3,
-    Users
+    Users,
+    Menu,
+    X
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { studentService, applicationService, offerService, authService } from '../../services/api';
@@ -67,9 +69,12 @@ const StudentDashboard = ({ setUserRole }) => {
     const [matchBreakdown, setMatchBreakdown] = useState(null);
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [recommendations, setRecommendations] = useState([]);
     const [recentApps, setRecentApps] = useState([]);
     const [toastMessage, setToastMessage] = useState(null);
+
+    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
     const showToast = (message) => {
         setToastMessage(message);
@@ -123,7 +128,7 @@ const StudentDashboard = ({ setUserRole }) => {
                     recentActivity: dashboardRes?.recent_activity || [],
                     completeness: dashboardRes?.profile_completeness || 0
                 });
-                setRecentApps(appsRes || []);
+                setRecentApps(Array.isArray(appsRes) ? appsRes : appsRes?.results || appsRes?.data || []);
                 setRecommendations(dashboardRes?.recommended_offers || []);
             } catch (err) {
                 console.error("Failed to fetch dashboard data:", err);
@@ -219,9 +224,27 @@ const StudentDashboard = ({ setUserRole }) => {
     }
 
     return (
-        <div className="student-dashboard">
+        <div className={`student-dashboard ${isSidebarOpen ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+            <button
+                className="sidebar-toggle-trigger"
+                onClick={toggleSidebar}
+                title={isSidebarOpen ? "Close Sidebar" : "Open Menu"}
+            >
+                <Menu size={24} />
+                {!isSidebarOpen && <span className="menu-label">Menu</span>}
+            </button>
+
+            {/* Sidebar Overlay */}
+            <div
+                className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`}
+                onClick={() => setIsSidebarOpen(false)}
+            ></div>
+
             {/* Sidebar */}
-            <aside className="dashboard-sidebar">
+            <aside className={`dashboard-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setIsSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
                 <div className="sidebar-header">
                     <div
                         className="user-context"
@@ -239,39 +262,39 @@ const StudentDashboard = ({ setUserRole }) => {
                 </div>
 
                 <nav className="sidebar-nav">
-                    <Link to="/dashboard/student" className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student" className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <LayoutDashboard size={20} />
                         <span>Dashboard</span>
                     </Link>
-                    <Link to="/dashboard/student/offers" className={`nav-item ${activeTab === 'offers' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student/offers" className={`nav-item ${activeTab === 'offers' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <Briefcase size={20} />
                         <span>My Offers</span>
                     </Link>
-                    <Link to="/dashboard/student/applications" className={`nav-item ${activeTab === 'applications' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student/applications" className={`nav-item ${activeTab === 'applications' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <Send size={20} />
                         <span>My Applications</span>
                     </Link>
-                    <Link to="/dashboard/student/favorites" className={`nav-item ${activeTab === 'favorites' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student/favorites" className={`nav-item ${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <Heart size={20} />
                         <span>Favorites</span>
                     </Link>
-                    <Link to="/dashboard/student/challenges" className={`nav-item ${activeTab === 'challenges' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student/challenges" className={`nav-item ${activeTab === 'challenges' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <Target size={20} />
                         <span>Skill Challenges</span>
                     </Link>
-                    <Link to="/dashboard/student/analytics" className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student/analytics" className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <BarChart3 size={20} />
                         <span>Analytics</span>
                     </Link>
-                    <Link to="/dashboard/student/messages" className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student/messages" className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <MessageSquare size={20} />
                         <span>Messages</span>
                     </Link>
-                    <Link to="/dashboard/student/groups" className={`nav-item ${activeTab === 'groups' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student/groups" className={`nav-item ${activeTab === 'groups' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <Users size={20} />
                         <span>Study Groups</span>
                     </Link>
-                    <Link to="/dashboard/student/settings" className={`nav-item ${activeTab === 'settings' || activeTab === 'complete-profile' ? 'active' : ''}`}>
+                    <Link to="/dashboard/student/settings" className={`nav-item ${activeTab === 'settings' || activeTab === 'complete-profile' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <Settings size={20} />
                         <span>Settings</span>
                     </Link>
@@ -558,6 +581,10 @@ const StudentDashboard = ({ setUserRole }) => {
                     />
                 ) : activeTab === 'groups' ? (
                     <StudentGroups
+                        userData={userData}
+                    />
+                ) : activeTab === 'messages' ? (
+                    <StudentMessages
                         userData={userData}
                     />
                 ) : activeTab === 'settings' ? (

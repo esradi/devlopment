@@ -32,6 +32,7 @@ import CreateOffer from './CreateOffer';
 import CompanySidebar from '../../components/CompanySidebar';
 import CompanyNavbar from '../../components/Navbar/CompanyNavbar';
 import NotificationBell from '../../components/NotificationBell';
+import CompanyMessages from './CompanyMessages';
 import './CompanyDashboard.css';
 
 const formatTime = (dateString) => {
@@ -201,26 +202,23 @@ const CompanyDashboard = ({ setUserRole }) => {
         <div className="company-dashboard">
             {/* ★ RESPONSIVE: hamburger button — CSS hides it on desktop, shows it ≤900px */}
             <button
-                className="company-sidebar-toggle"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Open menu"
+                className="sidebar-toggle-trigger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                title={sidebarOpen ? "Close Sidebar" : "Open Menu"}
             >
-                <Menu size={22} />
+                <Menu size={24} />
+                {!sidebarOpen && <span className="menu-label">Menu</span>}
             </button>
 
             {/* ★ RESPONSIVE: dimming backdrop, click anywhere to close drawer */}
-            {sidebarOpen && (
-                <div
-                    className="company-sidebar-backdrop"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+            <div className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)}></div>
 
-            {/* ★ RESPONSIVE: wrapper that turns the static sidebar into a slide-in drawer.
-                The `.open` class is what the CSS animates via translateX */}
-            <div className={`company-sidebar-wrapper ${sidebarOpen ? 'open' : ''}`}>
-                <CompanySidebar activePath={activeTab} />
-            </div>
+            <aside className={`dashboard-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
+                <CompanySidebar activePath={activeTab} onClose={() => setSidebarOpen(false)} />
+            </aside>
 
             {/* 2. Main Content Area */}
             <div className="company-main">
@@ -447,6 +445,8 @@ const CompanyDashboard = ({ setUserRole }) => {
                         <CompanyOffers userData={userData} />
                     ) : activeTab === 'create-offer' ? (
                         <CreateOffer userData={userData} onSuccess={() => navigate('/dashboard/company/offers')} />
+                    ) : activeTab === 'messages' ? (
+                        <CompanyMessages userData={userData} />
                     ) : (
                         <div className="placeholder-pane" style={{ padding: '80px', textAlign: 'center' }}>
                             <h2 style={{ fontSize: '32px', marginBottom: '16px' }}>Section Coming Soon</h2>

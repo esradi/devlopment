@@ -184,13 +184,15 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'accounts.User'
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = "pro.turbo-smtp.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'helpstageio@gmail.com'
-EMAIL_HOST_PASSWORD = 'youkiyouki2005' 
-DEFAULT_FROM_EMAIL = 'helpstageio@gmail.com' 
+EMAIL_USE_SSL = False
+
+EMAIL_HOST_USER = "7ddc9f92403201d6450f"
+EMAIL_HOST_PASSWORD = "TjhKut5OGAP3bJd0xgRy"
+
+DEFAULT_FROM_EMAIL = "stage.io.contact@gmail.com"
 
