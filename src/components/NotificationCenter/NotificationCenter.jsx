@@ -13,6 +13,7 @@ import {
     MailCheck
 } from 'lucide-react';
 import { notificationService } from '../../services/api';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import './NotificationCenter.css';
 
 const NotificationCenter = ({ role }) => {
@@ -21,6 +22,9 @@ const NotificationCenter = ({ role }) => {
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const dropdownRef = useRef(null);
+
+    // Real-time notifications
+    const { message: wsNotification } = useWebSocket('/notifications/');
 
     const fetchNotifications = async () => {
         try {
@@ -37,10 +41,16 @@ const NotificationCenter = ({ role }) => {
 
     useEffect(() => {
         fetchNotifications();
-        // Polling for new notifications every 60 seconds
-        const interval = setInterval(fetchNotifications, 60000);
-        return () => clearInterval(interval);
     }, []);
+
+    // Handle incoming real-time notifications
+    useEffect(() => {
+        if (wsNotification && wsNotification.type === 'new_notification') {
+            const newNotif = wsNotification.notification;
+            setNotifications(prev => [newNotif, ...prev]);
+            setUnreadCount(prev => prev + 1);
+        }
+    }, [wsNotification]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {

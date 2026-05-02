@@ -188,10 +188,17 @@ class Interview(models.Model):
 
 
 class Message(models.Model):
-    """Simple message between users"""
+    """Message between users with attachment support"""
+    MESSAGE_TYPES = [
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('file', 'File'),
+    ]
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_messages')
-    content = models.TextField()
+    content = models.TextField(blank=True, null=True)
+    attachment = models.FileField(upload_to='chat_attachments/', null=True, blank=True)
+    message_type = models.CharField(max_length=10, choices=MESSAGE_TYPES, default='text')
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

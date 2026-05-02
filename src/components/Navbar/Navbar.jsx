@@ -5,14 +5,20 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './Navbar.css';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import NotificationCenter from '../NotificationCenter/NotificationCenter';
+import { messageService } from '../../services/api';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 const Navbar = ({ role, setUserRole }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [unreadMessages, setUnreadMessages] = useState(0);
     const { scrollY } = useScroll();
     const [isScrolled, setIsScrolled] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+
+    // WebSocket for real-time messages
+    const { message: wsMessage } = useWebSocket('/messages/');
 
     useEffect(() => {
         const updateScroll = () => setIsScrolled(window.scrollY > 50);
@@ -20,7 +26,7 @@ const Navbar = ({ role, setUserRole }) => {
         return () => window.removeEventListener('scroll', updateScroll);
     }, []);
 
-    // Sync role from localStorage on mount and when role changes
+    // Sync role from localStorage
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser && role === 'public') {
@@ -29,16 +35,49 @@ const Navbar = ({ role, setUserRole }) => {
                 if (userData.role) {
                     setUserRole(userData.role);
                 }
-            } catch (err) {
-                console.warn('Failed to parse stored user data');
-            }
+            } catch (err) { }
         }
     }, []);
+
+    const fetchUnreadCount = async () => {
+        if (role !== 'public' && role) {
+            try {
+                const res = await messageService.getUnreadCount();
+                setUnreadMessages(res.unread_count || 0);
+            } catch (err) {
+                console.error("Failed to fetch unread count:", err);
+            }
+        }
+    };
+
+    // Initial and periodic sync
+    useEffect(() => {
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 60000); // Sync every minute just in case
+        
+        // Listen for internal "read" events from AdminMessages
+        window.addEventListener('messagesRead', fetchUnreadCount);
+        
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('messagesRead', fetchUnreadCount);
+        };
+    }, [role]);
+
+    // Update unread count on new websocket message
+    useEffect(() => {
+        if (wsMessage && wsMessage.type === 'chat_message') {
+            // Re-fetch total count for 100% accuracy
+            fetchUnreadCount();
+        }
+    }, [wsMessage]);
 
     // Close dropdowns on route change
     useEffect(() => {
         setIsProfileOpen(false);
         setIsMobileMenuOpen(false);
+        // We no longer reset to 0 here because being on the page doesn't mean all are read
+        // The individual conversation opening should trigger a mark-as-read in the future
     }, [location.pathname]);
 
     const scrollToSection = (sectionId) => {
@@ -61,12 +100,6 @@ const Navbar = ({ role, setUserRole }) => {
         navigate('/');
     };
 
-    const navbarBackground = useTransform(
-        scrollY,
-        [0, 100],
-        ["rgba(5, 5, 5, 0)", "rgba(5, 5, 5, 0.8)"]
-    );
-
     const publicLinks = [
         { label: 'Home', id: 'home' },
         { label: 'About Us', id: 'about' },
@@ -76,60 +109,19 @@ const Navbar = ({ role, setUserRole }) => {
         { label: 'Contact Us', id: 'contact' }
     ];
 
-    const dashboardLinks = {
-        student: [
-            { label: 'Dashboard', path: '/student/dashboard' },
-            { label: 'Challenges', path: '/student/challenges' },
-            { label: 'Offers', path: '/browse-offers' },
-            { label: 'Buddies', path: '/student/buddies' }
-        ],
-        company: [
-            { label: 'Dashboard', path: '/company/dashboard' },
-            { label: 'Offers', path: '/company/offers' },
-            { label: 'Candidates', path: '/company/candidates' },
-            { label: 'Interviews', path: '/company/interviews' }
-        ],
-        admin: [
-            { label: 'Dashboard', path: '/admin/dashboard' },
-            { label: 'Validation', path: '/admin/validation' },
-            { label: 'Users', path: '/admin/users' },
-            { label: 'Stats', path: '/admin/stats' }
-        ]
-    };
-
     const isDashboardView = location.pathname.includes('/dashboard') ||
         location.pathname.includes('/student/') ||
         location.pathname.includes('/company/') ||
         location.pathname.includes('/admin/');
 
-    const isStudentDashboard = location.pathname.startsWith('/dashboard/student');
-
-    const getDashboardLink = () => {
-        switch (role) {
-            case 'student': return '/student/dashboard';
-            case 'company': return '/company/dashboard';
-            case 'admin': return '/admin/dashboard';
-            default: return '/';
-        }
-    };
-
     const getProfileLink = () => {
         let currentRole = role;
-
         if (currentRole === 'public' || !currentRole) {
             try {
                 const storedUser = localStorage.getItem('user');
-                if (storedUser) {
-                    const userData = JSON.parse(storedUser);
-                    if (userData.role) {
-                        currentRole = userData.role;
-                    }
-                }
-            } catch (err) {
-                console.warn('Failed to retrieve role from localStorage');
-            }
+                if (storedUser) currentRole = JSON.parse(storedUser).role;
+            } catch (err) { }
         }
-
         switch (currentRole) {
             case 'student': return '/dashboard/student/complete-profile';
             case 'company': return '/dashboard/company/profile';
@@ -138,68 +130,15 @@ const Navbar = ({ role, setUserRole }) => {
         }
     };
 
-    const getProfileColor = () => {
-        let currentRole = role;
-
-        if (currentRole === 'public' || !currentRole) {
-            try {
-                const storedUser = localStorage.getItem('user');
-                if (storedUser) {
-                    const userData = JSON.parse(storedUser);
-                    if (userData.role) {
-                        currentRole = userData.role;
-                    }
-                }
-            } catch (err) {
-                console.warn('Failed to retrieve role from localStorage');
-            }
-        }
-
-        switch (currentRole?.toLowerCase()) {
-            case 'student': return '#3b82f6';
-            case 'company': return '#10b981';
-            case 'admin': return '#f59e0b';
-            default: return '#9333ea';
-        }
-    };
-
     const getProfileName = () => {
-        let currentRole = role;
-
-        if (currentRole === 'public' || !currentRole) {
-            try {
-                const storedUser = localStorage.getItem('user');
-                if (storedUser) {
-                    const userData = JSON.parse(storedUser);
-                    if (userData.role) {
-                        currentRole = userData.role;
-                    }
-                }
-            } catch (err) {
-                console.warn('Failed to retrieve role from localStorage');
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                const userData = JSON.parse(storedUser);
+                return (userData.first_name || userData.email || 'A').charAt(0).toUpperCase();
             }
-        }
-
-        switch (currentRole?.toLowerCase()) {
-            case 'student': return 'AB';
-            case 'company': return 'TC';
-            case 'admin': {
-                try {
-                    const storedUser = localStorage.getItem('user');
-                    if (storedUser) {
-                        const userData = JSON.parse(storedUser);
-                        if (userData.first_name) {
-                            return userData.first_name.charAt(0).toUpperCase();
-                        }
-                        if (userData.email) {
-                            return userData.email.charAt(0).toUpperCase();
-                        }
-                    }
-                } catch (err) { }
-                return 'A';
-            }
-            default: return 'U';
-        }
+        } catch (err) { }
+        return 'U';
     };
 
     return (
@@ -210,7 +149,6 @@ const Navbar = ({ role, setUserRole }) => {
             transition={{ duration: 0.5 }}
         >
             <div className="nav-content">
-                {/* LOGO */}
                 <div className="logo-section">
                     <Link to="/" className="logo" onClick={() => scrollToSection('home')}>
                         <motion.img
@@ -223,25 +161,16 @@ const Navbar = ({ role, setUserRole }) => {
                     </Link>
                 </div>
 
-                {/* CENTRAL MENU */}
                 <ul className="menu-list">
                     {publicLinks.map((link) => (
                         <li key={link.id}>
-                            <a
-                                href={`/#${link.id}`}
-                                className="nav-link"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    scrollToSection(link.id);
-                                }}
-                            >
+                            <a href={`/#${link.id}`} className="nav-link" onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>
                                 {link.label}
                             </a>
                         </li>
                     ))}
                 </ul>
 
-                {/* RIGHT ACTIONS */}
                 <div className="actions-section">
                     {role !== 'public' ? (
                         <div className="auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -259,7 +188,7 @@ const Navbar = ({ role, setUserRole }) => {
                                 title="Messages"
                             >
                                 <MessageSquare size={20} />
-                                <span className="action-badge">1</span>
+                                {unreadMessages > 0 && <span className="action-badge">{unreadMessages}</span>}
                             </Link>
 
                             <NotificationCenter role={role} />
@@ -275,13 +204,10 @@ const Navbar = ({ role, setUserRole }) => {
                                                 const storedUser = localStorage.getItem('user');
                                                 if (storedUser) {
                                                     const userData = JSON.parse(storedUser);
-                                                    if (userData.first_name || userData.last_name) {
-                                                        return `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
-                                                    }
-                                                    return userData.email.split('@')[0];
+                                                    return userData.first_name || userData.email.split('@')[0];
                                                 }
                                             } catch (e) { }
-                                            return role === 'admin' ? 'Admin' : 'User';
+                                            return 'User';
                                         })()}
                                     </span>
                                 </div>
@@ -309,38 +235,22 @@ const Navbar = ({ role, setUserRole }) => {
                             </div>
                         </div>
                     ) : (
-                        <Link to="/login" className="cta-menu-button">
-                            Login
-                        </Link>
+                        <Link to="/login" className="cta-menu-button">Login</Link>
                     )}
 
-                    <button
-                        className="mobile-toggle"
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    >
+                    <button className="mobile-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                         {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                 </div>
             </div>
 
-            {/* MOBILE MENU */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
-                    <motion.div
-                        className="mobile-menu"
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                    >
+                    <motion.div className="mobile-menu" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                         <ul className="mobile-menu-list">
                             {publicLinks.map((link) => (
-                                <li key={link.id}>
-                                    <a href={`/#${link.id}`} onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>
-                                        {link.label}
-                                    </a>
-                                </li>
+                                <li key={link.id}><a href={`/#${link.id}`} onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>{link.label}</a></li>
                             ))}
-
                             {role !== 'public' && (
                                 <>
                                     <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%', margin: '10px 0' }} />
@@ -360,4 +270,3 @@ const Navbar = ({ role, setUserRole }) => {
 };
 
 export default Navbar;
-

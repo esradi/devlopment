@@ -32,27 +32,33 @@ class CompanyMinimalSerializer(serializers.ModelSerializer):
 class InternshipValidationSerializer(serializers.ModelSerializer):
     """Handles List, Detail, and Status Updates for Internships"""
     student_name = serializers.CharField(source='application.student.user.get_full_name', read_only=True)
+    student_university = serializers.CharField(source='application.student.university', read_only=True)
     offer_title = serializers.CharField(source='application.offer.title', read_only=True)
+    company_name = serializers.CharField(source='application.offer.company.company_name', read_only=True)
     validated_by_name = serializers.CharField(source='validated_by.get_full_name', read_only=True)
 
     class Meta:
         model = InternshipValidation
         fields = [
-            'id', 'student_name', 'offer_title', 'status', 
-            'feedback', 'validated_by_name', 'created_at'
+            'id', 'student_name', 'student_university', 'offer_title',
+            'company_name', 'status', 'feedback', 'validated_by_name', 'created_at'
         ]
         read_only_fields = ['id', 'created_at', 'validated_by_name']
 
 class AdminUserSerializer(serializers.ModelSerializer):
     """Handles User listing and status/ID verification toggles"""
     domain = serializers.CharField(source='student_profile.domain', read_only=True, default=None)
+    speciality = serializers.CharField(source='student_profile.speciality', read_only=True, default=None)
+    university = serializers.CharField(source='student_profile.university', read_only=True, default=None)
+    cv = serializers.FileField(source='student_profile.cv', read_only=True, default=None)
     
     class Meta:
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 
             'is_active', 'id_verified', 'is_suspended', 
-            'suspension_reason', 'domain', 'date_joined'
+            'suspension_reason', 'domain', 'speciality', 'university', 'date_joined',
+            'national_id_card', 'cv', 'role'
         ]
         read_only_fields = ['id', 'email', 'date_joined']
 

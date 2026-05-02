@@ -1,10 +1,37 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Application
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from .models import Message
+from .serializers import MessageSerializer
+from apps.notifications.services import NotificationService
 
-
-@receiver(post_save, sender=Application)
-def create_internship_validation(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Message)
+def broadcast_new_message(sender, instance, created, **kwargs):
     if created:
-        from apps.admin_panel.models import InternshipValidation
-        InternshipValidation.objects.get_or_create(application=instance)
+        channel_layer = get_channel_layer()
+        serializer = MessageSerializer(instance)
+        
+        # 1. Create a persistent notification for the bell icon
+        try:
+            NotificationService.notify_new_message(instance)
+        except Exception as e:
+            print(f"Failed to create notification: {e}")
+
+        # 2. Notify the receiver via real-time chat WebSocket
+        async_to_sync(channel_layer.group_send)(
+            f"chat_{instance.receiver.id}",
+            {
+                "type": "chat_message",
+                "message": serializer.data
+            }
+        )
+        
+        # 3. Also notify the sender (for multi-device sync)
+        async_to_sync(channel_layer.group_send)(
+            f"chat_{instance.sender.id}",
+            {
+                "type": "chat_message",
+                "message": serializer.data
+            }
+        )

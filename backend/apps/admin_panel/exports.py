@@ -11,17 +11,17 @@ class AdminExporter:
     def export_users_to_excel(queryset):
         wb = Workbook()
         ws = wb.active
-        ws.title = "Users Export"
+        ws.title = "Students Export"
 
         # Headers
         headers = [
-            "ID", "Email", "First Name", "Last Name", 
-            "Role", "Date Joined", "ID Verified", "Suspended"
+            "ID", "First Name", "Last Name", "Email", 
+            "Domain", "Speciality", "Status", "Date Joined"
         ]
         
         # Style Headers
         header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+        header_fill = PatternFill(start_color="9E59FF", end_color="9E59FF", fill_type="solid") # Elegant Purple
         
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
@@ -31,14 +31,21 @@ class AdminExporter:
 
         # Data
         for row, user in enumerate(queryset, 2):
+            try:
+                domain = user.student_profile.domain or ''
+                speciality = user.student_profile.speciality or ''
+            except Exception:
+                domain = ''
+                speciality = ''
+
             ws.cell(row=row, column=1, value=user.id)
-            ws.cell(row=row, column=2, value=user.email)
-            ws.cell(row=row, column=3, value=user.first_name)
-            ws.cell(row=row, column=4, value=user.last_name)
-            ws.cell(row=row, column=5, value=user.role)
-            ws.cell(row=row, column=6, value=user.date_joined.strftime("%Y-%m-%d %H:%M"))
-            ws.cell(row=row, column=7, value="Yes" if user.id_verified else "No")
-            ws.cell(row=row, column=8, value="Yes" if user.is_suspended else "No")
+            ws.cell(row=row, column=2, value=user.first_name)
+            ws.cell(row=row, column=3, value=user.last_name)
+            ws.cell(row=row, column=4, value=user.email)
+            ws.cell(row=row, column=5, value=domain)
+            ws.cell(row=row, column=6, value=speciality)
+            ws.cell(row=row, column=7, value="Active" if getattr(user, 'is_active', False) else "Inactive")
+            ws.cell(row=row, column=8, value=user.date_joined.strftime("%Y-%m-%d"))
 
         # Column width
         for col in range(1, len(headers) + 1):

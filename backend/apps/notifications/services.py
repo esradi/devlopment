@@ -77,6 +77,24 @@ class NotificationService:
         """Broadcast that notifications were cleared."""
         NotificationService._broadcast_to_user(user_id, "notifications_cleared", {})
 
+    @staticmethod
+    def notify_new_message(message):
+        """Notify the receiver of a new private message"""
+        sender_name = f"{message.sender.first_name} {message.sender.last_name}".strip() or message.sender.email.split('@')[0]
+        
+        # We only create a persistent notification if it's not a duplicate 
+        # (Though signals usually only fire once, it's good practice)
+        return NotificationService.create_and_send_notification(
+            user=message.receiver,
+            notif_type='new_message',
+            title='💬 New Message',
+            message=f"You have a new message from {sender_name}.",
+            action_url='/dashboard/admin/messages' if message.receiver.role == 'admin' else '/dashboard/student/messages' if message.receiver.role == 'student' else '/dashboard/company/messages',
+            priority='normal',
+            related_object_type='message',
+            related_object_id=message.id
+        )
+
     # --- Helpers: Applications ---
 
     @staticmethod

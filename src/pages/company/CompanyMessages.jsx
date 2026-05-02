@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, FileText, X, Download } from 'lucide-react';
+import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, FileText, X, Download, Plus, User } from 'lucide-react';
 import { messageService } from '../../services/api';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import './CompanyMessages.css';
 
 const CompanyMessages = ({ userData }) => {
@@ -11,15 +12,20 @@ const CompanyMessages = ({ userData }) => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [showCVModal, setShowCVModal] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const myId = userData?.user_id || userData?.id;
+
+    // WebSocket for real-time messages
+    const { message: wsMessage } = useWebSocket('/messages/');
 
     const groupIntoConversations = (msgs, currentUserId) => {
         const convMap = {};
         msgs.forEach(msg => {
-            const otherId = msg.sender === currentUserId ? msg.receiver : msg.sender;
-            const otherName = msg.sender === currentUserId ? msg.receiver_name : msg.sender_name;
+            const otherId = String(msg.sender) === String(currentUserId) ? msg.receiver : msg.sender;
+            const otherName = String(msg.sender) === String(currentUserId) ? msg.receiver_name : msg.sender_name;
             if (!convMap[otherId]) {
                 convMap[otherId] = {
                     id: otherId,
@@ -57,6 +63,67 @@ const CompanyMessages = ({ userData }) => {
 
     useEffect(() => { fetchData(); }, []);
 
+    // Handle real-time WebSocket messages
+    useEffect(() => {
+        if (wsMessage && wsMessage.type === 'chat_message') {
+            const newMsg = wsMessage.message;
+            const otherId = String(newMsg.sender) === String(myId) ? newMsg.receiver : newMsg.sender;
+            
+            setConversations(prev => {
+                const existingConv = prev.find(c => String(c.id) === String(otherId));
+                let updatedConvs;
+                
+                if (existingConv) {
+                    if (existingConv.messages.some(m => m.id === newMsg.id)) return prev;
+                    
+                    updatedConvs = prev.map(c => {
+                        if (String(c.id) === String(otherId)) {
+                            return {
+                                ...c,
+                                messages: [...c.messages, newMsg],
+                                lastMessage: newMsg.content,
+                                lastTime: new Date(newMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            };
+                        }
+                        return c;
+                    });
+                } else {
+                    const otherName = String(newMsg.sender) === String(myId) ? newMsg.receiver_name : newMsg.sender_name;
+                    const newConv = {
+                        id: otherId,
+                        name: otherName || `User ${otherId}`,
+                        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(otherName || 'U')}&background=9e59ff&color=fff`,
+                        messages: [newMsg],
+                        lastMessage: newMsg.content,
+                        lastTime: new Date(newMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    };
+                    updatedConvs = [newConv, ...prev];
+                }
+
+                return [...updatedConvs].sort((a, b) => {
+                    const timeA = a.messages[a.messages.length - 1]?.created_at;
+                    const timeB = b.messages[b.messages.length - 1]?.created_at;
+                    return new Date(timeB) - new Date(timeA);
+                });
+            });
+
+            if (String(otherId) === String(activeConvId)) {
+                messageService.markRead(activeConvId).then(() => {
+                    window.dispatchEvent(new CustomEvent('messagesRead'));
+                });
+            }
+        }
+    }, [wsMessage, myId, activeConvId]);
+
+    // Mark as read when switching conversations
+    useEffect(() => {
+        if (activeConvId) {
+            messageService.markRead(activeConvId).then(() => {
+                window.dispatchEvent(new CustomEvent('messagesRead'));
+            });
+        }
+    }, [activeConvId]);
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [activeConvId, conversations]);
@@ -70,9 +137,29 @@ const CompanyMessages = ({ userData }) => {
                 receiver: activeConvId
             });
             setMessageInput('');
-            await fetchData();
         } catch (err) {
             console.error("Failed to send message:", err);
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !activeConvId) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('attachment', file);
+        formData.append('receiver', activeConvId);
+        formData.append('content', `Shared a ${file.type.startsWith('image/') ? 'photo' : 'file'}`);
+        formData.append('message_type', file.type.startsWith('image/') ? 'image' : 'file');
+
+        try {
+            await messageService.create(formData);
+        } catch (err) {
+            console.error("Upload failed:", err);
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -88,23 +175,25 @@ const CompanyMessages = ({ userData }) => {
         URL.revokeObjectURL(url);
     };
 
-    const activeConv = conversations.find(c => c.id === activeConvId);
+    const activeConv = conversations.find(c => String(c.id) === String(activeConvId));
     const filteredConversations = conversations.filter(c => 
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    if (loading) return <div className="messages-loading">Loading...</div>;
+    if (loading) return <div className="messages-loading">Loading Candidate Hub...</div>;
 
     return (
         <div className="messages-container">
             <div className="messages-sidebar">
                 <div className="messages-sidebar-header">
-                    <h2>Messaging</h2>
+                    <div className="header-top">
+                        <h2>Candidate Hub</h2>
+                    </div>
                     <div className="messages-search">
                         <Search size={18} />
                         <input 
                             type="text" 
-                            placeholder="Search contacts..." 
+                            placeholder="Search candidates..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -112,21 +201,27 @@ const CompanyMessages = ({ userData }) => {
                 </div>
                 <div className="conversations-list">
                     {filteredConversations.length === 0 ? (
-                        <div className="empty-convs">No conversations found</div>
+                        <div className="empty-convs">
+                            <MessageSquare size={40} opacity={0.3} />
+                            <p>No candidates found</p>
+                        </div>
                     ) : (
                         filteredConversations.map(conv => (
                             <div 
                                 key={conv.id} 
-                                className={`conversation-item ${activeConvId === conv.id ? 'active' : ''}`}
+                                className={`conversation-item ${String(activeConvId) === String(conv.id) ? 'active' : ''}`}
                                 onClick={() => setActiveConvId(conv.id)}
                             >
-                                <img src={conv.avatar} alt={conv.name} className="conv-avatar" />
+                                <div className="avatar-wrapper">
+                                    <img src={conv.avatar} alt={conv.name} className="conv-avatar" />
+                                    <div className="status-indicator online"></div>
+                                </div>
                                 <div className="conv-info">
                                     <div className="conv-header">
                                         <h4>{conv.name}</h4>
                                         <span>{conv.lastTime}</span>
                                     </div>
-                                    <p>{conv.lastMessage}</p>
+                                    <p className="last-msg-preview">{conv.lastMessage}</p>
                                 </div>
                             </div>
                         ))
@@ -139,26 +234,59 @@ const CompanyMessages = ({ userData }) => {
                     <>
                         <div className="chat-header">
                             <div className="chat-user-info">
-                                <img src={activeConv.avatar} alt={activeConv.name} className="chat-avatar" />
+                                <div className="avatar-wrapper">
+                                    <img src={activeConv.avatar} alt={activeConv.name} className="chat-avatar" />
+                                    <div className="status-indicator online pulse"></div>
+                                </div>
                                 <div>
                                     <h3>{activeConv.name}</h3>
-                                    <span className="online-status">Candidate</span>
+                                    <div className="chat-subtitle">
+                                        <span className="online-text">Candidate</span>
+                                    </div>
                                 </div>
                             </div>
                             <div className="chat-header-actions">
-                                <button className="chat-btn-secondary" onClick={() => setShowCVModal(true)}>
+                                <button className="chat-btn-premium" onClick={() => setShowCVModal(true)}>
                                     <FileText size={18} /> View CV
                                 </button>
-                                <button className="chat-options-btn"><MoreVertical size={20} /></button>
+                                <button className="chat-tool-btn"><MoreVertical size={20} /></button>
                             </div>
                         </div>
+
                         <div className="chat-messages">
                             {activeConv.messages.map((msg, idx) => {
                                 const isMe = String(msg.sender) === String(myId);
                                 return (
                                     <div key={msg.id || idx} className={`message-row ${isMe ? 'me' : 'them'}`}>
+                                        {!isMe && <img src={activeConv.avatar} alt="" className="message-mini-avatar" />}
                                         <div className={`message-bubble ${isMe ? 'sent' : 'received'}`}>
-                                            {msg.content}
+                                            {msg.message_type === 'image' && msg.attachment && (
+                                                <div className="message-attachment image">
+                                                    <img 
+                                                        src={msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`} 
+                                                        alt="Attachment" 
+                                                        onClick={() => window.open(msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`)} 
+                                                    />
+                                                </div>
+                                            )}
+                                            {msg.message_type === 'file' && msg.attachment && (
+                                                <div 
+                                                    className="message-attachment file"
+                                                    onClick={() => {
+                                                        const url = msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`;
+                                                        window.open(url, '_blank');
+                                                    }}
+                                                >
+                                                    <div className="file-icon-box">
+                                                        <Paperclip size={18} />
+                                                    </div>
+                                                    <div className="file-details">
+                                                        <span className="file-name">{msg.attachment.split('/').pop()}</span>
+                                                        <span className="file-size">Click to open or download</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <p className="message-text">{msg.content}</p>
                                             <span className="message-time">
                                                 {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -168,26 +296,44 @@ const CompanyMessages = ({ userData }) => {
                             })}
                             <div ref={messagesEndRef} />
                         </div>
-                        <form className="chat-input-container" onSubmit={handleSendMessage}>
-                            <div className="input-actions">
-                                <button type="button"><Paperclip size={20} /></button>
-                                <button type="button"><Smile size={20} /></button>
+
+                        <form className="chat-input-area" onSubmit={handleSendMessage}>
+                            <div className="chat-input-wrapper">
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    style={{ display: 'none' }} 
+                                    onChange={handleFileUpload}
+                                />
+                                <button 
+                                    type="button" 
+                                    className={`tool-btn ${isUploading ? 'uploading' : ''}`}
+                                    onClick={() => fileInputRef.current.click()}
+                                    disabled={isUploading}
+                                >
+                                    <Plus size={22} />
+                                </button>
+                                
+                                <input 
+                                    type="text" 
+                                    placeholder="Reply to candidate..." 
+                                    value={messageInput}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                />
+                                
+                                <button type="submit" className="send-btn" disabled={!messageInput.trim() || isUploading}>
+                                    <Send size={20} />
+                                </button>
                             </div>
-                            <input 
-                                type="text" 
-                                placeholder="Type your message..." 
-                                value={messageInput}
-                                onChange={(e) => setMessageInput(e.target.value)}
-                            />
-                            <button type="submit" className="send-btn" disabled={!messageInput.trim()}>
-                                <Send size={20} />
-                            </button>
                         </form>
                     </>
                 ) : (
                     <div className="no-chat-selected">
-                        <MessageSquare size={64} />
-                        <h3>Select a candidate to start chatting</h3>
+                        <div className="empty-state-icon">
+                            <MessageSquare size={64} />
+                        </div>
+                        <h3>Candidate Portal</h3>
+                        <p>Select a candidate from the list to begin communication.</p>
                     </div>
                 )}
             </div>
@@ -197,14 +343,14 @@ const CompanyMessages = ({ userData }) => {
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="cv-modal-overlay" onClick={() => setShowCVModal(false)}>
                         <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="cv-modal-content" onClick={(e) => e.stopPropagation()}>
                             <header className="cv-modal-header">
-                                <h3>CV Viewer</h3>
+                                <h3>Resume Preview</h3>
                                 <div className="cv-header-actions">
                                     <button className="btn-cv-action" onClick={handleDownloadCV}><Download size={18} /> Download</button>
                                     <button className="btn-cv-close" onClick={() => setShowCVModal(false)}><X size={20} /></button>
                                 </div>
                             </header>
                             <div className="cv-pdf-viewer">
-                                <p style={{ color: 'white', textAlign: 'center', marginTop: '2rem' }}>Candidate Resume Preview</p>
+                                <p style={{ color: 'white', textAlign: 'center', marginTop: '4rem' }}>Interactive Resume Viewer</p>
                             </div>
                         </motion.div>
                     </motion.div>

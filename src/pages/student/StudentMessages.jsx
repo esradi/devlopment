@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, Bell } from 'lucide-react';
+import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, Bell, User, Plus } from 'lucide-react';
 import { messageService, notificationService } from '../../services/api';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import './StudentMessages.css';
 
 const StudentMessages = ({ userData }) => {
@@ -11,15 +12,20 @@ const StudentMessages = ({ userData }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('messages');
     const [alerts, setAlerts] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const myId = userData?.user_id || userData?.id;
+
+    // WebSocket for real-time messages
+    const { message: wsMessage } = useWebSocket('/messages/');
 
     const groupIntoConversations = (msgs, currentUserId) => {
         const convMap = {};
         msgs.forEach(msg => {
-            const otherId = msg.sender === currentUserId ? msg.receiver : msg.sender;
-            const otherName = msg.sender === currentUserId ? msg.receiver_name : msg.sender_name;
+            const otherId = String(msg.sender) === String(currentUserId) ? msg.receiver : msg.sender;
+            const otherName = String(msg.sender) === String(currentUserId) ? msg.receiver_name : msg.sender_name;
             if (!convMap[otherId]) {
                 convMap[otherId] = {
                     id: otherId,
@@ -63,6 +69,67 @@ const StudentMessages = ({ userData }) => {
 
     useEffect(() => { fetchData(); }, []);
 
+    // Handle real-time WebSocket messages
+    useEffect(() => {
+        if (wsMessage && wsMessage.type === 'chat_message') {
+            const newMsg = wsMessage.message;
+            const otherId = String(newMsg.sender) === String(myId) ? newMsg.receiver : newMsg.sender;
+            
+            setConversations(prev => {
+                const existingConv = prev.find(c => String(c.id) === String(otherId));
+                let updatedConvs;
+                
+                if (existingConv) {
+                    if (existingConv.messages.some(m => m.id === newMsg.id)) return prev;
+                    
+                    updatedConvs = prev.map(c => {
+                        if (String(c.id) === String(otherId)) {
+                            return {
+                                ...c,
+                                messages: [...c.messages, newMsg],
+                                lastMessage: newMsg.content,
+                                lastTime: new Date(newMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            };
+                        }
+                        return c;
+                    });
+                } else {
+                    const otherName = String(newMsg.sender) === String(myId) ? newMsg.receiver_name : newMsg.sender_name;
+                    const newConv = {
+                        id: otherId,
+                        name: otherName || `User ${otherId}`,
+                        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(otherName || 'U')}&background=9e59ff&color=fff`,
+                        messages: [newMsg],
+                        lastMessage: newMsg.content,
+                        lastTime: new Date(newMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    };
+                    updatedConvs = [newConv, ...prev];
+                }
+
+                return [...updatedConvs].sort((a, b) => {
+                    const timeA = a.messages[a.messages.length - 1]?.created_at;
+                    const timeB = b.messages[b.messages.length - 1]?.created_at;
+                    return new Date(timeB) - new Date(timeA);
+                });
+            });
+
+            if (String(otherId) === String(activeConvId)) {
+                messageService.markRead(activeConvId).then(() => {
+                    window.dispatchEvent(new CustomEvent('messagesRead'));
+                });
+            }
+        }
+    }, [wsMessage, myId, activeConvId]);
+
+    // Mark as read when switching conversations
+    useEffect(() => {
+        if (activeConvId) {
+            messageService.markRead(activeConvId).then(() => {
+                window.dispatchEvent(new CustomEvent('messagesRead'));
+            });
+        }
+    }, [activeConvId]);
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [activeConvId, conversations]);
@@ -71,63 +138,95 @@ const StudentMessages = ({ userData }) => {
         if (e) e.preventDefault();
         if (!messageInput.trim() || !activeConvId) return;
         try {
-            await messageService.create({
+            const res = await messageService.create({
                 content: messageInput.trim(),
                 receiver: activeConvId
             });
             setMessageInput('');
-            await fetchData();
+            // The UI will update via WebSocket broadcast
         } catch (err) {
             console.error("Failed to send message:", err);
         }
     };
 
-    const activeConv = conversations.find(c => c.id === activeConvId);
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !activeConvId) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('attachment', file);
+        formData.append('receiver', activeConvId);
+        formData.append('content', `Shared a ${file.type.startsWith('image/') ? 'photo' : 'file'}`);
+        formData.append('message_type', file.type.startsWith('image/') ? 'image' : 'file');
+
+        try {
+            await messageService.create(formData);
+        } catch (err) {
+            console.error("Upload failed:", err);
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const activeConv = conversations.find(c => String(c.id) === String(activeConvId));
     const filteredConversations = conversations.filter(c => 
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    if (loading) return <div className="messages-loading">Loading...</div>;
+    if (loading) return <div className="messages-loading">Loading Messaging Hub...</div>;
 
     return (
         <div className="messages-container">
             <div className="messages-sidebar">
                 <div className="messages-sidebar-header">
-                    <h2>Messages</h2>
+                    <div className="header-top">
+                        <h2>Messaging Hub</h2>
+                    </div>
+                    
                     <div className="messages-tabs">
                         <button 
                             className={`m-tab ${activeTab === 'messages' ? 'active' : ''}`}
                             onClick={() => setActiveTab('messages')}
                         >
-                            Chat
+                            <MessageSquare size={16} />
+                            <span>Chats</span>
                         </button>
                         <button 
                             className={`m-tab ${activeTab === 'alerts' ? 'active' : ''}`}
                             onClick={() => setActiveTab('alerts')}
                         >
-                            Alerts {alerts.length > 0 && <span className="tab-badge">{alerts.length}</span>}
+                            <Bell size={16} />
+                            <span>Alerts</span>
+                            {alerts.length > 0 && <span className="tab-badge">{alerts.length}</span>}
                         </button>
                     </div>
+
                     <div className="messages-search">
                         <Search size={18} />
                         <input 
                             type="text" 
-                            placeholder="Search..." 
+                            placeholder="Search chats..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                 </div>
+
                 <div className="conversations-list">
                     {activeTab === 'alerts' ? (
                         alerts.length === 0 ? (
-                            <div className="empty-convs">No alerts found</div>
+                            <div className="empty-convs">
+                                <Bell size={40} opacity={0.3} />
+                                <p>No notifications yet</p>
+                            </div>
                         ) : alerts.map(alert => (
                             <div key={alert.id} className="conversation-item alert-item">
                                 <div className="alert-icon-circle"><Bell size={18} /></div>
                                 <div className="conv-info">
                                     <div className="conv-header">
-                                        <h4>{alert.title || 'Notification'}</h4>
+                                        <h4>{alert.title || 'System Alert'}</h4>
                                         <span>{new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                     <p>{alert.message || alert.content}</p>
@@ -135,21 +234,27 @@ const StudentMessages = ({ userData }) => {
                             </div>
                         ))
                     ) : filteredConversations.length === 0 ? (
-                        <div className="empty-convs">No conversations found</div>
+                        <div className="empty-convs">
+                            <MessageSquare size={40} opacity={0.3} />
+                            <p>No conversations found</p>
+                        </div>
                     ) : (
                         filteredConversations.map(conv => (
                             <div 
                                 key={conv.id} 
-                                className={`conversation-item ${activeConvId === conv.id ? 'active' : ''}`}
+                                className={`conversation-item ${String(activeConvId) === String(conv.id) ? 'active' : ''}`}
                                 onClick={() => setActiveConvId(conv.id)}
                             >
-                                <img src={conv.avatar} alt={conv.name} className="conv-avatar" />
+                                <div className="avatar-wrapper">
+                                    <img src={conv.avatar} alt={conv.name} className="conv-avatar" />
+                                    <div className="status-indicator online"></div>
+                                </div>
                                 <div className="conv-info">
                                     <div className="conv-header">
                                         <h4>{conv.name}</h4>
                                         <span>{conv.lastTime}</span>
                                     </div>
-                                    <p>{conv.lastMessage}</p>
+                                    <p className="last-msg-preview">{conv.lastMessage}</p>
                                 </div>
                             </div>
                         ))
@@ -160,29 +265,66 @@ const StudentMessages = ({ userData }) => {
             <div className="messages-main">
                 {activeTab === 'alerts' ? (
                     <div className="no-chat-selected">
-                        <Bell size={64} style={{ color: '#ff1b90' }} />
-                        <h3>Your Notifications</h3>
-                        <p>Stay updated with the latest internship alerts.</p>
+                        <div className="empty-state-icon">
+                            <Bell size={64} />
+                        </div>
+                        <h3>Your Notification Center</h3>
+                        <p>Stay informed about your internship applications and platform updates.</p>
                     </div>
                 ) : activeConv ? (
                     <>
                         <div className="chat-header">
                             <div className="chat-user-info">
-                                <img src={activeConv.avatar} alt={activeConv.name} className="chat-avatar" />
+                                <div className="avatar-wrapper">
+                                    <img src={activeConv.avatar} alt={activeConv.name} className="chat-avatar" />
+                                    <div className="status-indicator online pulse"></div>
+                                </div>
                                 <div>
                                     <h3>{activeConv.name}</h3>
-                                    <span className="online-status">Active Now</span>
+                                    <div className="chat-subtitle">
+                                        <span className="online-text">Active Now</span>
+                                    </div>
                                 </div>
                             </div>
-                            <button className="chat-options-btn"><MoreVertical size={20} /></button>
+                            <div className="chat-header-actions">
+                                <button className="chat-tool-btn"><MoreVertical size={20} /></button>
+                            </div>
                         </div>
+
                         <div className="chat-messages">
                             {activeConv.messages.map((msg, idx) => {
                                 const isMe = String(msg.sender) === String(myId);
                                 return (
                                     <div key={msg.id || idx} className={`message-row ${isMe ? 'me' : 'them'}`}>
+                                        {!isMe && <img src={activeConv.avatar} alt="" className="message-mini-avatar" />}
                                         <div className={`message-bubble ${isMe ? 'sent' : 'received'}`}>
-                                            {msg.content}
+                                            {msg.message_type === 'image' && msg.attachment && (
+                                                <div className="message-attachment image">
+                                                    <img 
+                                                        src={msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`} 
+                                                        alt="Attachment" 
+                                                        onClick={() => window.open(msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`)} 
+                                                    />
+                                                </div>
+                                            )}
+                                            {msg.message_type === 'file' && msg.attachment && (
+                                                <div 
+                                                    className="message-attachment file"
+                                                    onClick={() => {
+                                                        const url = msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`;
+                                                        window.open(url, '_blank');
+                                                    }}
+                                                >
+                                                    <div className="file-icon-box">
+                                                        <Paperclip size={18} />
+                                                    </div>
+                                                    <div className="file-details">
+                                                        <span className="file-name">{msg.attachment.split('/').pop()}</span>
+                                                        <span className="file-size">Click to open or download</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <p className="message-text">{msg.content}</p>
                                             <span className="message-time">
                                                 {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -192,26 +334,44 @@ const StudentMessages = ({ userData }) => {
                             })}
                             <div ref={messagesEndRef} />
                         </div>
-                        <form className="chat-input-container" onSubmit={handleSendMessage}>
-                            <div className="input-actions">
-                                <button type="button"><Paperclip size={20} /></button>
-                                <button type="button"><Smile size={20} /></button>
+
+                        <form className="chat-input-area" onSubmit={handleSendMessage}>
+                            <div className="chat-input-wrapper">
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    style={{ display: 'none' }} 
+                                    onChange={handleFileUpload}
+                                />
+                                <button 
+                                    type="button" 
+                                    className={`tool-btn ${isUploading ? 'uploading' : ''}`}
+                                    onClick={() => fileInputRef.current.click()}
+                                    disabled={isUploading}
+                                >
+                                    <Plus size={22} />
+                                </button>
+                                
+                                <input 
+                                    type="text" 
+                                    placeholder="Write a message..." 
+                                    value={messageInput}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                />
+                                
+                                <button type="submit" className="send-btn" disabled={!messageInput.trim() || isUploading}>
+                                    <Send size={20} />
+                                </button>
                             </div>
-                            <input 
-                                type="text" 
-                                placeholder="Type your message..." 
-                                value={messageInput}
-                                onChange={(e) => setMessageInput(e.target.value)}
-                            />
-                            <button type="submit" className="send-btn" disabled={!messageInput.trim()}>
-                                <Send size={20} />
-                            </button>
                         </form>
                     </>
                 ) : (
                     <div className="no-chat-selected">
-                        <MessageSquare size={64} />
-                        <h3>Select a conversation to start chatting</h3>
+                        <div className="empty-state-icon">
+                            <MessageSquare size={64} />
+                        </div>
+                        <h3>Select a conversation</h3>
+                        <p>Pick a contact from the list to start your internship journey.</p>
                     </div>
                 )}
             </div>

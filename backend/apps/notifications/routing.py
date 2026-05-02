@@ -1,8 +1,10 @@
 from django.urls import re_path
 from .consumers import NotificationConsumer
+from .chat_consumers import ChatConsumer
 from apps.groups.routing import websocket_urlpatterns as groups_websocket_urlpatterns
 
 websocket_urlpatterns = [
     re_path(r"ws/notifications/$", NotificationConsumer.as_asgi()),
+    re_path(r"ws/messages/$", ChatConsumer.as_asgi()),
     *groups_websocket_urlpatterns,
 ]
