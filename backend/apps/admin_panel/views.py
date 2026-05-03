@@ -146,7 +146,7 @@ class GlobalSearchView(APIView):
         })
 
 class BaseAdminViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsUniversityAdmin]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     
     def perform_update(self, serializer):
@@ -196,7 +196,7 @@ class AdminUserViewSet(BaseAdminViewSet):
     queryset = User.objects.all()
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().select_related('student_profile')
         role = self.request.query_params.get('role')
         search = self.request.query_params.get('search')
         verified = self.request.query_params.get('verified')
@@ -234,6 +234,15 @@ class AdminUserViewSet(BaseAdminViewSet):
         action_name = 'user_suspended' if is_suspended else 'user_activated'
         log_admin_action(request, action_name, user, {'reason': reason})
         return Response({'status': action_name, 'is_suspended': user.is_suspended})
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """Activate an inactive user account"""
+        user = self.get_object()
+        user.is_active = True
+        user.save()
+        log_admin_action(request, 'user_account_activated', user)
+        return Response({'status': 'activated', 'is_active': True})
 
     @action(detail=False, methods=['post'], url_path='bulk-verify')
     def bulk_verify(self, request):

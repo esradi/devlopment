@@ -116,7 +116,20 @@ const Login = ({ setUserRole }) => {
                             </Link>
                         </div>
 
-                        {error && <p className="error-msg" style={{ color: '#ff4d4d', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>{error}</p>}
+                        {error && (
+                            <div className="login-error-alert">
+                                {error.includes('|REASON|') ? (
+                                    <>
+                                        <strong>{error.split('|REASON|')[0]}</strong>
+                                        <div className="suspend-reason">
+                                            Reason: {error.split('|REASON|')[1]}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <span>{error}</span>
+                                )}
+                            </div>
+                        )}
 
                         <button type="submit" className="submit-btn" disabled={loading}>
                             {loading ? <Loader2 className="animate-spin" size={20} style={{ margin: '0 auto' }} /> : 'Sign In'}

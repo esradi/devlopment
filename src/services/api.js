@@ -20,7 +20,10 @@ const handleApiError = async (response) => {
             const errorData = JSON.parse(text);
             if (errorData.detail) errorMessage = errorData.detail;
             else if (errorData.non_field_errors) errorMessage = errorData.non_field_errors[0];
-            else if (errorData.error) errorMessage = errorData.error;
+            else if (errorData.error) {
+                errorMessage = errorData.error;
+                if (errorData.reason) errorMessage += `|REASON|${errorData.reason}`;
+            }
             else if (typeof errorData === 'object') {
                 const firstKey = Object.keys(errorData)[0];
                 const firstError = errorData[firstKey];
@@ -208,6 +211,9 @@ export const quizService = {
 export const messageService = {
     getAll: () => api.get('/messages/'),
     create: (data) => api.post('/messages/', data),
+    getUnreadCount: () => api.get('/messages/unread_count/'),
+    markRead: (senderId) => api.post('/messages/mark_read/', { sender_id: senderId }),
+    getContacts: () => api.get('/admin/users/'), // Admins can message any user
 };
 
 export const interviewService = {
@@ -220,8 +226,8 @@ export const interviewService = {
 
 export const notificationService = {
     getAll: () => api.get('/notifications/'),
-    getUnreadCount: () => api.get('/notifications/unread_count/'),
-    markRead: (id) => api.post(`/notifications/${id}/mark_read/`),
+    getUnreadCount: () => api.get('/notifications/unread-count/'),
+    markRead: (id) => api.post(`/notifications/${id}/mark-read/`),
     markAllRead: () => api.post('/notifications/mark_all_read/'),
 };
 
@@ -240,6 +246,7 @@ export const adminService = {
     getValidationDetails: (id) => api.get(`/admin/validations/${id}/`),
     approveValidation: (id, data) => api.post(`/admin/internships/${id}/validate/`, { ...data, status: 'approved' }),
     rejectValidation: (id, data) => api.post(`/admin/internships/${id}/validate/`, { ...data, status: 'rejected' }),
+    activateUser: (id) => api.post(`/admin/users/${id}/activate/`),
 
     getPortfolios: (status) => api.get(status ? `/admin/portfolios/?status=${status}` : '/admin/portfolios/'),
     reviewPortfolio: (id, data) => api.post(`/admin/portfolios/${id}/review/`, data),
@@ -249,7 +256,25 @@ export const adminService = {
     getActivityFeed: () => api.get('/admin/activities/'),
     getSpecialities: () => api.get('/admin/specialities/'),
 
-    exportUsers: (role) => api.get(role ? `/admin/users/export/?role=${role}` : '/admin/users/export/'),
+    exportUsers: async (role) => {
+        const token = localStorage.getItem('access_token');
+        const url = role
+            ? `${API_BASE_URL}/admin/users/export/?role=${role}`
+            : `${API_BASE_URL}/admin/users/export/`;
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || `Export failed with status ${response.status}`);
+        }
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'students_export.xlsx';
+        link.click();
+        URL.revokeObjectURL(link.href);
+    },
     search: (query) => api.get(`/admin/search/?q=${query}`),
 };
 

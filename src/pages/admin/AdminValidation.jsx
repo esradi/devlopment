@@ -152,17 +152,17 @@ const AdminValidation = () => {
                                         >
                                             <td>
                                                 <div className="offer-detail-cell">
-                                                    <strong>{row.application?.student?.first_name} {row.application?.student?.last_name}</strong>
-                                                    <span>{row.application?.student?.university}</span>
+                                                    <strong>{row.student_name || '—'}</strong>
+                                                    <span>{row.student_university || '—'}</span>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="offer-detail-cell">
-                                                    <strong>{row.application?.offer?.title}</strong>
+                                                    <strong>{row.offer_title || '—'}</strong>
                                                 </div>
                                             </td>
                                             <td>
-                                                <strong>{row.application?.offer?.company_name}</strong>
+                                                <strong>{row.company_name || '—'}</strong>
                                             </td>
                                             <td>
                                                 {getStatusElement(row.status)}

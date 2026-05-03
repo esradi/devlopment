@@ -303,8 +303,8 @@
     background: #9e59ff;
     color: #fff;
     border: none;
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -313,29 +313,41 @@
     transition: all 0.2s;
 }
 
-.send-btn:hover:not(:disabled) {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(158, 89, 255, 0.4);
-}
-
 .send-btn:disabled {
     opacity: 0.5;
-    cursor: default;
+    cursor: not-allowed;
 }
 
+.send-btn:hover:not(:disabled) {
+    background: #8b31ff;
+    transform: scale(1.05);
+}
+
+/* Empty State */
 .no-chat-selected {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #444b5a;
-    gap: 16px;
+    color: #64748b;
+}
+
+.empty-state-icon {
+    width: 120px;
+    height: 120px;
+    background: rgba(158, 89, 255, 0.05);
+    color: #9e59ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
 }
 
 .no-chat-selected h3 {
-    font-size: 18px;
-    color: #8892b0;
+    color: #fff;
+    margin-bottom: 8px;
 }
 
 .messages-loading {

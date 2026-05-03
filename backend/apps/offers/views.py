@@ -1,4 +1,5 @@
 from rest_framework import status, permissions, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -27,6 +28,25 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        count = Message.objects.filter(receiver=request.user, is_read=False).count()
+        return Response({'unread_count': count})
+
+    @action(detail=False, methods=['post'])
+    def mark_read(self, request):
+        sender_id = request.data.get('sender_id')
+        if not sender_id:
+            return Response({'error': 'sender_id is required'}, status=400)
+        
+        updated = Message.objects.filter(
+            receiver=request.user, 
+            sender_id=sender_id, 
+            is_read=False
+        ).update(is_read=True)
+        
+        return Response({'marked_read': updated})
 
 class InterviewViewSet(viewsets.ModelViewSet):
     queryset = Interview.objects.all()

@@ -27,7 +27,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'sender_name', 'receiver', 'receiver_name', 'content', 'is_read', 'created_at']
+        fields = ['id', 'sender', 'sender_name', 'receiver', 'receiver_name', 'content', 'attachment', 'message_type', 'is_read', 'created_at']
         read_only_fields = ['sender', 'created_at']
 
 class LocationSerializer(serializers.ModelSerializer):
