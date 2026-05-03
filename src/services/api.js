@@ -36,14 +36,34 @@ const handleApiError = async (response) => {
 };
 
 export const api = {
-    async get(endpoint, includeAuth = true) {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    // async get(endpoint, includeAuth = true) {
+    //     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    //         headers: getHeaders(false, includeAuth)
+    //     });
+    //     if (!response.ok) {
+    //         if (response.status === 401) {
+    //             console.warn('Unauthorized access - redirecting to login');
+    //         }
+    //         await handleApiError(response);
+    //     }
+    //     return response.json();
+    // },
+    async get(endpoint, paramsOrAuth = true) {
+        let includeAuth = true;
+        let url = `${API_BASE_URL}${endpoint}`;
+
+        if (typeof paramsOrAuth === 'object') {
+            const queryString = new URLSearchParams(paramsOrAuth).toString();
+            if (queryString) url += `?${queryString}`;
+        } else {
+            includeAuth = paramsOrAuth;
+        }
+
+        const response = await fetch(url, {
             headers: getHeaders(false, includeAuth)
         });
         if (!response.ok) {
-            if (response.status === 401) {
-                console.warn('Unauthorized access - redirecting to login');
-            }
+            if (response.status === 401) console.warn('Unauthorized access');
             await handleApiError(response);
         }
         return response.json();
@@ -211,24 +231,24 @@ export const adminService = {
     getUserActivity: (id) => api.get(`/admin/users/${id}/activity/`),
     verifyUser: (id) => api.post(`/admin/users/${id}/verify/`),
     updateUserStatus: (id, data) => api.post(`/admin/users/${id}/status/`, data),
-    
+
     getCompanies: () => api.get('/admin/companies/'),
     verifyCompany: (id) => api.post(`/admin/companies/${id}/verify/`),
     rejectCompany: (id, reason) => api.post(`/admin/companies/${id}/reject/`, { reason }),
-    
+
     getValidations: (status) => api.get(status ? `/admin/internships/?status=${status}` : '/admin/internships/'),
     getValidationDetails: (id) => api.get(`/admin/validations/${id}/`),
     approveValidation: (id, data) => api.post(`/admin/internships/${id}/validate/`, { ...data, status: 'approved' }),
     rejectValidation: (id, data) => api.post(`/admin/internships/${id}/validate/`, { ...data, status: 'rejected' }),
-    
+
     getPortfolios: (status) => api.get(status ? `/admin/portfolios/?status=${status}` : '/admin/portfolios/'),
     reviewPortfolio: (id, data) => api.post(`/admin/portfolios/${id}/review/`, data),
-    
+
     getAnalytics: () => api.get('/admin/analytics/'),
     getAlerts: () => api.get('/admin/alerts/'),
     getActivityFeed: () => api.get('/admin/activities/'),
     getSpecialities: () => api.get('/admin/specialities/'),
-    
+
     exportUsers: (role) => api.get(role ? `/admin/users/export/?role=${role}` : '/admin/users/export/'),
     search: (query) => api.get(`/admin/search/?q=${query}`),
 };

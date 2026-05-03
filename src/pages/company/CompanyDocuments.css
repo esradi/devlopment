@@ -1,6 +1,6 @@
 /* CompanyDocuments.css */
 .company-documents-dashboard {
-  display: grid;
+  display: block;
   grid-template-columns: 260px 1fr 340px;
   height: 100vh;
   overflow: hidden;
@@ -138,7 +138,8 @@
   right: 0;
   bottom: -1px;
   height: 2px;
-  background: #db2777; /* Ping gradient base color */
+  background: #db2777;
+  /* Ping gradient base color */
   box-shadow: 0 -2px 10px rgba(219, 39, 119, 0.5);
 }
 
@@ -169,8 +170,14 @@
   position: relative;
 }
 
-.doc-filter-item span.lbl { color: #5d6785; }
-.doc-filter-item span.val { color: #fff; font-weight: 500; }
+.doc-filter-item span.lbl {
+  color: #5d6785;
+}
+
+.doc-filter-item span.val {
+  color: #fff;
+  font-weight: 500;
+}
 
 .doc-filter-divider {
   width: 1px;
@@ -189,11 +196,15 @@
   font-weight: 500;
   cursor: pointer;
 }
-.btn-clear-filters:hover { color: #fff; }
+
+.btn-clear-filters:hover {
+  color: #fff;
+}
 
 /* Table */
 .doc-table-container {
-  background: #111417; /* slightly lighter than background */
+  background: #111417;
+  /* slightly lighter than background */
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.03);
   overflow: hidden;
@@ -221,7 +232,9 @@
   vertical-align: middle;
 }
 
-.doc-table tr:last-child td { border-bottom: none; }
+.doc-table tr:last-child td {
+  border-bottom: none;
+}
 
 /* Student Cell */
 .doc-student-cell {
@@ -243,6 +256,7 @@
   font-weight: 600;
   color: #fff;
 }
+
 .doc-s-info p {
   margin: 0;
   font-size: 0.8rem;
@@ -257,6 +271,7 @@
   font-weight: 600;
   color: #fff;
 }
+
 .doc-offer-cell p {
   margin: 0;
   font-size: 0.8rem;
@@ -275,23 +290,44 @@
   text-transform: uppercase;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .doc-status-pill .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
 }
 
-.doc-status-pill.signed { border-color: rgba(153, 27, 84, 0.5); }
-.doc-status-pill.signed .dot { background: #db2777; }
+.doc-status-pill.signed {
+  border-color: rgba(153, 27, 84, 0.5);
+}
 
-.doc-status-pill.sent { border-color: rgba(158, 89, 255, 0.5); }
-.doc-status-pill.sent .dot { background: #9e59ff; }
+.doc-status-pill.signed .dot {
+  background: #db2777;
+}
 
-.doc-status-pill.finalized { border-color: rgba(16, 185, 129, 0.5); }
-.doc-status-pill.finalized .dot { background: #10b981; }
+.doc-status-pill.sent {
+  border-color: rgba(158, 89, 255, 0.5);
+}
 
-.doc-status-pill.draft { border-color: rgba(136, 146, 176, 0.3); }
-.doc-status-pill.draft .dot { background: #8892b0; }
+.doc-status-pill.sent .dot {
+  background: #9e59ff;
+}
+
+.doc-status-pill.finalized {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.doc-status-pill.finalized .dot {
+  background: #10b981;
+}
+
+.doc-status-pill.draft {
+  border-color: rgba(136, 146, 176, 0.3);
+}
+
+.doc-status-pill.draft .dot {
+  background: #8892b0;
+}
 
 /* Generated Cell */
 .doc-gen-cell h6 {
@@ -300,6 +336,7 @@
   font-weight: 500;
   color: #fff;
 }
+
 .doc-gen-cell p {
   margin: 0;
   font-size: 0.75rem;
@@ -319,7 +356,10 @@
   border-radius: 8px;
   transition: background 0.2s;
 }
-.doc-action-btn:hover { background: rgba(255, 255, 255, 0.05); }
+
+.doc-action-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
 
 
 /* RIGHT PANEL */
@@ -374,7 +414,10 @@
   margin-bottom: 20px;
   cursor: pointer;
 }
-.widget-select.filled { color: #fff; }
+
+.widget-select.filled {
+  color: #fff;
+}
 
 .btn-widget-gen {
   width: 100%;
@@ -388,7 +431,10 @@
   cursor: pointer;
   transition: transform 0.2s;
 }
-.btn-widget-gen:hover { transform: translateY(-2px); }
+
+.btn-widget-gen:hover {
+  transform: translateY(-2px);
+}
 
 /* Status Summary Widget */
 .widget-status-sum {
@@ -427,20 +473,38 @@
   font-size: 0.9rem;
   color: #8892b0;
 }
+
 .s-item-dot {
-  width: 6px; height: 6px; border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
-.doc-status-pill.draft .s-item-dot { background: #5d6785; }
-.doc-status-pill.sent .s-item-dot { background: #9e59ff; }
-.doc-status-pill.signed .s-item-dot { background: #db2777; }
-.doc-status-pill.finalized .s-item-dot { background: #10b981; }
+
+.doc-status-pill.draft .s-item-dot {
+  background: #5d6785;
+}
+
+.doc-status-pill.sent .s-item-dot {
+  background: #9e59ff;
+}
+
+.doc-status-pill.signed .s-item-dot {
+  background: #db2777;
+}
+
+.doc-status-pill.finalized .s-item-dot {
+  background: #10b981;
+}
 
 .s-item-right {
   font-weight: 700;
   color: #fff;
 }
 
-.activity-block .widget-label { margin-bottom: 4px; }
+.activity-block .widget-label {
+  margin-bottom: 4px;
+}
+
 .activity-main {
   font-size: 2.2rem;
   font-weight: 700;
@@ -450,6 +514,7 @@
   gap: 12px;
   margin-bottom: 2px;
 }
+
 .activity-trend {
   font-size: 0.85rem;
   font-weight: 600;
@@ -457,6 +522,7 @@
   display: flex;
   align-items: center;
 }
+
 .activity-sub {
   font-size: 0.75rem;
   color: #5d6785;

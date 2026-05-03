@@ -1,11 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-    ChevronLeft, Camera, Globe, MapPin, Users, Mail, 
+import {
+    ChevronLeft, Camera, Globe, MapPin, Users, Mail,
     Shield, Save, Sparkles, Building, Target, Heart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import CompanySidebar from '../../components/CompanySidebar';
 import './CompanyProfile.css';
 
 const EditCompanyProfile = () => {
@@ -82,9 +81,7 @@ const EditCompanyProfile = () => {
 
     return (
         <div className="company-profile-dashboard">
-            <CompanySidebar activePath="profile" />
-
-            <main className="profile-main-content">
+            <main className="profile-main-content full-scroll">
                 <div className="edit-profile-container">
                     <header className="edit-header-modern">
                         <button className="back-btn-modern" onClick={() => navigate(-1)}>
@@ -98,7 +95,7 @@ const EditCompanyProfile = () => {
 
                     <form className="edit-form-modern" onSubmit={handleSave}>
                         <div className="edit-grid-modern">
-                            
+
                             {/* Left Column - Branding & Info */}
                             <div className="edit-col">
                                 <section className="edit-section">
@@ -110,12 +107,12 @@ const EditCompanyProfile = () => {
                                             {logoPreview ? (
                                                 <img src={logoPreview} alt="Logo Preview" style={{ width: '100%', height: '100%', borderRadius: '20px', objectFit: 'cover' }} />
                                             ) : (
-                                                <span>{formData.name.charAt(0)}</span>
+                                                <span>{formData.company_name?.charAt(0) || 'C'}</span>
                                             )}
-                                            <input 
-                                                type="file" 
-                                                ref={fileInputRef} 
-                                                style={{ display: 'none' }} 
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                style={{ display: 'none' }}
                                                 accept="image/*"
                                                 onChange={handleLogoChange}
                                             />
@@ -130,35 +127,35 @@ const EditCompanyProfile = () => {
                                     </div>
                                     <div className="form-group-modern">
                                         <label>Company Name</label>
-                                        <input 
-                                            type="text" 
-                                            value={formData.company_name} 
-                                            onChange={(e) => setFormData({...formData, company_name: e.target.value})}
+                                        <input
+                                            type="text"
+                                            value={formData.company_name}
+                                            onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                                         />
                                     </div>
                                     <div className="form-group-modern">
                                         <label>Industry</label>
-                                        <input 
-                                            type="text" 
-                                            value={formData.industry} 
-                                            onChange={(e) => setFormData({...formData, industry: e.target.value})}
+                                        <input
+                                            type="text"
+                                            value={formData.industry}
+                                            onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
                                         />
                                     </div>
                                     <div className="form-row-modern">
                                         <div className="form-group-modern">
                                             <label><Globe size={12} /> Website</label>
-                                            <input 
-                                                type="url" 
-                                                value={formData.website} 
-                                                onChange={(e) => setFormData({...formData, website: e.target.value})}
+                                            <input
+                                                type="url"
+                                                value={formData.website}
+                                                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                                             />
                                         </div>
                                         <div className="form-group-modern">
                                             <label><Mail size={12} /> HR Email</label>
-                                            <input 
-                                                type="email" 
-                                                value={formData.contact_email} 
-                                                onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                                            <input
+                                                type="email"
+                                                value={formData.contact_email}
+                                                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                                             />
                                         </div>
                                     </div>
@@ -170,17 +167,17 @@ const EditCompanyProfile = () => {
                                     </div>
                                     <div className="form-group-modern">
                                         <label>Headquarters</label>
-                                        <input 
-                                            type="text" 
-                                            value={formData.location} 
-                                            onChange={(e) => setFormData({...formData, location: e.target.value})}
+                                        <input
+                                            type="text"
+                                            value={formData.location}
+                                            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                         />
                                     </div>
                                     <div className="form-group-modern">
                                         <label>Number of Employees</label>
-                                        <select 
-                                            value={formData.size_range} 
-                                            onChange={(e) => setFormData({...formData, size_range: e.target.value})}
+                                        <select
+                                            value={formData.size_range}
+                                            onChange={(e) => setFormData({ ...formData, size_range: e.target.value })}
                                         >
                                             <option value="">Select size</option>
                                             <option value="1-10">1-10 employees</option>
@@ -203,27 +200,27 @@ const EditCompanyProfile = () => {
                                     </div>
                                     <div className="form-group-modern">
                                         <label>Short Description</label>
-                                        <textarea 
+                                        <textarea
                                             rows="4"
                                             value={formData.description}
-                                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         ></textarea>
                                     </div>
                                     <div className="form-group-modern">
                                         <label>Our Mission</label>
-                                        <textarea 
+                                        <textarea
                                             rows="3"
                                             value={formData.mission}
-                                            onChange={(e) => setFormData({...formData, mission: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
                                         ></textarea>
                                     </div>
                                     <div className="form-group-modern">
                                         <label>Company Values (comma separated)</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             placeholder="e.g. innovation, collaboration"
                                             value={formData.values}
-                                            onChange={(e) => setFormData({...formData, values: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, values: e.target.value })}
                                         />
                                     </div>
                                 </section>

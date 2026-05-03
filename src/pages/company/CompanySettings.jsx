@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    User, Lock, Bell, Activity, Globe, Clock, Camera, Mail, Phone, 
-    AtSign, Shield, Smartphone, MailCheck, BellRing, MessageSquareMore, CheckCircle
+import {
+    User, Lock, Bell, Activity, Globe, Clock, Camera, Mail, Phone,
+    AtSign, Shield, Smartphone, MailCheck, BellRing, MessageSquareMore, CheckCircle, Menu, X
 } from 'lucide-react';
 import CompanySidebar from '../../components/CompanySidebar';
 import { authService, companyService } from '../../services/api';
 import './CompanySettings.css';
 
 const CompanySettings = () => {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeInternalTab, setActiveInternalTab] = useState('Profile');
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [loading, setLoading] = useState(true);
-    
+    const [toggles, setToggles] = useState({
+        '2fa': true,
+        'email-app-updates': true,
+        'email-interviews': true,
+        'email-reports': false,
+        'app-updates': true,
+        'app-interviews': true,
+        'app-messages': true
+    });
+
     const [user, setUser] = useState({
         first_name: '',
         last_name: '',
@@ -75,15 +85,6 @@ const CompanySettings = () => {
 
     if (loading) return <div className="loading" style={{ height: '100vh', background: '#0A0C10' }}></div>;
 
-    const [toggles, setToggles] = useState({
-        '2fa': true,
-        'email-app-updates': true,
-        'email-interviews': true,
-        'email-reports': false,
-        'app-updates': true,
-        'app-interviews': true,
-        'app-messages': true
-    });
 
     const activityLog = [
         { id: 1, action: 'Password changed', date: 'Oct 14, 2023 12:45 PM', ip: '197.204.XX.XX', device: 'Chrome • Algiers, DZ' },
@@ -105,7 +106,26 @@ const CompanySettings = () => {
 
     return (
         <div className="company-settings-container">
-            <CompanySidebar activePath="settings" />
+            {/* Toggle Button */}
+            <button
+                className="sidebar-toggle-trigger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                title={sidebarOpen ? "Close Sidebar" : "Open Menu"}
+            >
+                <Menu size={24} />
+                {!sidebarOpen && <span className="menu-label">Menu</span>}
+            </button>
+
+            {/* Overlay */}
+            <div className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+
+            {/* Sidebar Drawer */}
+            <aside className={`dashboard-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
+                <CompanySidebar activePath="settings" onClose={() => setSidebarOpen(false)} />
+            </aside>
 
             <main className="settings-main-content">
                 <header className="settings-header">
@@ -122,8 +142,8 @@ const CompanySettings = () => {
 
                 <div className="settings-tabs">
                     {['Profile', 'Security', 'Notifications', 'Activity Log'].map(tab => (
-                        <div 
-                            key={tab} 
+                        <div
+                            key={tab}
                             className={`settings-tab ${activeInternalTab === tab ? 'active' : ''}`}
                             onClick={() => setActiveInternalTab(tab)}
                         >
@@ -216,11 +236,11 @@ const CompanySettings = () => {
                                 <div className="security-extra-list">
                                     <div className="notification-row">
                                         <span>Show IP on login</span>
-                                        <Switch checked={true} onChange={() => {}} />
+                                        <Switch checked={true} onChange={() => { }} />
                                     </div>
                                     <div className="notification-row">
                                         <span>Email me on new login</span>
-                                        <Switch checked={true} onChange={() => {}} />
+                                        <Switch checked={true} onChange={() => { }} />
                                     </div>
                                 </div>
                             </div>

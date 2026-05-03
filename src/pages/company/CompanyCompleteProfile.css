@@ -358,7 +358,7 @@
 .cp-sticky-footer {
     position: fixed;
     bottom: 0;
-    left: 260px; /* sidebar width */
+    left: 0; /* removed sidebar width */
     right: 0;
     background: rgba(8, 10, 12, 0.8);
     backdrop-filter: blur(20px);

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
+import {
     LayoutDashboard, Briefcase, Send, MessageSquare, Settings, Calendar,
     Search, ChevronDown, Video, MapPin, MoreVertical, Trash2, ArrowRight,
-    Folder, User, LogOut
+    Folder, User, LogOut, Menu, X
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
@@ -11,6 +11,7 @@ import { interviewService } from '../../services/api';
 import './CompanyInterviews.css';
 
 const CompanyInterviews = () => {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Upcoming');
     const [interviews, setInterviews] = useState([]);
@@ -39,8 +40,26 @@ const CompanyInterviews = () => {
 
     return (
         <div className="company-interviews-dashboard">
-            {/* LEFT SIDEBAR */}
-            <CompanySidebar activePath="interviews" />
+            {/* Toggle Button */}
+            <button
+                className="sidebar-toggle-trigger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                title={sidebarOpen ? "Close Sidebar" : "Open Menu"}
+            >
+                <Menu size={24} />
+                {!sidebarOpen && <span className="menu-label">Menu</span>}
+            </button>
+
+            {/* Overlay */}
+            <div className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+
+            {/* Sidebar Drawer */}
+            <aside className={`dashboard-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
+                <CompanySidebar activePath="candidates" onClose={() => setSidebarOpen(false)} />
+            </aside>
 
             {/* MAIN CONTENT */}
             <main className="interviews-main">
@@ -53,8 +72,8 @@ const CompanyInterviews = () => {
                         <div className="i-header-actions">
                             <div className="i-tabs">
                                 {['Upcoming', 'Past', 'All'].map(tab => (
-                                    <button 
-                                        key={tab} 
+                                    <button
+                                        key={tab}
                                         className={`i-tab ${activeTab === tab ? 'active' : ''}`}
                                         onClick={() => setActiveTab(tab)}
                                     >
@@ -62,7 +81,7 @@ const CompanyInterviews = () => {
                                     </button>
                                 ))}
                             </div>
-                            <button 
+                            <button
                                 className="i-btn-schedule"
                                 onClick={() => navigate('/dashboard/company/interviews/schedule')}
                             >
@@ -104,7 +123,7 @@ const CompanyInterviews = () => {
                                     <span className="i-time-sub">{interview.time.substring(0, 5)} • {interview.duration} min</span>
                                     <span className={`i-status-pill ${interview.status}`}>{interview.status.toUpperCase()}</span>
                                     <div className="i-method-indicator">
-                                        {interview.method === 'video' ? <Video size={14} /> : <MapPin size={14} />} 
+                                        {interview.method === 'video' ? <Video size={14} /> : <MapPin size={14} />}
                                         {interview.method === 'video' ? ' Video call' : ' On-site'}
                                     </div>
                                 </div>
@@ -121,14 +140,14 @@ const CompanyInterviews = () => {
                                 </div>
                                 <div className="i-actions">
                                     {interview.join_url && (
-                                        <button 
+                                        <button
                                             className="btn-i-action primary"
                                             onClick={() => window.open(interview.join_url, '_blank')}
                                         >
                                             Join
                                         </button>
                                     )}
-                                    <button 
+                                    <button
                                         className="btn-i-action"
                                         onClick={() => navigate(`/dashboard/company/offer/0/application/${interview.application}`)}
                                     >
@@ -151,7 +170,7 @@ const CompanyInterviews = () => {
 
             {/* RIGHT SIDEBAR */}
             <aside className="i-right-panel">
-                
+
                 {/* Today's Schedule */}
                 <div className="i-schedule-widget">
                     <div className="i-widget-header">
@@ -172,7 +191,7 @@ const CompanyInterviews = () => {
                                         </div>
                                         <div className="i-t-job">{i.offer_title}</div>
                                         {i.join_url && (
-                                            <button 
+                                            <button
                                                 className="btn-i-join-now"
                                                 onClick={() => window.open(i.join_url, '_blank')}
                                             >
@@ -195,14 +214,14 @@ const CompanyInterviews = () => {
                 {/* Recruitment Flow */}
                 <div className="i-flow-widget">
                     <h3>RECRUITMENT FLOW</h3>
-                    
+
                     <div className="i-flow-row">
                         <div className="i-flow-labels">
                             <span>Interview Completion</span>
                             <strong>{interviews.length > 0 ? Math.round((interviews.filter(i => i.status === 'completed').length / interviews.length) * 100) : 0}%</strong>
                         </div>
                         <div className="i-flow-bar-bg">
-                            <div className="i-flow-bar-fill fill-purple" style={{width: `${interviews.length > 0 ? (interviews.filter(i => i.status === 'completed').length / interviews.length) * 100 : 0}%`}}></div>
+                            <div className="i-flow-bar-fill fill-purple" style={{ width: `${interviews.length > 0 ? (interviews.filter(i => i.status === 'completed').length / interviews.length) * 100 : 0}%` }}></div>
                         </div>
                     </div>
 

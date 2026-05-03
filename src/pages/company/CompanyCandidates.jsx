@@ -4,12 +4,13 @@ import {
     LayoutDashboard, Briefcase, Send, MessageSquare, Settings, Calendar,
     Search, MapPin, ChevronRight, CheckCircle2, ChevronLeft,
     Eye, Users, Award, XCircle, Download, ArrowUpRight, Check,
-    Folder, User, LogOut
+    Folder, User, LogOut, Menu, X
 } from 'lucide-react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
 import { companyService, offerService } from '../../services/api';
 import './CompanyCandidates.css';
+
 
 const MatchScoreRing = ({ score }) => {
     const radius = 14;
@@ -41,14 +42,17 @@ const StatusPill = ({ status }) => {
     if (val === 'interview') { bg = 'rgba(158, 89, 255, 0.3)'; color = '#d4b3ff'; }
     if (val === 'accepted') { bg = 'rgba(16, 185, 129, 0.15)'; color = '#10b981'; }
     if (val === 'refused' || val === 'rejected') { bg = 'rgba(244, 63, 94, 0.15)'; color = '#f43f5e'; }
-    if (val === 'offer') { bg = 'rgba(255, 27, 144, 0.15)'; color = '#ff1b90'; }
+    // if (val === 'offer') { bg = 'rgba(255, 27, 144, 0.15)'; color = '#ff1b90'; }
 
     return <span className="table-status-pill" style={{ background: bg, color: color }}>{val.toUpperCase()}</span>;
 };
 
 const CompanyCandidates = () => {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const { offerId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const activePath = location.pathname.split('/').filter(Boolean).pop();
     const [applicants, setApplicants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('All');
@@ -58,7 +62,7 @@ const CompanyCandidates = () => {
         applied: 0,
         inReview: 0,
         interview: 0,
-        offer: 0,
+        // offer: 0,
         refused: 0,
         accepted: 0,
     });
@@ -76,8 +80,21 @@ const CompanyCandidates = () => {
                     const data = await companyService.getOfferApplicants(offerId);
                     apps = data?.results || data || [];
                 } else {
-                    const data = await companyService.getApplications();
-                    apps = data?.results || data || [];
+                    const fetchAllApplications = async () => {
+                        let allApps = [];
+                        let page = 1;
+                        let hasMore = true;
+                        while (hasMore) {
+                            const data = await companyService.getApplications({ page });
+                            const results = data?.results || data || [];
+                            allApps = [...allApps, ...results];
+                            hasMore = !!data?.next;
+                            page++;
+                        }
+                        return allApps;
+                    };
+
+                    apps = await fetchAllApplications();
                 }
 
                 setApplicants(apps);
@@ -87,7 +104,7 @@ const CompanyCandidates = () => {
                     applied: apps.filter(a => ['applied', 'pending'].includes(a.status?.toLowerCase())).length,
                     inReview: apps.filter(a => ['in review', 'under review', 'viewed'].includes(a.status?.toLowerCase())).length,
                     interview: apps.filter(a => a.status?.toLowerCase() === 'interview').length,
-                    offer: apps.filter(a => a.status?.toLowerCase() === 'offer').length,
+                    // offer: apps.filter(a => a.status?.toLowerCase() === 'offer').length,
                     refused: apps.filter(a => ['refused', 'rejected'].includes(a.status?.toLowerCase())).length,
                     accepted: apps.filter(a => a.status?.toLowerCase() === 'accepted').length,
                 };
@@ -119,29 +136,44 @@ const CompanyCandidates = () => {
         filteredApplicants = filteredApplicants.filter(a => ['applied', 'pending'].includes(a.status?.toLowerCase()));
     } else if (activeFilter === 'In Review') {
         filteredApplicants = filteredApplicants.filter(a => ['in review', 'under review'].includes(a.status?.toLowerCase()));
-    }
-    if (searchTerm) {
-        filteredApplicants = filteredApplicants.filter(a =>
-            (a.student?.first_name + ' ' + a.student?.last_name).toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }
-
-    if (loading) {
-        return <div className="candidates-loading" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0C10' }}><div className="custom-loader" /></div>;
+    } else if (activeFilter === 'Interview') {
+        filteredApplicants = filteredApplicants.filter(a => a.status?.toLowerCase() === 'interview');
+        // } else if (activeFilter === 'Offer') {
+        //     filteredApplicants = filteredApplicants.filter(a => a.status?.toLowerCase() === 'offer');
+    } else if (activeFilter === 'Refused') {
+        filteredApplicants = filteredApplicants.filter(a => ['refused', 'rejected'].includes(a.status?.toLowerCase()));
+    } else if (activeFilter === 'Accepted') {
+        filteredApplicants = filteredApplicants.filter(a => a.status?.toLowerCase() === 'accepted');
     }
 
     return (
-        <div className="company-candidates-dashboard">
-            {/* LEFT SIDEBAR */}
-            <CompanySidebar activePath="candidates" />
+        <div className="company-candidates-dashboard" >
+            {/* Toggle Button */}
+            <button
+                className="sidebar-toggle-trigger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                title={sidebarOpen ? "Close Sidebar" : "Open Menu"}
+            >
+                <Menu size={24} />
+                {!sidebarOpen && <span className="menu-label">Menu</span>}
+            </button>
+
+            {/* Overlay */}
+            <div className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+
+            {/* Sidebar Drawer */}
+            <aside className={`dashboard-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
+                <CompanySidebar activePath={activePath} onClose={() => setSidebarOpen(false)} />
+            </aside>
 
             {/* MAIN CONTENT */}
             <main className="candidates-main">
                 <div className="candidates-header-container">
                     <div className="breadcrumbs">
                         <Link to="/dashboard/company/offers">MY OFFERS</Link>
-                        <ChevronRight size={14} />
-                        <span style={{ textTransform: 'uppercase' }}>{offerDetails?.title || 'GENERAL'}</span>
                         <ChevronRight size={14} />
                         <span className="current">APPLICATIONS</span>
                     </div>
@@ -193,7 +225,7 @@ const CompanyCandidates = () => {
                     {/* Filter Row */}
                     <div className="filter-row">
                         <div className="filter-tabs">
-                            {['All', 'Applied', 'In Review'].map(tab => (
+                            {['All', 'Applied', 'In Review', 'Interview', 'Refused', 'Accepted'].map(tab => (
                                 <button
                                     key={tab}
                                     className={`filter-tab ${activeFilter === tab ? 'active' : ''}`}
@@ -202,20 +234,6 @@ const CompanyCandidates = () => {
                                     {tab}
                                 </button>
                             ))}
-                        </div>
-
-                        <div className="filter-controls">
-                            <div className="search-box">
-                                <Search size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="Search candidates..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                            <button className="btn-select">Match score</button>
-                            <button className="btn-select">University</button>
                         </div>
                     </div>
 
@@ -298,57 +316,6 @@ const CompanyCandidates = () => {
                     </div>
                 </div>
             </main>
-
-            {/* RIGHT SIDEBAR - Offer Pipeline */}
-            <aside className="pipeline-sidebar">
-                <div className="pipeline-card">
-                    <h3>Offer Pipeline</h3>
-                    <div className="pipeline-steps">
-
-                        <div className="p-step">
-                            <div className="step-icon-bg"><Download size={14} /></div>
-                            <span className="step-label">Applied</span>
-                            <span className="step-count">{pipelineCounts.applied}</span>
-                        </div>
-
-                        <div className="p-step">
-                            <div className="step-icon-bg purple"><Eye size={14} /></div>
-                            <span className="step-label">In Review</span>
-                            <span className="step-count">{pipelineCounts.inReview}</span>
-                        </div>
-
-                        <div className="p-step">
-                            <div className="step-icon-bg purple-light"><Users size={14} /></div>
-                            <span className="step-label">Interview</span>
-                            <span className="step-count">{pipelineCounts.interview}</span>
-                        </div>
-
-                        <div className="p-step">
-                            <div className="step-icon-bg green-light"><Award size={14} /></div>
-                            <span className="step-label">Offer</span>
-                            <span className="step-count">{pipelineCounts.offer}</span>
-                        </div>
-
-                        <div className="p-step">
-                            <div className="step-icon-bg red"><XCircle size={14} /></div>
-                            <span className="step-label">Refused</span>
-                            <span className="step-count">{pipelineCounts.refused}</span>
-                        </div>
-
-                        <div className="p-step accepted-final">
-                            <div className="step-icon-bg green-solid"><Check size={14} strokeWidth={3} /></div>
-                            <span className="step-label text-white">Accepted</span>
-                            <span className="step-count text-white">{pipelineCounts.accepted}</span>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div className="boost-card">
-                    <p>Need to hire faster?</p>
-                    <button className="btn-boost">Boost this Offer</button>
-                </div>
-            </aside>
         </div>
     );
 };

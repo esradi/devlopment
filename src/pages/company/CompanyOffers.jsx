@@ -92,7 +92,7 @@ const CompanyOffers = ({ userData }) => {
                     <p>Manage your recruitment pipeline and active internship listings.</p>
                 </div>
                 <div className="header-actions-modern">
-                    <div className="search-bar-modern">
+                    <div className="search-box">
                         <Search size={18} />
                         <input
                             type="text"
@@ -119,10 +119,10 @@ const CompanyOffers = ({ userData }) => {
                         </button>
                     ))}
                 </div>
-                <div className="dropdowns-group">
+                {/* <div className="dropdowns-group">
                     <button className="btn-dropdown">TYPE <ChevronDown size={14} /></button>
                     <button className="btn-dropdown">LOCATION <ChevronDown size={14} /></button>
-                </div>
+                </div> */}
             </div>
 
             <motion.div className="offers-list-modern" variants={containerVariants} initial="hidden" animate="visible">
@@ -184,9 +184,9 @@ const CompanyOffers = ({ userData }) => {
                                 >
                                     <Edit2 size={16} />
                                 </button>
-                                <button className="icon-btn">
+                                {/* <button className="icon-btn">
                                     {offer.status === 'DRAFT' ? <Trash2 size={16} /> : <MoreVertical size={16} />}
-                                </button>
+                                </button> */}
                             </div>
                         </div>
                     </motion.div>

@@ -5,7 +5,6 @@ import {
     Upload, Info, Eye, CheckCircle, ChevronRight, Lightbulb
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import CompanySidebar from '../../components/CompanySidebar';
 import { companyService } from '../../services/api';
 import './CompanyCompleteProfile.css';
 
@@ -79,9 +78,6 @@ const CompanyCompleteProfile = () => {
 
     return (
         <div className="company-complete-profile">
-            {/* 1. SIDEBAR */}
-            <CompanySidebar activePath="profile" />
-
             {/* 2. MAIN CONTAINER */}
             <div className="cp-main-container">
                 

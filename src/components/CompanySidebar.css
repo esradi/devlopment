@@ -1,24 +1,66 @@
 .global-company-sidebar {
-    width: var(--sidebar-width, 260px);
-    background: #0d0f14;
-    border-right: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+    width: 280px;
+    background-color: #050505;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
-    padding: 80px 20px 24px 20px; /* Increased to match Admin sidebar spacing */
+    padding: 80px 20px 24px 20px;
     height: 100vh;
+    box-sizing: border-box;
     overflow-y: auto;
-    z-index: 100;
+    scrollbar-width: none;
+    /* REMOVED: position, top, left, transform, transition, z-index, box-shadow */
 }
 
-/* Scrollbar hide */
+.global-company-sidebar.open {
+    transform: translateX(0);
+}
+
 .global-company-sidebar::-webkit-scrollbar {
     display: none;
 }
-.global-company-sidebar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+
+/* Overlay */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
 }
 
+.sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Close Button */
+.sidebar-close-trigger {
+    position: absolute;
+    top: 24px;
+    right: 20px;
+    color: #8892b0;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 8px;
+    border-radius: 50%;
+}
+
+.sidebar-close-trigger:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    transform: rotate(90deg);
+}
+
+/* Nav */
 .sidebar-top-section {
     flex: 1;
 }
@@ -26,62 +68,62 @@
 .sidebar-main-nav {
     display: flex;
     flex-direction: column;
-    gap: 14px; /* Increased for better legibility and aesthetics */
+    gap: 8px;
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     padding: 14px 20px;
     border-radius: 12px;
-    color: var(--text-secondary, #8b92a5);
     text-decoration: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #9ca3af;
     font-weight: 500;
-    font-size: 15px;
+    font-size: 14px;
+    transition: all 0.2s ease;
 }
 
 .nav-item:hover {
+    color: #fff;
     background: rgba(255, 255, 255, 0.03);
+}
+
+.nav-item.active {
+    background: linear-gradient(90deg, #9e59ff 0%, #ff1b90 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(158, 89, 255, 0.25);
+}
+
+.nav-item.active svg {
     color: #fff;
 }
 
-/* The active state matching the screenshot exactly */
-.nav-item.active {
-    background: #110e19; /* very dark purple tint */
-    color: #9e59ff;
-    border: 1px solid rgba(158, 89, 255, 0.3);
+/* Bottom Section */
+.sidebar-bottom-section {
+    margin-top: 24px;
 }
 
-.nav-item svg {
-    transition: transform 0.3s ease;
-}
-
-.nav-item:hover svg {
-    transform: translateX(2px);
-}
-
-/* Premium Upgrade Card */
+/* Premium Card */
 .premium-upgrade-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
     padding: 20px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 .premium-badge {
     font-size: 10px;
     font-weight: 800;
-    color: #ff1b90;
+    color: #9e59ff;
     letter-spacing: 1px;
     margin-bottom: 8px;
 }
 
 .premium-upgrade-card p {
     font-size: 12px;
-    color: var(--text-secondary, #8b92a5);
+    color: #9ca3af;
     line-height: 1.5;
     margin: 0 0 16px 0;
 }
@@ -100,11 +142,11 @@
     letter-spacing: 0.5px;
 }
 
-/* Bottom Links (Help, Logout) */
+/* Bottom Links */
 .sidebar-bottom-links {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 .bottom-link-item {
@@ -112,19 +154,27 @@
     align-items: center;
     gap: 12px;
     padding: 10px 12px;
-    color: var(--text-secondary, #8b92a5);
+    color: #9ca3af;
     text-decoration: none;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     background: transparent;
     border: none;
     cursor: pointer;
-    text-transform: uppercase;
-    transition: color 0.2s;
+    border-radius: 10px;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
 }
 
 .bottom-link-item:hover {
     color: #fff;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.bottom-link-item.logout:hover {
+    color: #ff3b90;
+    background: rgba(255, 59, 144, 0.05);
 }
 
 /* ============================================================
@@ -134,14 +184,19 @@
 /* Tablets (<= 1024px): slim the sidebar so main content has more room */
 @media (max-width: 1024px) {
     .global-company-sidebar {
-        width: 220px;                 /* Slimmer sidebar on tablets */
-        padding: 24px 14px;           /* Reduced inner padding to recover horizontal space */
+        width: 220px;
+        /* Slimmer sidebar on tablets */
+        padding: 24px 14px;
+        /* Reduced inner padding to recover horizontal space */
     }
 
     .nav-item {
-        padding: 12px 14px;           /* Slightly tighter nav items for narrower sidebar */
-        font-size: 14px;              /* Smaller font for the slimmer column */
-        gap: 12px;                    /* Reduced gap between icon and label */
+        padding: 12px 14px;
+        /* Slightly tighter nav items for narrower sidebar */
+        font-size: 14px;
+        /* Smaller font for the slimmer column */
+        gap: 12px;
+        /* Reduced gap between icon and label */
     }
 }
 
@@ -155,19 +210,24 @@
 /* ★ Mobile (<= 900px): adjust sidebar to drawer-friendly size */
 @media (max-width: 900px) {
     .global-company-sidebar {
-        width: 260px;                 /* ★ Standard mobile drawer width */
-        height: calc(100vh - 70px);   /* ★ Match parent's adjusted 70px top offset */
+        width: 260px;
+        /* ★ Standard mobile drawer width */
+        height: calc(100vh - 70px);
+        /* ★ Match parent's adjusted 70px top offset */
     }
 }
 
 /* ★ Small phones (<= 480px): drawer takes more viewport so labels don't truncate */
 @media (max-width: 480px) {
     .global-company-sidebar {
-        width: 82vw;                  /* ★ Fluid drawer width on tiny phones */
-        max-width: 300px;             /* ★ Cap so it never overshoots */
+        width: 82vw;
+        /* ★ Fluid drawer width on tiny phones */
+        max-width: 300px;
+        /* ★ Cap so it never overshoots */
     }
 
     .premium-upgrade-card {
-        padding: 14px;                /* ★ Tighter padding on tiny screens */
+        padding: 14px;
+        /* ★ Tighter padding on tiny screens */
     }
 }

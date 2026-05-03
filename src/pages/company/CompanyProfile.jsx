@@ -2,14 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     LayoutDashboard, Briefcase, User, MessageSquare, Settings, Calendar,
     Folder, Search, MapPin, Globe, Users, Edit3, Camera, PlayCircle, Users2,
-    CheckCircle2, PlusCircle, PenTool, CheckCircle, Search as SearchIcon, Bell, BadgeCheck, Activity, Info, Target
+    CheckCircle2, PlusCircle, PenTool, CheckCircle, Search as SearchIcon, Bell, BadgeCheck, Activity, Info, Target, Menu, X
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
 import './CompanyProfile.css';
 import { companyService } from '../../services/api';
+import '../company/CompanyDashboard.css';
 
 const CompanyProfile = () => {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
     const [profile, setProfile] = useState(null);
@@ -58,8 +60,27 @@ const CompanyProfile = () => {
 
     return (
         <div className="company-profile-dashboard">
-            {/* 1. SIDEBAR */}
-            <CompanySidebar activePath="profile" />
+            {/* Toggle Button */}
+            <button
+                className="sidebar-toggle-trigger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                title={sidebarOpen ? "Close Sidebar" : "Open Menu"}
+            >
+                <Menu size={24} />
+                {!sidebarOpen && <span className="menu-label">Menu</span>}
+            </button>
+
+            {/* Overlay */}
+            <div className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+
+            {/* Sidebar Drawer */}
+            <aside className={`dashboard-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
+                <CompanySidebar activePath="profile" onClose={() => setSidebarOpen(false)} />
+            </aside>
+
 
             {/* 2. MAIN CONTAINER */}
             <main className="profile-main-content">
@@ -73,7 +94,10 @@ const CompanyProfile = () => {
                         </div>
                         <button
                             className="btn-edit-profile"
-                            onClick={() => navigate('/dashboard/company/complete-profile')}
+                            onClick={() => {
+                                setSidebarOpen(false);
+                                navigate('/dashboard/company/profile/edit');
+                            }}
                         >
                             <Edit3 size={16} /> Edit Profile
                         </button>

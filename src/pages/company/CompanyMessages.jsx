@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, FileText, X, Download } from 'lucide-react';
+import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, FileText, X, Download, Menu } from 'lucide-react';
 import { messageService } from '../../services/api';
 import './CompanyMessages.css';
+import CompanySidebar from '../../components/CompanySidebar';
+import '../company/CompanyDashboard.css';
 
 const CompanyMessages = ({ userData }) => {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [conversations, setConversations] = useState([]);
     const [activeConvId, setActiveConvId] = useState(null);
     const [messageInput, setMessageInput] = useState('');
@@ -89,7 +92,7 @@ const CompanyMessages = ({ userData }) => {
     };
 
     const activeConv = conversations.find(c => c.id === activeConvId);
-    const filteredConversations = conversations.filter(c => 
+    const filteredConversations = conversations.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -97,14 +100,34 @@ const CompanyMessages = ({ userData }) => {
 
     return (
         <div className="messages-container">
+            {/* Toggle Button */}
+            <button
+                className="sidebar-toggle-trigger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                title={sidebarOpen ? "Close Sidebar" : "Open Menu"}
+            >
+                <Menu size={24} />
+                {!sidebarOpen && <span className="menu-label">Menu</span>}
+            </button>
+
+            {/* Overlay */}
+            <div className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+
+            {/* Sidebar Drawer */}
+            <aside className={`dashboard-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
+                <CompanySidebar activePath="messages" onClose={() => setSidebarOpen(false)} />
+            </aside>
             <div className="messages-sidebar">
                 <div className="messages-sidebar-header">
                     <h2>Messaging</h2>
                     <div className="messages-search">
                         <Search size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="Search contacts..." 
+                        <input
+                            type="text"
+                            placeholder="Search contacts..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -115,8 +138,8 @@ const CompanyMessages = ({ userData }) => {
                         <div className="empty-convs">No conversations found</div>
                     ) : (
                         filteredConversations.map(conv => (
-                            <div 
-                                key={conv.id} 
+                            <div
+                                key={conv.id}
                                 className={`conversation-item ${activeConvId === conv.id ? 'active' : ''}`}
                                 onClick={() => setActiveConvId(conv.id)}
                             >
@@ -173,9 +196,9 @@ const CompanyMessages = ({ userData }) => {
                                 <button type="button"><Paperclip size={20} /></button>
                                 <button type="button"><Smile size={20} /></button>
                             </div>
-                            <input 
-                                type="text" 
-                                placeholder="Type your message..." 
+                            <input
+                                type="text"
+                                placeholder="Type your message..."
                                 value={messageInput}
                                 onChange={(e) => setMessageInput(e.target.value)}
                             />

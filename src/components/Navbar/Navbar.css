@@ -10,8 +10,10 @@
   /* Ensure outer container is clear */
   left: 0;
   /* Ensuring centered positioning relative to viewport */
-  pointer-events: none; /* Allow clicks to pass through empty areas */
+  pointer-events: none;
+  /* Allow clicks to pass through empty areas */
 }
+
 
 .nav-content {
   display: grid;
@@ -27,7 +29,8 @@
   width: 92%;
   max-width: 1200px;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-  pointer-events: auto; /* Re-enable clicks for the actual pill */
+  pointer-events: auto;
+  /* Re-enable clicks for the actual pill */
 }
 
 .logo-section {
@@ -430,6 +433,7 @@
 
 /* ★ Tablets and small laptops: hide the desktop menu, show the mobile toggle */
 @media (max-width: 900px) {
+
   /* ★ Hide horizontal links — target both wrapper and list because JSX
      renders .menu-list directly without .menu-section in some screens */
   .menu-section,
@@ -446,9 +450,12 @@
 
   /* ★ Restructure the 3-column grid so logo + actions hug the edges */
   .nav-content {
-    grid-template-columns: auto 1fr auto; /* Logo | spacer | actions */
-    width: 95%;                           /* Almost full width to avoid cramped pill */
-    padding: 6px 14px;                    /* Tighter padding on mobile */
+    grid-template-columns: auto 1fr auto;
+    /* Logo | spacer | actions */
+    width: 95%;
+    /* Almost full width to avoid cramped pill */
+    padding: 6px 14px;
+    /* Tighter padding on mobile */
   }
 
   /* ★ Compact spacing between profile pill and hamburger */
@@ -466,16 +473,19 @@
 /* ★ Phones (<= 600px) — slim navbar, bigger touch targets */
 @media (max-width: 600px) {
   .navbar {
-    top: 12px;                     /* ★ Sit closer to top to save vertical space */
+    top: 12px;
+    /* ★ Sit closer to top to save vertical space */
   }
 
   .nav-content {
-    padding: 6px 10px;             /* ★ Slimmer pill padding for narrow phones */
+    padding: 6px 10px;
+    /* ★ Slimmer pill padding for narrow phones */
     border-radius: 50px;
   }
 
   .nav-logo-img {
-    height: 44px;                  /* ★ Smaller logo so it fits the pill */
+    height: 44px;
+    /* ★ Smaller logo so it fits the pill */
   }
 
   /* ★ Compress the auth pill (notif + avatar) on phones */
@@ -511,13 +521,23 @@
 
   .mobile-menu-list a {
     font-size: 0.95rem;
-    padding: 12px 10px;            /* ★ Larger tap target for fingers */
+    padding: 12px 10px;
+    /* ★ Larger tap target for fingers */
   }
 }
 
 /* ★ Tiny phones (<= 380px) — last-resort space saver */
 @media (max-width: 380px) {
   .auth-actions .action-icon.icon-btn {
-    display: none !important;      /* ★ Drop notification icon entirely */
+    display: none !important;
+    /* ★ Drop notification icon entirely */
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }

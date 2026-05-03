@@ -1,19 +1,39 @@
 import React, { useState } from 'react';
 import CompanySidebar from '../../components/CompanySidebar';
-import { Check, CheckCircle2, CreditCard } from 'lucide-react';
+import { Check, CheckCircle2, CreditCard, Menu, X } from 'lucide-react';
 import './CompanyBilling.css';
 
 const CompanyBilling = () => {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [billingPeriod, setBillingPeriod] = useState('monthly');
 
     return (
         <div className="company-billing-dashboard">
-            {/* Sidebar */}
-            <CompanySidebar activePath="billing" />
+            {/* Toggle Button */}
+            <button
+                className="sidebar-toggle-trigger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                title={sidebarOpen ? "Close Sidebar" : "Open Menu"}
+            >
+                <Menu size={24} />
+                {!sidebarOpen && <span className="menu-label">Menu</span>}
+            </button>
+
+            {/* Overlay */}
+            <div className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+
+            {/* Sidebar Drawer */}
+            <aside className={`dashboard-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
+                <CompanySidebar activePath="billing" onClose={() => setSidebarOpen(false)} />
+            </aside>
 
             {/* Main Content */}
             <main className="billing-main-content">
-                <header className="billing-header">
+                <div className="billing-inner-container">
+                    <header className="billing-header">
                     <h1>Billing & Plans</h1>
                     <p>Choose the plan that fits your hiring needs.</p>
                 </header>
@@ -55,18 +75,18 @@ const CompanyBilling = () => {
                             <span className="most-popular-badge">MOST POPULAR</span>
                         </div>
                         <h2 className="plan-name">Premium</h2>
-                        
+
                         <div className="price-and-toggle">
                             <div className="plan-price">
-                                <span className="price-val">{billingPeriod === 'monthly' ? '1,500' : '15,000'} DA</span> 
+                                <span className="price-val">{billingPeriod === 'monthly' ? '1,500' : '15,000'} DA</span>
                                 <span className="price-period">/ {billingPeriod === 'monthly' ? 'month' : 'year'}</span>
                             </div>
                             <div className="billing-toggle">
-                                <button 
+                                <button
                                     className={`toggle-btn ${billingPeriod === 'monthly' ? 'active' : ''}`}
                                     onClick={() => setBillingPeriod('monthly')}
                                 >Monthly</button>
-                                <button 
+                                <button
                                     className={`toggle-btn ${billingPeriod === 'yearly' ? 'active' : ''}`}
                                     onClick={() => setBillingPeriod('yearly')}
                                 >Yearly</button>
@@ -87,7 +107,7 @@ const CompanyBilling = () => {
                     {/* Billing Summary */}
                     <div className="billing-summary-card">
                         <h3 className="summary-title"><CreditCard size={18} /> Billing Summary</h3>
-                        
+
                         <div className="summary-row">
                             <span className="summary-label">Plan</span>
                             <span className="summary-value text-purple">Premium</span>
@@ -116,7 +136,7 @@ const CompanyBilling = () => {
                         <button className="btn-view-invoice">View invoice history</button>
                     </div>
                 </div>
-
+                </div>
             </main>
         </div>
     );

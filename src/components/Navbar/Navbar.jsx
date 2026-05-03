@@ -242,7 +242,12 @@ const Navbar = ({ role, setUserRole }) => {
                 </ul>
 
                 {/* RIGHT ACTIONS */}
-                <div className="actions-section">
+                <div className="actions-section" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    paddingLeft: '24px',
+                }}>
                     {role !== 'public' ? (
                         <div className="auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Link
