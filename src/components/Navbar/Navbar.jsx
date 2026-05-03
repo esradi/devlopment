@@ -54,10 +54,10 @@ const Navbar = ({ role, setUserRole }) => {
     useEffect(() => {
         fetchUnreadCount();
         const interval = setInterval(fetchUnreadCount, 60000); // Sync every minute just in case
-        
+
         // Listen for internal "read" events from AdminMessages
         window.addEventListener('messagesRead', fetchUnreadCount);
-        
+
         return () => {
             clearInterval(interval);
             window.removeEventListener('messagesRead', fetchUnreadCount);
@@ -171,7 +171,6 @@ const Navbar = ({ role, setUserRole }) => {
                     ))}
                 </ul>
 
-<<<<<<< HEAD
                 {/* RIGHT ACTIONS */}
                 <div className="actions-section" style={{
                     display: 'flex',
@@ -179,9 +178,6 @@ const Navbar = ({ role, setUserRole }) => {
                     gap: '8px',
                     paddingLeft: '24px',
                 }}>
-=======
-                <div className="actions-section">
->>>>>>> 665ce74bcae46cf1fe825c3e0535505b6e538639
                     {role !== 'public' ? (
                         <div className="auth-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Link
