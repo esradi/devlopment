@@ -13,7 +13,8 @@ import {
     AlertCircle,
     Handshake,
     Loader2,
-    ChevronRight as ChevronRightIcon
+    ChevronRight as ChevronRightIcon,
+    Calendar
 } from 'lucide-react';
 import { adminService } from '../../services/api';
 import './AdminCompanies.css';
@@ -22,6 +23,7 @@ const AdminCompanies = () => {
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
     useEffect(() => {
@@ -69,7 +71,8 @@ const AdminCompanies = () => {
     const filteredCompanies = companies.filter(company => {
         const matchesSearch = company.company_name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'All' || company.verification_status.toLowerCase() === statusFilter.toLowerCase();
-        return matchesSearch && matchesStatus;
+        const matchesDate = !dateFilter || (company.created_at && new Date(company.created_at).toISOString().split('T')[0] === dateFilter);
+        return matchesSearch && matchesStatus && matchesDate;
     });
 
     if (loading) {
@@ -120,6 +123,17 @@ const AdminCompanies = () => {
                         placeholder="Search by company name..." 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                <div className="search-box" style={{ width: 'auto' }}>
+                    <Calendar size={18} />
+                    <input 
+                        type="date" 
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        title="Filter by joining date"
+                        style={{ background: 'transparent', border: 'none', color: '#fff', outline: 'none' }}
                     />
                 </div>
 

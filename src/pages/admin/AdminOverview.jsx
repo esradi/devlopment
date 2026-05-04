@@ -247,8 +247,11 @@ const AdminOverview = () => {
                             </div>
                         </div>
                         <div className="stat-body">
-                            <span className="stat-label">HIRED STUDENTS</span>
-                            <h3>{stats?.stats?.applications?.accepted ?? stats?.applications?.accepted ?? 0} <span className="stat-subtext">total</span></h3>
+                            <span className="stat-label">ACCEPTED INTERNS</span>
+                            <h3>
+                                {stats?.stats?.applications?.accepted ?? 0}
+                                <span className="stat-subtext"> of {stats?.stats?.applications?.total ?? 0} apps</span>
+                            </h3>
                         </div>
                     </motion.div>
                 </motion.div>

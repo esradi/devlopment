@@ -28,18 +28,26 @@ def verify_webauthn_for_user(request, user, webauthn_data):
         return False, "No authentication challenge found."
 
     try:
-        credential = AuthenticationCredential.parse_raw(json.dumps(webauthn_data))
-    except Exception:
-        return False, "Invalid WebAuthn response structure."
+        # Try parse_raw for pydantic v1, or model_validate for v2
+        if hasattr(AuthenticationCredential, 'parse_raw'):
+            credential = AuthenticationCredential.parse_raw(json.dumps(webauthn_data))
+        else:
+            credential = AuthenticationCredential.model_validate(webauthn_data)
+    except Exception as e:
+        return False, f"Invalid WebAuthn response structure: {str(e)}"
 
     cred_obj = WebauthnCredential.objects.filter(user=user, credential_id=credential.id).first()
     if not cred_obj:
         return False, "WebAuthn credential not found for this user."
 
     rp_id = request.get_host().split(':')[0]
-    expected_origin = f"http://{request.get_host()}"
-    if '127.0.0.1' in expected_origin or 'localhost' in expected_origin:
-        expected_origin = [f"http://{request.get_host()}", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
+    expected_origin = [
+        f"http://{request.get_host()}", 
+        "http://localhost:3000", "http://127.0.0.1:3000", 
+        "http://localhost:5173", "http://127.0.0.1:5173",
+        "http://localhost:5174", "http://127.0.0.1:5174",
+        "http://localhost:5175", "http://127.0.0.1:5175"
+    ]
 
     try:
         verification = verify_authentication_response(
@@ -49,6 +57,7 @@ def verify_webauthn_for_user(request, user, webauthn_data):
             expected_origin=expected_origin,
             credential_public_key=base64url_to_bytes(cred_obj.public_key) if isinstance(cred_obj.public_key, str) else cred_obj.public_key,
             credential_current_sign_count=cred_obj.sign_count,
+            require_user_verification=False
         )
         
         if hasattr(verification, 'json'):
@@ -69,9 +78,16 @@ class ConventionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        
         user = self.request.user
         qs = Convention.objects.all()
+
+        # If it's a download action with a verification code, we allow the queryset
+        # and let check_object_permissions handle the actual security check.
+        if self.action == 'download' and not user.is_authenticated:
+            return qs
+
+        if not user.is_authenticated:
+            return qs.none()
 
         if user.role == 'student':
             if hasattr(user, 'student_profile'):
@@ -91,11 +107,23 @@ class ConventionViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_permissions(self):
-        if self.action in ['retrieve', 'download', 'status', 'history']:
-            self.permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+        if self.action == 'download':
+            # Allow public access to download via verification code or authenticated access
+            return [permissions.AllowAny()]
+        if self.action in ['retrieve', 'status', 'history']:
+            return [permissions.IsAuthenticated(), IsOwnerOrAdmin()]
         return super().get_permissions()
 
     def check_object_permissions(self, request, obj):
+        # 1. Allow access via verification code (for public download)
+        v_code = request.query_params.get('v')
+        if v_code and obj.verification_code == v_code:
+            return True
+            
+        # 2. Allow authenticated access
+        if not request.user.is_authenticated:
+            self.permission_denied(request, message="Authentication required or valid verification code needed.")
+
         if request.user.role == 'admin':
             return True
             
@@ -131,6 +159,15 @@ class ConventionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+    @action(detail=True, methods=['post'], url_path='force-regenerate', permission_classes=[permissions.IsAdminUser])
+    def force_regenerate(self, request, pk=None):
+        #POST /api/conventions/<id>/force-regenerate/
+        convention = self.get_object()
+        from .services.convention_service import ConventionService
+        final_version = (convention.status == 'validated')
+        ConventionService.regenerate_pdf(convention, final=final_version)
+        return Response({'message': 'PDF regenerated successfully'}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'], url_path='sign-student')
     def sign_student(self, request, pk=None):
         #POST /api/conventions/<id>/sign-student/
@@ -163,27 +200,41 @@ class ConventionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        webauthn_response = request.data.get('webauthn_response')
-        if not webauthn_response:
-            return Response(
-                {'error': 'Fingerprint authentication data (webauthn_response) is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Check for manual signature fallback
+        is_manual = request.data.get('manual', False)
+        signature_image = request.data.get('signature_image', None)
+        
+        if not is_manual:
+            webauthn_response = request.data.get('webauthn_response')
+            if not webauthn_response:
+                return Response(
+                    {'error': 'Fingerprint authentication data (webauthn_response) is required or use manual:true'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            is_valid, result_or_error = verify_webauthn_for_user(request, request.user, webauthn_response)
+            if not is_valid:
+                return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
             
-        is_valid, result_or_error = verify_webauthn_for_user(request, request.user, webauthn_response)
-        if not is_valid:
-            return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
+            credential_id = result_or_error
+            fingerprint_auth = True
+        else:
+            credential_id = "MANUAL_SIG"
+            fingerprint_auth = False
         
         from django.utils import timezone
         from .services.convention_service import ConventionService
         
         convention.student_signed = True
         convention.student_signed_at = timezone.now()
-        convention.student_fingerprint_authenticated = True
+        convention.student_fingerprint_authenticated = fingerprint_auth
         convention.student_authentication_timestamp = str(timezone.now().timestamp())
-        convention.student_credential_id = result_or_error
+        convention.student_credential_id = credential_id
         convention.student_ip_address = get_client_ip(request)
         convention.student_user_agent = request.META.get('HTTP_USER_AGENT', '')
+        if is_manual and signature_image:
+            convention.student_signature_image = signature_image
+            
         convention.status = 'pending_company_signature'
         convention.save()
         
@@ -194,7 +245,7 @@ class ConventionViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(convention)
         return Response({
-            'message': 'Convention signed successfully with Fingerprint',
+            'message': f"Convention signed successfully with {'Fingerprint' if fingerprint_auth else 'Manual Signature'}",
             'convention': serializer.data
         }, status=status.HTTP_200_OK)
     
@@ -230,27 +281,41 @@ class ConventionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        webauthn_response = request.data.get('webauthn_response')
-        if not webauthn_response:
-            return Response(
-                {'error': 'Fingerprint authentication data (webauthn_response) is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Check for manual signature fallback
+        is_manual = request.data.get('manual', False)
+        signature_image = request.data.get('signature_image', None)
+        
+        if not is_manual:
+            webauthn_response = request.data.get('webauthn_response')
+            if not webauthn_response:
+                return Response(
+                    {'error': 'Fingerprint authentication data (webauthn_response) is required or use manual:true'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            is_valid, result_or_error = verify_webauthn_for_user(request, request.user, webauthn_response)
+            if not is_valid:
+                return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
             
-        is_valid, result_or_error = verify_webauthn_for_user(request, request.user, webauthn_response)
-        if not is_valid:
-            return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
+            credential_id = result_or_error
+            fingerprint_auth = True
+        else:
+            credential_id = "MANUAL_SIG"
+            fingerprint_auth = False
         
         from django.utils import timezone
         from .services.convention_service import ConventionService
         
         convention.company_signed = True
         convention.company_signed_at = timezone.now()
-        convention.company_fingerprint_authenticated = True
+        convention.company_fingerprint_authenticated = fingerprint_auth
         convention.company_authentication_timestamp = str(timezone.now().timestamp())
-        convention.company_credential_id = result_or_error
+        convention.company_credential_id = credential_id
         convention.company_ip_address = get_client_ip(request)
         convention.company_user_agent = request.META.get('HTTP_USER_AGENT', '')
+        if is_manual and signature_image:
+            convention.company_signature_image = signature_image
+            
         convention.status = 'pending_admin_validation'
         convention.save()
         
@@ -261,19 +326,25 @@ class ConventionViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(convention)
         return Response({
-            'message': 'Convention signed successfully with Fingerprint',
+            'message': f"Convention signed successfully with {'Fingerprint' if fingerprint_auth else 'Manual Signature'}",
             'convention': serializer.data
         }, status=status.HTTP_200_OK)
     
-    @action(detail=True, methods=['post'], url_path='validate', permission_classes=[permissions.IsAdminUser])
-    def validate_convention(self, request, pk=None):
-        #POST /api/conventions/<id>/validate/
-        convention = self.get_object()
+    @action(detail=True, methods=['post'], url_path='validate_admin', permission_classes=[permissions.IsAdminUser])
+    def validate_admin(self, request, pk=None):
+        print(f"validate_admin called with pk={pk} by user={request.user} (is_staff={request.user.is_staff})")
+        #POST /api/conventions/<id>/validate_admin/
+        try:
+            convention = self.get_object()
+        except Exception as e:
+            print(f"get_object failed: {e}")
+            raise
         
-        if convention.status != 'pending_admin_validation':
+        # Allow admin to sign at any stage as long as it's not already validated/rejected
+        if convention.status in ['validated', 'rejected']:
             return Response(
                 {
-                    'error': f'Cannot validate at this stage. Current status: {convention.status}',
+                    'error': f'Cannot validate a convention that is already {convention.status}.',
                     'current_status': convention.status
                 },
                 status=status.HTTP_400_BAD_REQUEST
@@ -281,26 +352,32 @@ class ConventionViewSet(viewsets.ModelViewSet):
         
         if convention.admin_signed:
             return Response(
-                {'error': 'Convention already validated'},
+                {'error': 'You have already signed this convention'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        if not request.data.get('confirmed'):
-            return Response(
-                {'error': 'You must confirm before validating'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Check for manual signature fallback
+        is_manual = request.data.get('manual', False)
         
-        webauthn_response = request.data.get('webauthn_response')
-        if not webauthn_response:
-            return Response(
-                {'error': 'Fingerprint authentication data (webauthn_response) is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if not is_manual:
+            webauthn_response = request.data.get('webauthn_response')
+            if not webauthn_response:
+                return Response(
+                    {'error': 'Fingerprint authentication data (webauthn_response) is required or use manual:true'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            is_valid, result_or_error = verify_webauthn_for_user(request, request.user, webauthn_response)
+            if not is_valid:
+                return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
             
-        is_valid, result_or_error = verify_webauthn_for_user(request, request.user, webauthn_response)
-        if not is_valid:
-            return Response({'error': f'Fingerprint authentication failed: {result_or_error}'}, status=status.HTTP_400_BAD_REQUEST)
+            credential_id = result_or_error
+            auth_method = "Fingerprint"
+            signature_image = None
+        else:
+            credential_id = "MANUAL_DIGITAL_SIG"
+            auth_method = "Secure Digital Signature"
+            signature_image = request.data.get('signature_image', None)
         
         from django.utils import timezone
         from .services.convention_service import ConventionService
@@ -308,22 +385,31 @@ class ConventionViewSet(viewsets.ModelViewSet):
         convention.admin_signed = True
         convention.admin_signed_at = timezone.now()
         convention.admin_signed_by = request.user
-        convention.admin_fingerprint_authenticated = True
+        convention.admin_fingerprint_authenticated = (not is_manual)
         convention.admin_authentication_timestamp = str(timezone.now().timestamp())
-        convention.admin_credential_id = result_or_error
+        convention.admin_credential_id = credential_id
         convention.admin_ip_address = get_client_ip(request)
         convention.admin_user_agent = request.META.get('HTTP_USER_AGENT', '')
-        convention.status = 'validated'
+        if signature_image:
+            convention.admin_signature_image = signature_image
+            
+        # If both others are already signed, this completes it
+        if convention.student_signed and convention.company_signed:
+            convention.status = 'validated'
+            final_version = True
+        else:
+            final_version = False
+            
         convention.save()
         
-        ConventionService.regenerate_pdf(convention, final=True)
+        ConventionService.regenerate_pdf(convention, final=final_version)
         
         from apps.notifications.services import NotificationService
         NotificationService.notify_convention_validated(convention)
         
         serializer = self.get_serializer(convention)
         return Response({
-            'message': 'Convention validated successfully with Fingerprint',
+            'message': f'Convention validated successfully with {auth_method}',
             'convention': serializer.data
         }, status=status.HTTP_200_OK)
 
@@ -373,6 +459,30 @@ class ConventionViewSet(viewsets.ModelViewSet):
             "status": convention.status,
             "history": convention.get_signature_status()
         }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='notify-reminder')
+    def notify_reminder(self, request, pk=None):
+        #POST /api/conventions/<id>/notify-reminder/
+        convention = self.get_object()
+        
+        # Only admin can send reminders
+        if request.user.role != 'admin':
+            return Response({'error': 'Only admins can send reminders'}, status=status.HTTP_403_FORBIDDEN)
+            
+        target = request.data.get('target') # 'student' or 'company'
+        if target not in ['student', 'company']:
+            return Response({'error': 'Invalid target. Must be student or company'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Check if they actually need to sign
+        if target == 'student' and convention.student_signed:
+            return Response({'error': 'Student has already signed'}, status=status.HTTP_400_BAD_REQUEST)
+        if target == 'company' and convention.company_signed:
+            return Response({'error': 'Company has already signed'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from apps.notifications.services import NotificationService
+        NotificationService.remind_signature(convention, target)
+        
+        return Response({'message': f'Reminder sent to {target}'}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
     def pending(self, request):

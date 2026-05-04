@@ -128,6 +128,7 @@ class Application(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('accepted', 'Accepted'),
+        ('university_approved', 'University Approved'),
         ('rejected', 'Rejected'),
         ('withdrawn', 'Withdrawn'),
     ]

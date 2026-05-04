@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard, Briefcase, Send, MessageSquare, Settings, Calendar,
     Folder, Sparkles, Filter, ChevronDown, Download, Edit3, CloudDownload,
-    LogOut, User, FileText, TrendingUp, Search, Bell, HelpCircle, Menu, X
+    LogOut, User, FileText, TrendingUp, Search, Bell, HelpCircle, Menu, X,
+    Fingerprint, AlertCircle, CheckCircle2, ShieldCheck
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
@@ -35,6 +36,11 @@ const CompanyDocuments = () => {
     const [selectedStudent, setSelectedStudent] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [offerFilter, setOfferFilter] = useState('All');
+    const [modernAlert, setModernAlert] = useState(null);
+
+    const showModal = (type, title, message, onConfirm = null) => {
+        setModernAlert({ type, title, message, onConfirm });
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -59,6 +65,23 @@ const CompanyDocuments = () => {
         fetchData();
     }, []);
 
+    const handleSendReminder = (conventionId, target) => {
+        showModal(
+            'confirm', 
+            'Send Reminder', 
+            `Are you sure you want to send a signature reminder to the ${target}?`,
+            async () => {
+                try {
+                    await conventionService.notifyReminder(conventionId, target);
+                    showModal('success', 'Reminder Sent', `A notification has been sent to the ${target} successfully.`);
+                } catch (err) {
+                    console.error("Failed to send reminder:", err);
+                    showModal('error', 'Failed', 'Could not send reminder.');
+                }
+            }
+        );
+    };
+
     const filteredDocs = () => {
         let docs = [];
         if (activeTab === 'Conventions') docs = conventions;
@@ -78,17 +101,17 @@ const CompanyDocuments = () => {
 
     const handleGenerate = async () => {
         if (!selectedStudent) {
-            alert("Please select a student");
+            showModal('error', 'Selection Required', "Please select a student first.");
             return;
         }
 
         try {
+            setLoading(true);
             if (genType === 'Convention') {
-                // For convention, we need an application ID
                 const studentApp = interns.find(i => i.student === parseInt(selectedStudent));
                 if (studentApp) {
                     await companyService.generateConvention(studentApp.id);
-                    alert("Convention generated successfully!");
+                    showModal('success', 'Generated', "Convention generated successfully!");
                 }
             } else {
                 await referenceService.create({
@@ -96,17 +119,25 @@ const CompanyDocuments = () => {
                     subject: "Attestation de stage",
                     content: "Félicitations pour votre stage."
                 });
-                alert("Reference letter generated successfully!");
+                showModal('success', 'Generated', "Reference letter generated successfully!");
             }
             // Refresh data
-            window.location.reload();
+            const [convData, refData, statsData] = await Promise.all([
+                conventionService.getConventions(),
+                referenceService.getReferences(),
+                companyService.getConventionStats()
+            ]);
+            setConventions(convData);
+            setReferences(refData);
+            setStats(statsData);
         } catch (err) {
-            alert("Generation failed: " + err.message);
+            showModal('error', 'Generation Failed', err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (loading) return <div className="loading-container" style={{ height: '100vh', background: '#0A0C10' }}><div className="custom-loader" /></div>;
-
+    if (loading && conventions.length === 0) return <div className="loading-container" style={{ height: '100vh', background: '#0A0C10' }}><div className="custom-loader" /></div>;
 
     return (
         <div className="company-documents-dashboard">
@@ -131,15 +162,58 @@ const CompanyDocuments = () => {
                 <CompanySidebar activePath="documents" onClose={() => setSidebarOpen(false)} />
             </aside>
 
+            <AnimatePresence>
+                {modernAlert && (
+                    <motion.div 
+                        className="modern-alert-overlay"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ zIndex: 11000 }}
+                    >
+                        <motion.div 
+                            className="modern-alert-box"
+                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                        >
+                            <div className="modern-alert-header" style={{ 
+                                '--icon-bg': modernAlert.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : (modernAlert.type === 'confirm' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)') 
+                            }}>
+                                <div className="modern-alert-icon" style={{ 
+                                    color: modernAlert.type === 'success' ? '#10b981' : (modernAlert.type === 'confirm' ? '#8b5cf6' : '#ef4444') 
+                                }}>
+                                    {modernAlert.type === 'success' ? <CheckCircle2 size={28} /> : (modernAlert.type === 'confirm' ? <ShieldCheck size={28} /> : <AlertCircle size={28} />)}
+                                </div>
+                                <h3>{modernAlert.title}</h3>
+                            </div>
+                            <div className="modern-alert-body">
+                                <p>{modernAlert.message}</p>
+                            </div>
+                            <div className="modern-alert-actions">
+                                <button className="modern-btn-cancel" onClick={() => setModernAlert(null)}>
+                                    {modernAlert.type === 'confirm' ? 'Cancel' : 'Close'}
+                                </button>
+                                {modernAlert.type === 'confirm' && (
+                                    <button className="modern-btn-confirm" onClick={() => {
+                                        const callback = modernAlert.onConfirm;
+                                        setModernAlert(null);
+                                        if (callback) callback();
+                                    }}>
+                                        Proceed Securely
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* MAIN CONTENT */}
             <main className="documents-main">
                 <div className="doc-header-flex">
                     <div className="doc-header-left">
                         <h1>Documents</h1>
                         <p>Manage internship agreements and reference letters for your interns.</p>
                     </div>
-                    <button className="btn-generate-main">
+                    <button className="btn-generate-main" onClick={() => setActiveTab('Conventions')}>
                         <Sparkles size={18} /> Generate document
                     </button>
                 </div>
@@ -203,7 +277,7 @@ const CompanyDocuments = () => {
                             <tr>
                                 <th>Student</th>
                                 <th>Offer</th>
-                                <th>Status</th>
+                                <th>Signature Track</th>
                                 <th>Generated</th>
                                 <th>Actions</th>
                             </tr>
@@ -233,7 +307,27 @@ const CompanyDocuments = () => {
                                             </div>
                                         </td>
                                         <td>
-                                            <StatusPill status={doc.status || 'Generated'} />
+                                            {isConv ? (
+                                                <div className="company-sig-tracking">
+                                                    <div className="sig-dots-row">
+                                                        <div className={`sig-dot-s ${doc.student_signed ? 'done' : 'pending'}`} title="Student Signature"></div>
+                                                        <div className={`sig-dot-s ${doc.company_signed ? 'done' : 'pending'}`} title="Company Signature"></div>
+                                                        <div className={`sig-dot-s ${doc.admin_signed ? 'done' : 'pending'}`} title="Admin Validation"></div>
+                                                    </div>
+                                                    {!doc.student_signed && (
+                                                        <button className="btn-remind-mini" onClick={() => handleSendReminder(doc.id, 'student')}>
+                                                            Remind
+                                                        </button>
+                                                    )}
+                                                    {doc.student_signed && !doc.company_signed && (
+                                                        <button className="btn-sign-mini-company" onClick={() => navigate(`/dashboard/company/conventions/${doc.id}`)}>
+                                                            <Fingerprint size={12} /> Sign
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <StatusPill status={doc.status || 'Generated'} />
+                                            )}
                                         </td>
                                         <td>
                                             <div className="doc-gen-cell">
@@ -263,11 +357,9 @@ const CompanyDocuments = () => {
                 </div>
             </main>
 
-            {/* RIGHT SIDEBAR */}
             <aside className="doc-right-panel">
                 <div className="widget-quick-gen">
                     <h3><Sparkles size={18} color="#9e59ff" /> Quick generate</h3>
-
                     <span className="widget-label">Select Student</span>
                     <select
                         className="widget-select-input"
@@ -279,7 +371,6 @@ const CompanyDocuments = () => {
                             <option key={i.id} value={i.student}>{i.student_name}</option>
                         ))}
                     </select>
-
                     <span className="widget-label">Document Type</span>
                     <select
                         className="widget-select-input filled"
@@ -289,7 +380,6 @@ const CompanyDocuments = () => {
                         <option value="Convention">Convention de stage</option>
                         <option value="Reference">Reference Letter</option>
                     </select>
-
                     <button className="btn-widget-gen" onClick={handleGenerate}>Generate</button>
                 </div>
 
@@ -313,22 +403,6 @@ const CompanyDocuments = () => {
                             <div className="s-item-right">{stats?.validated || 0}</div>
                         </div>
                     </div>
-
-                    <div className="activity-block">
-                        <span className="widget-label">Total Documents</span>
-                        <div className="activity-main">
-                            {(conventions.length + references.length)} <div className="activity-trend"><TrendingUp size={16} /></div>
-                        </div>
-                        <span className="activity-sub">Conventions and letters generated</span>
-                    </div>
-                </div>
-
-                <div className="widget-export-log">
-                    <div className="log-icon-wrap">
-                        <CloudDownload size={20} color="#fff" />
-                    </div>
-                    <h3>Export Audit Log</h3>
-                    <p>Get a full spreadsheet of all document movements this quarter.</p>
                 </div>
             </aside>
         </div>

@@ -94,8 +94,47 @@ class AdminPortfolioReviewSerializer(serializers.ModelSerializer):
         fields = ['id', 'student_name', 'skill_name', 'portfolio_url', 'status', 'feedback', 'submitted_at']
         read_only_fields = ['id', 'student_name', 'skill_name', 'portfolio_url', 'submitted_at']
 
+class AdminApplicationSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.user.get_full_name', read_only=True)
+    student_email = serializers.EmailField(source='student.user.email', read_only=True)
+    offer_title = serializers.CharField(source='offer.title', read_only=True)
+    company_name = serializers.CharField(source='company.company_name', read_only=True)
+    convention_id = serializers.IntegerField(source='convention.id', read_only=True, allow_null=True)
+    convention_status = serializers.ReadOnlyField(source='convention.status', allow_null=True)
+    convention_student_signed = serializers.BooleanField(source='convention.student_signed', read_only=True, default=False)
+    convention_company_signed = serializers.BooleanField(source='convention.company_signed', read_only=True, default=False)
+    convention_admin_signed = serializers.BooleanField(source='convention.admin_signed', read_only=True, default=False)
+    convention_admin_signature_image = serializers.CharField(source='convention.admin_signature_image', read_only=True, allow_null=True)
+    convention_verification_code = serializers.CharField(source='convention.verification_code', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = Application
+        fields = [
+            'id', 'student_name', 'student_email', 'offer_title', 
+            'company_name', 'company_id', 'status', 'convention_status', 'convention_id',
+            'convention_student_signed', 'convention_company_signed', 'convention_admin_signed',
+            'convention_admin_signature_image',
+            'convention_verification_code',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = fields
+
 class AdminDomainTreeSerializer(serializers.ModelSerializer):
     specialities = SpecialityDetailSerializer(many=True, read_only=True)
     class Meta:
         model = Domain
         fields = ['id', 'name', 'specialities']
+
+from apps.challenges.models import SkillChallengeSubmission
+
+class AdminChallengeSubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.user.get_full_name', read_only=True)
+    student_email = serializers.EmailField(source='student.user.email', read_only=True)
+    challenge_title = serializers.CharField(source='challenge.title', read_only=True)
+    skill_name = serializers.CharField(source='challenge.skill_name', read_only=True)
+    challenge_type = serializers.CharField(source='challenge.challenge_type', read_only=True)
+    
+    class Meta:
+        model = SkillChallengeSubmission
+        fields = ['id', 'student_name', 'student_email', 'challenge_title', 'skill_name', 'challenge_type', 'score', 'passed', 'submitted_at']
+

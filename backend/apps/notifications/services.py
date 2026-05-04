@@ -212,6 +212,25 @@ class NotificationService:
             related_object_id=convention.id
         )
         return True
+    
+    @staticmethod
+    def remind_signature(convention, target_role):
+        """Send a reminder to sign the convention"""
+        if target_role == 'student':
+            user = convention.student.user
+        else:
+            user = convention.company.user
+            
+        return NotificationService.create_and_send_notification(
+            user=user,
+            notif_type="convention_reminder",
+            title="⚠️ Action Required: Signature Pending",
+            message=f"A reminder that your signature is still pending for the convention '{convention.offer.title}'. Please sign it to proceed.",
+            action_url=f"/{target_role}/conventions/{convention.id}" if target_role == 'company' else f"/dashboard/student/offer/{convention.offer.id}",
+            priority="high",
+            related_object_type="convention",
+            related_object_id=convention.id
+        )
 
     @staticmethod
     def notify_application_viewed(application):

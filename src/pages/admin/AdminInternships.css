@@ -1,4 +1,29 @@
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+.icon-btn {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+}
+.icon-btn:hover:not(:disabled) {
+    background: rgba(158,89,255,0.12);
+    color: #9e59ff;
+    border-color: #9e59ff;
+}
+.icon-btn:disabled { cursor: not-allowed; }
+
 .admin-internships-page {
+
     padding: 30px;
     color: #fff;
     max-width: 1200px;
@@ -152,12 +177,15 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .filters-left {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .filter-label {

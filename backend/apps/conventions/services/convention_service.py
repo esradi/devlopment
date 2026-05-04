@@ -148,12 +148,29 @@ class ConventionService:
                 y -= 0.4*cm
                 p.setFont("Helvetica", 8)
                 p.drawString(2.5*cm, y, f"IP: {getattr(convention, 'student_ip_address', 'N/A')}")
+            elif getattr(convention, 'student_signature_image', None):
+                try:
+                    import base64
+                    from reportlab.lib.utils import ImageReader
+                    import io
+                    img_data = convention.student_signature_image
+                    if ',' in img_data: img_data = img_data.split(',')[1]
+                    img_bytes = base64.b64decode(img_data)
+                    img = ImageReader(io.BytesIO(img_bytes))
+                    p.drawImage(img, 2.5*cm, y - 1.5*cm, width=3*cm, height=1.5*cm, mask='auto')
+                    y -= 1.5*cm
+                except Exception:
+                    p.drawString(2.5*cm, y, "🖋️ Signé manuellement")
+                    y -= 0.4*cm
+            else:
+                p.drawString(2.5*cm, y, "🖋️ Signé manuellement")
+                y -= 0.4*cm
         else:
             p.setFillColorRGB(0.7, 0.7, 0.7)
             p.drawString(2.5*cm, y, "En attente de signature...")
             p.setFillColorRGB(0, 0, 0)
         
-        y -= 1*cm
+        y -= 0.8*cm
         
         # Signature Entreprise
         p.setFont("Helvetica-Bold", 11)
@@ -175,6 +192,23 @@ class ConventionService:
                 y -= 0.4*cm
                 p.setFont("Helvetica", 8)
                 p.drawString(2.5*cm, y, f"IP: {getattr(convention, 'company_ip_address', 'N/A')}")
+            elif getattr(convention, 'company_signature_image', None):
+                try:
+                    import base64
+                    from reportlab.lib.utils import ImageReader
+                    import io
+                    img_data = convention.company_signature_image
+                    if ',' in img_data: img_data = img_data.split(',')[1]
+                    img_bytes = base64.b64decode(img_data)
+                    img = ImageReader(io.BytesIO(img_bytes))
+                    p.drawImage(img, 2.5*cm, y - 1.5*cm, width=3*cm, height=1.5*cm, mask='auto')
+                    y -= 1.5*cm
+                except Exception:
+                    p.drawString(2.5*cm, y, "🖋️ Signé manuellement")
+                    y -= 0.4*cm
+            else:
+                p.drawString(2.5*cm, y, "🖋️ Signé manuellement")
+                y -= 0.4*cm
         else:
             p.setFillColorRGB(0.7, 0.7, 0.7)
             p.drawString(2.5*cm, y, "En attente de signature...")
@@ -198,11 +232,40 @@ class ConventionService:
             admin_full_name = convention.admin_signed_by.get_full_name() if convention.admin_signed_by else "Admin"
             p.drawString(2.5*cm, y, f"Par: {admin_full_name}")
             y -= 0.4*cm
+            
             if getattr(convention, 'admin_fingerprint_authenticated', False):
                 p.drawString(2.5*cm, y, "🔐 Authentifié par empreinte digitale")
                 y -= 0.4*cm
                 p.setFont("Helvetica", 8)
                 p.drawString(2.5*cm, y, f"IP: {getattr(convention, 'admin_ip_address', 'N/A')}")
+            elif getattr(convention, 'admin_signature_image', None):
+                # We have a manual digital signature! Let's draw it!
+                try:
+                    import base64
+                    from reportlab.lib.utils import ImageReader
+                    import io
+                    
+                    # Clean the base64 string
+                    img_data = convention.admin_signature_image
+                    if ',' in img_data:
+                        img_data = img_data.split(',')[1]
+                    
+                    # Decode base64
+                    img_bytes = base64.b64decode(img_data)
+                    img = ImageReader(io.BytesIO(img_bytes))
+                    
+                    # Draw the image on the PDF at (X, Y) with specific width and height
+                    p.drawImage(img, 2.5*cm, y - 2*cm, width=4*cm, height=2*cm, mask='auto')
+                    
+                    # Shift Y down to make space for the image
+                    y -= 2*cm
+                except Exception as e:
+                    print(f"Failed to draw manual signature on PDF: {e}")
+                    p.drawString(2.5*cm, y, "🖋️ Signé manuellement (Image indisponible)")
+                    y -= 0.4*cm
+            else:
+                p.drawString(2.5*cm, y, "🖋️ Signé manuellement")
+                y -= 0.4*cm
         else:
             p.setFillColorRGB(0.7, 0.7, 0.7)
             p.drawString(2.5*cm, y, "En attente de validation...")

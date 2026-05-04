@@ -51,12 +51,19 @@ class Convention(models.Model):
     # Validation Tracking: Admin
     admin_signed = models.BooleanField(default=False)
     admin_signed_at = models.DateTimeField(null=True, blank=True)
-    admin_signed_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='validated_conventions')
+    admin_signed_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='signed_conventions')
     admin_fingerprint_authenticated = models.BooleanField(default=False)
-    admin_authentication_timestamp = models.CharField(max_length=100, blank=True)
-    admin_credential_id = models.CharField(max_length=255, blank=True)
-    admin_ip_address = models.GenericIPAddressField(null=True, blank=True)
-    admin_user_agent = models.TextField(blank=True)
+    admin_authentication_timestamp = models.CharField(max_length=100, blank=True, null=True)
+    admin_credential_id = models.CharField(max_length=255, blank=True, null=True)
+    admin_ip_address = models.CharField(max_length=50, blank=True, null=True)
+    admin_user_agent = models.TextField(blank=True, null=True)
+    admin_signature_image = models.TextField(blank=True, null=True) # Stores base64 drawing
+    
+    # Student Signature Fallback
+    student_signature_image = models.TextField(blank=True, null=True)
+    
+    # Company Signature Fallback
+    company_signature_image = models.TextField(blank=True, null=True)
     
     # PDF Storage
     pdf_file = models.FileField(upload_to='conventions/', blank=True, null=True)

@@ -9,14 +9,25 @@ import {
     Calendar,
     ArrowRight,
     MapPin,
-    AlertCircle
+    AlertCircle,
+    Fingerprint,
+    Download,
+    FileText,
+    ShieldCheck
 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { conventionService } from '../../services/api';
 import './StudentApplications.css';
 
 const StudentApplications = ({ recentApps = [] }) => {
     const navigate = useNavigate();
     const [filter, setFilter] = useState('all');
+    const [modernAlert, setModernAlert] = useState(null);
+
+    const showModal = (type, title, message, onConfirm = null) => {
+        setModernAlert({ type, title, message, onConfirm });
+    };
 
     const sortedApps = [...recentApps].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -60,6 +71,49 @@ const StudentApplications = ({ recentApps = [] }) => {
 
     return (
         <div className="student-applications-page">
+            <AnimatePresence>
+                {modernAlert && (
+                    <motion.div 
+                        className="modern-alert-overlay"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    >
+                        <motion.div 
+                            className="modern-alert-box"
+                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                        >
+                            <div className="modern-alert-header" style={{ 
+                                '--icon-bg': modernAlert.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : (modernAlert.type === 'confirm' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)') 
+                            }}>
+                                <div className="modern-alert-icon" style={{ 
+                                    color: modernAlert.type === 'success' ? '#10b981' : (modernAlert.type === 'confirm' ? '#8b5cf6' : '#ef4444') 
+                                }}>
+                                    {modernAlert.type === 'success' ? <CheckCircle2 size={28} /> : (modernAlert.type === 'confirm' ? <ShieldCheck size={28} /> : <AlertCircle size={28} />)}
+                                </div>
+                                <h3>{modernAlert.title}</h3>
+                            </div>
+                            <div className="modern-alert-body">
+                                <p>{modernAlert.message}</p>
+                            </div>
+                            <div className="modern-alert-actions">
+                                <button className="modern-btn-cancel" onClick={() => setModernAlert(null)}>
+                                    {modernAlert.type === 'confirm' ? 'Cancel' : 'Close'}
+                                </button>
+                                {modernAlert.type === 'confirm' && (
+                                    <button className="modern-btn-confirm" onClick={() => {
+                                        const callback = modernAlert.onConfirm;
+                                        setModernAlert(null);
+                                        if (callback) callback();
+                                    }}>
+                                        Proceed Securely
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             <div className="apps-header">
                 <h1>My Applications</h1>
                 <p>Track the status of your {recentApps.length} applications.</p>
@@ -110,7 +164,6 @@ const StudentApplications = ({ recentApps = [] }) => {
                             key={app.id}
                             className="app-card"
                             variants={itemVariants}
-                            whileHover={{ scale: 1.01 }}
                         >
                             <div className="app-card-main">
                                 <div className="company-info">
@@ -127,15 +180,39 @@ const StudentApplications = ({ recentApps = [] }) => {
                                         <Calendar size={14} />
                                         <span>Applied on: {new Date(app.created_at).toLocaleDateString()}</span>
                                     </div>
+                                </div>
+                            </div>
+                            <div className="app-card-actions">
+                                <div className="app-status-actions">
                                     <div className={`status-badge ${app.status.replace(' ', '-')}`}>
                                         {getStatusIcon(app.status)}
                                         <span>{app.status.toUpperCase()}</span>
                                     </div>
+                                    
+                                    {app.status === 'accepted' && app.convention_id && (
+                                        <div className="convention-track">
+                                            <div className="track-labels">
+                                                <div className={`track-dot ${app.convention_student_signed ? 'done' : 'pending'}`} title="Student Signature"></div>
+                                                <div className={`track-dot ${app.convention_company_signed ? 'done' : 'pending'}`} title="Company Signature"></div>
+                                                <div className={`track-dot ${app.convention_admin_signed ? 'done' : 'pending'}`} title="Admin Validation"></div>
+                                            </div>
+                                            {app.convention_student_signed ? (
+                                                <span className="conv-msg success">Signed</span>
+                                            ) : (
+                                                <button className="btn-sign-now" onClick={() => navigate(`/dashboard/student/offer/${app.offer}`)}>
+                                                    <Fingerprint size={14} /> Sign Now
+                                                </button>
+                                            )}
+                                            {app.convention_pdf && (
+                                                <a href={conventionService.download(app.convention_id)} className="btn-download-conv" title="Download PDF" target="_blank" rel="noopener noreferrer">
+                                                    <Download size={14} />
+                                                </a>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                            <div className="app-card-actions">
                                 <button className="btn-view" onClick={() => navigate(`/dashboard/student/offer/${app.offer}`)}>
-                                    View Offer Details <ArrowRight size={14} />
+                                    Details <ArrowRight size={14} />
                                 </button>
                             </div>
                         </motion.div>
