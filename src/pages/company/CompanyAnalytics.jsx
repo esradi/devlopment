@@ -1,27 +1,111 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-    ChevronLeft, BarChart3, Users, Briefcase, 
+import React, { useState, useEffect } from 'react';
+import {
+    ChevronLeft, BarChart3, Users, Briefcase,
     ArrowUpRight, ArrowDownRight, Target, Clock,
-    TrendingUp, Award, Zap, PieChart
+    TrendingUp, Award, Zap, PieChart, Menu, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { companyService } from '../../services/api';
 import CompanySidebar from '../../components/CompanySidebar';
 import './CompanyProfile.css';
+import '../company/CompanyDashboard.css';
 
 const CompanyAnalytics = () => {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [data, setData] = useState(null);
     const navigate = useNavigate();
 
-    const metrics = [
-        { label: 'Total Applications', value: '428', change: '+12%', positive: true, icon: Users, color: '#9e59ff' },
-        { label: 'Active Offers', value: '12', change: '+2', positive: true, icon: Briefcase, color: '#3b82f6' },
-        { label: 'Avg. Response Time', value: '2.4 days', change: '-10%', positive: true, icon: Clock, color: '#f59e0b' },
-        { label: 'Conversion Rate', value: '6.4%', change: '-2%', positive: false, icon: Award, color: '#ff1b90' }
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                setLoading(true);
+                const response = await companyService.getAnalytics();
+                setData(response);
+                setError(null);
+            } catch (err) {
+                console.error('Error fetching analytics:', err);
+                setError('Failed to load recruitment insights.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAnalytics();
+    }, []);
+
+    const metrics = data ? [
+        {
+            label: 'Total Applications',
+            value: data.conversion_funnel.applications.toString(),
+            positive: true,
+            icon: Users,
+            color: '#9e59ff'
+        },
+        {
+            label: 'Candidate Quality',
+            value: `${data.performance_metrics.candidate_quality_score}%`,
+            positive: true,
+            icon: Target,
+            color: '#3b82f6'
+        },
+        {
+            label: 'Avg. Hire Time',
+            value: `${data.performance_metrics.avg_time_to_hire} days`,
+            positive: true,
+            icon: Clock,
+            color: '#f59e0b'
+        },
+        {
+            label: 'Acceptance Rate',
+            value: `${data.performance_metrics.acceptance_rate}%`,
+            positive: false,
+            icon: Award,
+            color: '#ff1b90'
+        }
+    ] : [
+        { label: 'Total Applications', value: '...', positive: true, icon: Users, color: '#9e59ff' },
+        { label: 'Candidate Quality', value: '...', positive: true, icon: Target, color: '#3b82f6' },
+        { label: 'Avg. Hire Time', value: '...', positive: true, icon: Clock, color: '#f59e0b' },
+        { label: 'Acceptance Rate', value: '...', positive: false, icon: Award, color: '#ff1b90' }
     ];
+
+    if (loading) return (
+        <div className="company-profile-dashboard">
+            <CompanySidebar activePath="analytics" />
+            <main className="profile-main-content">
+                <div className="analytics-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                    <div className="loading-spinner-modern"></div>
+                </div>
+            </main>
+        </div>
+    );
 
     return (
         <div className="company-profile-dashboard">
-            <CompanySidebar activePath="profile" />
+            {/* Toggle Button */}
+            <button
+                className="sidebar-toggle-trigger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                title={sidebarOpen ? "Close Sidebar" : "Open Menu"}
+            >
+                <Menu size={24} />
+                {!sidebarOpen && <span className="menu-label">Menu</span>}
+            </button>
+
+            {/* Overlay */}
+            <div className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+
+            {/* Sidebar Drawer */}
+            <aside className={`dashboard-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-close-trigger" onClick={() => setSidebarOpen(false)}>
+                    <X size={20} />
+                </div>
+                <CompanySidebar activePath="analytics" onClose={() => setSidebarOpen(false)} />
+            </aside>
+
+
 
             <main className="profile-main-content">
                 <div className="analytics-container">
@@ -37,7 +121,7 @@ const CompanyAnalytics = () => {
 
                     {/* Meta Stats Panel */}
                     <div className="analytics-grid-modern">
-                        
+
                         {metrics.map((m, idx) => (
                             <div key={idx} className="metric-card-modern">
                                 <div className="metric-top">
@@ -45,7 +129,6 @@ const CompanyAnalytics = () => {
                                         <m.icon size={20} />
                                     </div>
                                     <div className={`metric-change ${m.positive ? 'up' : 'down'}`}>
-                                        {m.change} {m.positive ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
                                     </div>
                                 </div>
                                 <div className="metric-body">
@@ -70,23 +153,23 @@ const CompanyAnalytics = () => {
                             <div className="funnel-display">
                                 <div className="funnel-layer l1">
                                     <div className="layer-label">Applicants</div>
-                                    <div className="layer-bar"><div className="fill" style={{width: '100%'}}></div></div>
-                                    <div className="layer-val">428</div>
+                                    <div className="layer-bar"><div className="fill" style={{ width: '100%' }}></div></div>
+                                    <div className="layer-val">{data?.conversion_funnel.applications || 0}</div>
                                 </div>
                                 <div className="funnel-layer l2">
-                                    <div className="layer-label">In Review</div>
-                                    <div className="layer-bar"><div className="fill" style={{width: '65%'}}></div></div>
-                                    <div className="layer-val">278</div>
+                                    <div className="layer-label">Interviews</div>
+                                    <div className="layer-bar"><div className="fill" style={{ width: `${(data?.conversion_funnel.interviews / data?.conversion_funnel.applications * 100) || 0}%` }}></div></div>
+                                    <div className="layer-val">{data?.conversion_funnel.interviews || 0}</div>
                                 </div>
                                 <div className="funnel-layer l3">
-                                    <div className="layer-label">Interviews</div>
-                                    <div className="layer-bar"><div className="fill" style={{width: '32%'}}></div></div>
-                                    <div className="layer-val">136</div>
+                                    <div className="layer-label">Offers</div>
+                                    <div className="layer-bar"><div className="fill" style={{ width: `${(data?.conversion_funnel.acceptances / data?.conversion_funnel.applications * 100) || 0}%` }}></div></div>
+                                    <div className="layer-val">{data?.conversion_funnel.acceptances || 0}</div>
                                 </div>
                                 <div className="funnel-layer l4">
-                                    <div className="layer-label">Offers</div>
-                                    <div className="layer-bar"><div className="fill" style={{width: '12%'}}></div></div>
-                                    <div className="layer-val">52</div>
+                                    <div className="layer-label">Signed</div>
+                                    <div className="layer-bar"><div className="fill" style={{ width: `${(data?.conversion_funnel.signed_conventions / data?.conversion_funnel.applications * 100) || 0}%` }}></div></div>
+                                    <div className="layer-val">{data?.conversion_funnel.signed_conventions || 0}</div>
                                 </div>
                             </div>
                         </div>
@@ -97,22 +180,24 @@ const CompanyAnalytics = () => {
                                 <Zap size={18} /> Top Sourcing Channels
                             </div>
                             <div className="performance-list">
-                                {[
-                                    { name: 'Direct Search', pct: 45, color: '#9e59ff' },
-                                    { name: 'University Partnerships', pct: 32, color: '#3b82f6' },
-                                    { name: 'Referrals', pct: 18, color: '#10b981' },
-                                    { name: 'External Ads', pct: 5, color: '#8892b0' }
-                                ].map((item, i) => (
-                                    <div key={i} className="perf-item">
-                                        <div className="perf-info">
-                                            <span>{item.name}</span>
-                                            <strong>{item.pct}%</strong>
+                                {data?.applications_by_speciality.length > 0 ? (
+                                    data.applications_by_speciality.map((item, i) => (
+                                        <div key={i} className="perf-item">
+                                            <div className="perf-info">
+                                                <span>{item.speciality}</span>
+                                                <strong>{Math.round((item.count / data.conversion_funnel.applications) * 100)}%</strong>
+                                            </div>
+                                            <div className="perf-track">
+                                                <div className="perf-fill" style={{
+                                                    width: `${(item.count / data.conversion_funnel.applications) * 100}%`,
+                                                    backgroundColor: ['#9e59ff', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'][i % 5]
+                                                }}></div>
+                                            </div>
                                         </div>
-                                        <div className="perf-track">
-                                            <div className="perf-fill" style={{ width: `${item.pct}%`, backgroundColor: item.color }}></div>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <p className="no-data-msg">No specialty data available yet.</p>
+                                )}
                             </div>
                         </div>
 

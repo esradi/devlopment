@@ -23,12 +23,15 @@ const CompanyOffers = ({ userData }) => {
                     id: offer.id,
                     title: offer.title,
                     status: offer.status?.toUpperCase() || 'ACTIVE', // normalize to uppercase
+                    offer_types: offer.offer_types || [],
+                    durations: offer.durations || [],
+                    updated_at: offer.updated_at,
                     tags: [
                         ...(offer.offer_types?.map(t => t.name) || []),
                         ...(offer.durations?.map(d => `${d.months} Months`) || []),
                         ...(offer.skills?.map(s => s.name) || []),
                     ],
-                    candidates: offer.applications_count || 0,
+                    candidates: offer.applications_count ?? 0,
                     avg_match: offer.avg_match_score || 0,
                     posted: offer.created_at
                         ? new Date(offer.created_at).toLocaleDateString()
@@ -156,17 +159,18 @@ const CompanyOffers = ({ userData }) => {
                                 <div className="offer-stats-grid">
                                     <div className="stat-item">
                                         <span className="stat-label">CANDIDATES</span>
-                                        <span className="stat-value">{offer.applicants_count || 0}</span>
+                                        <span className="stat-value">{offer.candidates}</span>
                                     </div>
                                     <div className="stat-item">
                                         <span className="stat-label">AVG. MATCH</span>
-                                        <span className="stat-value text-pink">{offer.avg_match_score || 0}%</span>
+                                        <span className="stat-value text-pink">{offer.avg_match}%</span>
                                     </div>
                                     <div className="stat-item">
                                         <span className="stat-label">POSTED</span>
-                                        <span className="stat-value">{new Date(offer.created_at).toLocaleDateString()}</span>
+                                        <span className="stat-value">{offer.posted}</span>
                                     </div>
                                 </div>
+
                             )}
                         </div>
 

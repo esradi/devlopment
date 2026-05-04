@@ -73,6 +73,8 @@ class OfferSerializer(serializers.ModelSerializer):
     )
 
     match_score = serializers.SerializerMethodField()
+    applications_count = serializers.SerializerMethodField()
+    avg_match_score = serializers.SerializerMethodField()
 
     class Meta:
         model = Offer
@@ -83,7 +85,7 @@ class OfferSerializer(serializers.ModelSerializer):
             'skills', 'skill_ids',
             'status', 'requirements', 'salary', 'is_favorite', 'match_score', 
             'is_featured', 'boosted_until', 'report_count', 'is_flagged',
-            'wilaya', 'created_at', 'updated_at'
+            'wilaya', 'created_at', 'updated_at', 'applications_count', 'avg_match_score'
         ]
         extra_kwargs = {
         'company': {'read_only': True} 
@@ -106,6 +108,23 @@ class OfferSerializer(serializers.ModelSerializer):
                     return match_data.get('total_score', 0)
             except Exception:
                 pass
+        return 0
+
+    def get_applications_count(self, obj):
+        return obj.applications.count()
+
+    def get_avg_match_score(self, obj):
+        from apps.matching.models import MatchScore
+        from django.db.models import Avg
+        # Calculate average match score for students who applied to this offer
+        scores = MatchScore.objects.filter(
+            offer=obj, 
+            student__applications__offer=obj
+        ).distinct()
+        
+        if scores.exists():
+            avg = scores.aggregate(Avg('total_score'))['total_score__avg']
+            return round(avg) if avg else 0
         return 0
 
 
@@ -162,7 +181,23 @@ class ApplicationSerializer(serializers.ModelSerializer):
             data['company'] = offer.company
         return data
 
-
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        student = instance.student
+        request = self.context.get('request')
+        profile_pic_url = student.profile_picture.url if student.profile_picture else None
+        if profile_pic_url and request is not None:
+            profile_pic_url = request.build_absolute_uri(profile_pic_url)
+            
+        data['student'] = {
+            'id': student.id,
+            'first_name': student.user.first_name,
+            'last_name': student.user.last_name,
+            'profile_picture': profile_pic_url,
+            'university': student.university,
+        }
+        data['skills'] = [{'name': skill.name} for skill in student.skills.all()]
+        return data
 class ApplicationNotesSerializer(serializers.ModelSerializer):
     """Serializer for company to update internal notes on an application."""
     class Meta:

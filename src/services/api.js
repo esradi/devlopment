@@ -56,6 +56,7 @@ export const api = {
         let url = `${API_BASE_URL}${endpoint}`;
 
         if (typeof paramsOrAuth === 'object') {
+            const flatParams = paramsOrAuth.params || paramsOrAuth;
             const queryString = new URLSearchParams(paramsOrAuth).toString();
             if (queryString) url += `?${queryString}`;
         } else {
@@ -166,7 +167,7 @@ export const companyService = {
     getOfferDetails: (id) => api.get(`/offers/${id}/`),
     updateOffer: (id, data) => api.put(`/offers/${id}/`),
     deleteOffer: (id) => api.delete(`/offers/${id}/`),
-    getOfferApplicants: (offerId) => api.get(`/applications/offer/${offerId}/`),
+    getOfferApplicants: (offerId, params = {}) => api.get(`/applications/offer/${offerId}/`, params),
     getApplications: (params = {}) => api.get('/applications/company/list/', params),
     getApplicationDetails: (id) => api.get(`/applications/${id}/company/detail/`),
     updateApplicationStatus: (id, status) => {
@@ -175,8 +176,20 @@ export const companyService = {
         return api.post(`/applications/${id}/view/`);
     },
     getProfile: () => api.get('/company/profile/'),
-    updateProfile: (data) => api.patch('/company/profile/update/', data),
+    updateProfile: (data) => api.put('/company/profile/', data),
     generateConvention: (id) => api.post(`/applications/${id}/generate-convention/`),
+    getConventionStats: () => api.get('/company/conventions/stats/'),
+    getAcceptedInterns: () => api.get('/applications/company/list/', { status: 'accepted' }),
+    // uploadLogo: (formData) => api.patch('/company/profile/', formData),
+    uploadLogo: (formData) => api.post('/company/profile/logo/', formData),
+    getAnalytics: () => api.get('/company/analytics/'),
+};
+
+export const referenceService = {
+    getReferences: () => api.get('/references/'),
+    getDetails: (id) => api.get(`/references/${id}/`),
+    create: (data) => api.post('/references/', data),
+    sign: (id) => api.post(`/references/${id}/sign/`),
 };
 
 export const conventionService = {

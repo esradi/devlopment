@@ -58,11 +58,11 @@ const CompanyCandidates = () => {
     const [activeFilter, setActiveFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [offerDetails, setOfferDetails] = useState(null);
+    const [stats, setStats] = useState({ total: null, avgScore: null, newThisWeek: null });
     const [pipelineCounts, setPipelineCounts] = useState({
         applied: 0,
         inReview: 0,
         interview: 0,
-        // offer: 0,
         refused: 0,
         accepted: 0,
     });
@@ -72,39 +72,51 @@ const CompanyCandidates = () => {
             try {
                 setLoading(true);
 
+                // Helper to paginate through all pages
+                const fetchAllPages = async (fetchFn) => {
+                    let allApps = [];
+                    let page = 1;
+                    let hasMore = true;
+                    const MAX_PAGES = 20;
+                    while (hasMore) {
+                        const data = await fetchFn(page);
+                        const results = data?.results || data || [];
+                        allApps = [...allApps, ...results];
+                        hasMore = !!data?.next;
+                        page++;
+                    }
+                    return allApps;
+                };
+
                 let apps = [];
                 if (offerId) {
-                    const offerData = await offerService.getDetails(offerId);
+                    const [offerData, allApps] = await Promise.all([
+                        offerService.getDetails(offerId),
+                        fetchAllPages((page) => companyService.getOfferApplicants(offerId, { page }))
+                    ]);
                     setOfferDetails(offerData);
-
-                    const data = await companyService.getOfferApplicants(offerId);
-                    apps = data?.results || data || [];
+                    apps = allApps;
                 } else {
-                    const fetchAllApplications = async () => {
-                        let allApps = [];
-                        let page = 1;
-                        let hasMore = true;
-                        while (hasMore) {
-                            const data = await companyService.getApplications({ page });
-                            const results = data?.results || data || [];
-                            allApps = [...allApps, ...results];
-                            hasMore = !!data?.next;
-                            page++;
-                        }
-                        return allApps;
-                    };
-
-                    apps = await fetchAllApplications();
+                    apps = await fetchAllPages((page) => companyService.getApplications({ page }));
                 }
 
                 setApplicants(apps);
+
+                console.log('Match scores:', apps.map(a => ({ id: a.id, score: a.match_score })));
+                // Compute stats from all fetched applicants
+                const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                const totalCount = apps.length;
+                const avgScore = totalCount > 0
+                    ? Math.round(apps.reduce((acc, a) => acc + (a.match_score || 0), 0) / totalCount)
+                    : 0;
+                const newThisWeek = apps.filter(a => new Date(a.created_at).getTime() > weekAgo).length;
+                setStats({ total: totalCount, avgScore, newThisWeek });
 
                 // Calculate Pipeline Counts
                 const counts = {
                     applied: apps.filter(a => ['applied', 'pending'].includes(a.status?.toLowerCase())).length,
                     inReview: apps.filter(a => ['in review', 'under review', 'viewed'].includes(a.status?.toLowerCase())).length,
                     interview: apps.filter(a => a.status?.toLowerCase() === 'interview').length,
-                    // offer: apps.filter(a => a.status?.toLowerCase() === 'offer').length,
                     refused: apps.filter(a => ['refused', 'rejected'].includes(a.status?.toLowerCase())).length,
                     accepted: apps.filter(a => a.status?.toLowerCase() === 'accepted').length,
                 };
@@ -205,18 +217,21 @@ const CompanyCandidates = () => {
                             </div>
                         </div>
                         <div className="stat-block bordered center">
-                            <div className="stat-value">{applicants.length}</div>
+                            <div className="stat-value">
+                                {loading ? '—' : stats.total}
+                            </div>
                             <span className="stat-label">TOTAL CANDIDATES</span>
                         </div>
                         <div className="stat-block bordered center">
                             <div className="stat-value text-green">
-                                {applicants.length > 0 ? (applicants.reduce((acc, a) => acc + (a.match_score || 0), 0) / applicants.length).toFixed(0) : 0}%
+                                {loading ? '—' : `${stats.avgScore}%`}
                             </div>
                             <span className="stat-label">AVG MATCH SCORE</span>
                         </div>
                         <div className="stat-block center">
                             <div className="stat-value text-pink flex-center">
-                                {applicants.filter(a => new Date(a.created_at) > new Date(Date.now() - 7 * 86400000)).length} <ArrowUpRight size={20} style={{ marginLeft: '4px' }} />
+                                {loading ? '—' : stats.newThisWeek}
+                                {!loading && <ArrowUpRight size={20} style={{ marginLeft: '4px' }} />}
                             </div>
                             <span className="stat-label">NEW THIS WEEK</span>
                         </div>
@@ -285,7 +300,7 @@ const CompanyCandidates = () => {
                                             </div>
                                         </td>
                                         <td>
-                                            <MatchScoreRing score={app.match_score || Math.floor(Math.random() * 40) + 60} />
+                                            <MatchScoreRing score={app.match_score || 0} />
                                         </td>
                                         <td>
                                             <StatusPill status={app.status} />

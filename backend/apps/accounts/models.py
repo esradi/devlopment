@@ -98,6 +98,11 @@ class Company(models.Model):
     verified_by = models.CharField(max_length=100, null=True, blank=True)
     rejection_reason = models.TextField(null=True, blank=True)
     
+    # New fields for detailed profile
+    mission = models.TextField(null=True, blank=True)
+    values = models.TextField(null=True, blank=True)
+    preferred_domains = models.ManyToManyField('specialities.Domain', blank=True)
+    
     class Meta:
         db_table = 'api_company'
 

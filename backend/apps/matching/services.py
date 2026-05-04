@@ -22,15 +22,45 @@ class MatchingService:
         challenges_score = MatchingService._calculate_challenges_score(student, offer)
         location_score   = MatchingService._calculate_location_score(student, offer)
 
-        scores  = np.array([speciality_score, skills_score, challenges_score, location_score])
-        weights = np.array([
-            MatchingService.WEIGHTS["speciality"],
-            MatchingService.WEIGHTS["skills"],
-            MatchingService.WEIGHTS["challenges"],
-            MatchingService.WEIGHTS["location"],
-        ])
+        # Build active dimensions — exclude those with no meaningful data
+        dimensions = {}
 
-        total_score = float(np.dot(scores, weights))
+        # Speciality: active if student has domain or speciality set
+        if student.domain or student.speciality:
+            dimensions["speciality"] = speciality_score
+
+        # Skills: active if the offer has required skills AND student has some skills
+        if offer.skills.exists() and student.skills.exists():
+            dimensions["skills"] = skills_score
+
+        # Challenges: active if score > 0 (student completed relevant challenges)
+        if challenges_score > 0:
+            dimensions["challenges"] = challenges_score
+
+        # Location: active if both student and offer have wilaya set
+        if student.wilaya and offer.wilaya:
+            dimensions["location"] = location_score
+
+        # If no dimensions are active, compute a profile-completeness baseline
+        if not dimensions:
+            baseline = MatchingService._calculate_baseline_score(student, offer)
+            return {
+                "total_score": round(baseline, 2),
+                "breakdown": {
+                    "speciality": speciality_score,
+                    "skills":     skills_score,
+                    "challenges": challenges_score,
+                    "location":   location_score,
+                },
+                "weights": MatchingService.WEIGHTS,
+            }
+
+        # Redistribute weights proportionally among active dimensions
+        active_weights = {k: MatchingService.WEIGHTS[k] for k in dimensions}
+        total_weight = sum(active_weights.values())
+        normalized_weights = {k: v / total_weight for k, v in active_weights.items()}
+
+        total_score = sum(dimensions[k] * normalized_weights[k] for k in dimensions)
 
         return {
             "total_score": round(total_score, 2),
@@ -42,6 +72,41 @@ class MatchingService:
             },
             "weights": MatchingService.WEIGHTS,
         }
+
+    @staticmethod
+    def _calculate_baseline_score(student, offer) -> float:
+        """
+        Fallback score when no structured dimensions have enough data.
+        Based on profile completeness + lightweight keyword overlap.
+        Returns a score in the 15-55 range to differentiate candidates.
+        """
+        score = 15.0  # Base score for applying
+
+        # Profile completeness bonuses
+        if student.cv:
+            score += 10
+        if student.domain:
+            score += 5
+        if student.speciality:
+            score += 5
+        if student.university:
+            score += 3
+        if student.wilaya:
+            score += 2
+
+        # Lightweight keyword overlap between student field and offer
+        offer_text = f"{offer.title or ''} {offer.description or ''}".lower()
+        student_keywords = set()
+        if student.domain:
+            student_keywords.update(student.domain.lower().split())
+        if student.speciality:
+            student_keywords.update(student.speciality.lower().split())
+
+        if student_keywords and offer_text:
+            matches = sum(1 for kw in student_keywords if len(kw) > 2 and kw in offer_text)
+            score += min(matches * 5, 15)
+
+        return min(score, 55.0)
 
     @staticmethod
     def recalculate_all_scores():
@@ -68,28 +133,54 @@ class MatchingService:
     @staticmethod
     def _calculate_speciality_score(student, offer) -> float:
         score = 0
+        offer_text = f"{offer.title or ''} {offer.description or ''}".lower()
+
         if student.domain:
+            domain_lower = student.domain.lower()
+            # Check structured domains
             if offer.domains.filter(name__iexact=student.domain).exists():
                 score += 50
+            # Also check offer title and description
+            elif domain_lower in offer_text:
+                score += 40
+
         if student.speciality:
-            spec_lower       = student.speciality.lower()
-            title_match      = offer.title and spec_lower in offer.title.lower()
+            spec_lower = student.speciality.lower()
+            # Check structured domains
             domain_tag_match = offer.domains.filter(name__iexact=student.speciality).exists()
-            if title_match or domain_tag_match:
+            # Check offer title and description
+            title_match = offer.title and spec_lower in offer.title.lower()
+            desc_match = spec_lower in offer_text
+            if domain_tag_match:
                 score += 50
-        return float(score)
+            elif title_match:
+                score += 45
+            elif desc_match:
+                score += 30
+
+        return min(float(score), 100.0)
 
     @staticmethod
     def _calculate_skills_score(student, offer) -> float:
         required_skills = offer.skills.all()
         if not required_skills.exists():
             return 100.0 if student.skills.exists() else 0.0
-        verified_count = StudentSkill.objects.filter(
+
+        total_required = required_skills.count()
+
+        # Count declared (all) and verified skill matches
+        all_matches = StudentSkill.objects.filter(
             student=student,
-            skill__in=required_skills,
-            is_verified=True
-        ).count()
-        return (verified_count / required_skills.count()) * 100
+            skill__in=required_skills
+        )
+        declared_count = all_matches.count()
+        verified_count = all_matches.filter(is_verified=True).count()
+        unverified_count = declared_count - verified_count
+
+        # Verified skills = full credit, declared-only skills = 60% credit
+        weighted_count = verified_count + (unverified_count * 0.6)
+
+        return min((weighted_count / total_required) * 100, 100.0)
 
     @staticmethod
     def _calculate_challenges_score(student, offer) -> float:

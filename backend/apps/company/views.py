@@ -35,12 +35,16 @@ class CompanyProfileView(APIView):
     permission_classes = [IsAuthenticated, IsCompany]
 
     def get(self, request):
-        company = request.user.company_profile
+        company = request.user.get_company()
+        if not company:
+            return Response({"error": "No company profile found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = CompanyProfileSerializer(company)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
-        company = request.user.company_profile
+        company = request.user.get_company()
+        if not company:
+            return Response({"error": "No company profile found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = CompanyUpdateSerializer(company, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -48,11 +52,16 @@ class CompanyProfileView(APIView):
             return Response(updated_serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def patch(self, request):
+        return self.put(request)
+
 class CompanyLogoView(APIView):
     permission_classes = [IsAuthenticated, IsCompany]
 
     def post(self, request):
-        company = request.user.company_profile
+        company = request.user.get_company()
+        if not company:
+            return Response({"error": "No company profile found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = CompanyLogoSerializer(company, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -63,7 +72,9 @@ class CompanyLogoView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
-        company = request.user.company_profile
+        company = request.user.get_company()
+        if not company:
+            return Response({"error": "No company profile found"}, status=status.HTTP_404_NOT_FOUND)
         if company.logo:
             company.logo.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -74,7 +85,9 @@ class CompanyVerificationRequestView(APIView):
     permission_classes = [IsAuthenticated, IsCompany]
 
     def post(self, request):
-        company = request.user.company_profile
+        company = request.user.get_company()
+        if not company:
+            return Response({"error": "No company profile found"}, status=status.HTTP_404_NOT_FOUND)
         description = request.data.get('company_description')
         if description:
             company.description = description
@@ -104,7 +117,10 @@ class CompanyVerificationStatusView(APIView):
     permission_classes = [IsAuthenticated, IsCompany]
 
     def get(self, request):
-        serializer = CompanyVerificationStatusSerializer(request.user.company_profile)
+        company = request.user.get_company()
+        if not company:
+            return Response({"error": "No company profile found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CompanyVerificationStatusSerializer(company)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

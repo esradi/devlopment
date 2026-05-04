@@ -34,21 +34,18 @@ const CompanyProfile = () => {
     const handleLogoClick = () => {
         fileInputRef.current.click();
     };
-
     const handleLogoChange = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const formData = new FormData();
-            formData.append('logo', file);
-            try {
-                // Assuming updateProfile handles FormData if logo is present
-                // Or you might have a specific uploadLogo service
-                await companyService.updateProfile(formData);
-                const updated = await companyService.getProfile();
-                setProfile(updated);
-            } catch (err) {
-                console.error("Failed to upload logo:", err);
-            }
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('logo', file);
+
+        try {
+            const res = await companyService.uploadLogo(formData);
+            setProfile(prev => ({ ...prev, logo: res.logo_url }));
+        } catch (err) {
+            console.error("Failed to upload logo:", err);
         }
     };
 
@@ -106,7 +103,7 @@ const CompanyProfile = () => {
                     <div className="profile-card company-hero-card">
                         <div className="company-logo-large">
                             {profile.logo ? (
-                                <img src={profile.logo} alt="Company Logo" style={{ width: '100%', height: '100%', borderRadius: '20px', objectFit: 'cover' }} />
+                                <img src={profile.logo.startsWith('http') ? profile.logo : `http://localhost:8000${profile.logo}`} alt="Company Logo" style={{ width: '100%', height: '100%', borderRadius: '20px', objectFit: 'cover' }} />
                             ) : (
                                 <div className="logo-placeholder">
                                     {profile.company_name?.[0] || 'C'}
@@ -182,9 +179,13 @@ const CompanyProfile = () => {
 
                         <div className="card-subtitle">What we offer interns</div>
                         <div className="tag-cloud">
-                            {profile.values?.split(',').map((val, idx) => (
-                                <div key={idx} className="dark-tag"><PlayCircle size={14} /> {val.trim()}</div>
-                            )) || <div className="dark-tag">Real-world projects</div>}
+                            {profile.values ? (
+                                profile.values.split(',').filter(v => v.trim()).map((val, idx) => (
+                                    <div key={idx} className="dark-tag"><PlayCircle size={14} /> {val.trim()}</div>
+                                ))
+                            ) : (
+                                <div className="dark-tag"><PlayCircle size={14} /> Real-world projects</div>
+                            )}
                         </div>
                     </div>
 
@@ -200,15 +201,19 @@ const CompanyProfile = () => {
                             <div className="pref-col">
                                 <h4>Domains</h4>
                                 <div className="tag-cloud">
-                                    {profile.preferred_domains?.map((d, idx) => (
-                                        <span key={idx} className="purple-outline-tag">{d.name}</span>
-                                    )) || <span className="purple-outline-tag">General</span>}
+                                    {profile.preferred_domains && profile.preferred_domains.length > 0 ? (
+                                        profile.preferred_domains.map((d, idx) => (
+                                            <span key={idx} className="purple-outline-tag">{d.name}</span>
+                                        ))
+                                    ) : (
+                                        <span className="purple-outline-tag">General</span>
+                                    )}
                                 </div>
                             </div>
                             <div className="pref-col">
                                 <h4>Locations</h4>
                                 <div className="tag-cloud">
-                                    <span className="white-outline-tag">{profile.location || 'Various'}</span>
+                                    <span className="white-outline-tag">{profile.city || profile.country || 'Various'}</span>
                                 </div>
                             </div>
                         </div>

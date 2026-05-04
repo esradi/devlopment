@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
-import { conventionService } from '../../services/api';
+import { conventionService, referenceService, companyService } from '../../services/api';
 import './CompanyDocuments.css';
 import '../company/CompanyDashboard.css';
 
@@ -26,22 +26,84 @@ const CompanyDocuments = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Conventions');
-    const [documents, setDocuments] = useState([]);
+    const [conventions, setConventions] = useState([]);
+    const [references, setReferences] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState(null);
+    const [interns, setInterns] = useState([]);
+    const [genType, setGenType] = useState('Convention');
+    const [selectedStudent, setSelectedStudent] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    const [offerFilter, setOfferFilter] = useState('All');
 
     useEffect(() => {
-        const fetchDocs = async () => {
+        const fetchData = async () => {
             try {
-                const data = await conventionService.getConventions();
-                setDocuments(data);
+                setLoading(true);
+                const [convData, refData, statsData, internData] = await Promise.all([
+                    conventionService.getConventions(),
+                    referenceService.getReferences(),
+                    companyService.getConventionStats(),
+                    companyService.getAcceptedInterns()
+                ]);
+                setConventions(convData);
+                setReferences(refData);
+                setStats(statsData);
+                setInterns(Array.isArray(internData) ? internData : internData?.results || []);
             } catch (err) {
                 console.error("Failed to fetch documents:", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchDocs();
+        fetchData();
     }, []);
+
+    const filteredDocs = () => {
+        let docs = [];
+        if (activeTab === 'Conventions') docs = conventions;
+        else if (activeTab === 'Reference letters') docs = references;
+        else docs = [...conventions, ...references].sort((a, b) => new Date(b.created_at || b.issue_date) - new Date(a.created_at || a.issue_date));
+
+        if (statusFilter !== 'All') {
+            docs = docs.filter(doc => doc.status === statusFilter || (statusFilter === 'Generated' && !doc.status));
+        }
+
+        if (offerFilter !== 'All') {
+            docs = docs.filter(doc => (doc.offer_details?.title || doc.offer_title) === offerFilter);
+        }
+
+        return docs;
+    };
+
+    const handleGenerate = async () => {
+        if (!selectedStudent) {
+            alert("Please select a student");
+            return;
+        }
+
+        try {
+            if (genType === 'Convention') {
+                // For convention, we need an application ID
+                const studentApp = interns.find(i => i.student === parseInt(selectedStudent));
+                if (studentApp) {
+                    await companyService.generateConvention(studentApp.id);
+                    alert("Convention generated successfully!");
+                }
+            } else {
+                await referenceService.create({
+                    student: selectedStudent,
+                    subject: "Attestation de stage",
+                    content: "Félicitations pour votre stage."
+                });
+                alert("Reference letter generated successfully!");
+            }
+            // Refresh data
+            window.location.reload();
+        } catch (err) {
+            alert("Generation failed: " + err.message);
+        }
+    };
 
     if (loading) return <div className="loading-container" style={{ height: '100vh', background: '#0A0C10' }}><div className="custom-loader" /></div>;
 
@@ -98,23 +160,39 @@ const CompanyDocuments = () => {
                     <div className="doc-filter-group">
                         <div className="doc-filter-item">
                             <span className="lbl">Status:</span>
-                            <span className="val">All</span>
-                            <ChevronDown size={14} />
+                            <select
+                                className="filter-select"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="All">All</option>
+                                <option value="pending_student_signature">Pending Student</option>
+                                <option value="pending_company_signature">Pending Company</option>
+                                <option value="pending_admin_validation">Pending Admin</option>
+                                <option value="validated">Validated</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
                         </div>
                         <div className="doc-filter-divider"></div>
                         <div className="doc-filter-item">
                             <span className="lbl">Offer:</span>
-                            <span className="val">All</span>
-                            <ChevronDown size={14} />
-                        </div>
-                        <div className="doc-filter-divider"></div>
-                        <div className="doc-filter-item">
-                            <span className="lbl">Year:</span>
-                            <span className="val">2024</span>
-                            <ChevronDown size={14} />
+                            <select
+                                className="filter-select"
+                                value={offerFilter}
+                                onChange={(e) => setOfferFilter(e.target.value)}
+                            >
+                                <option value="All">All</option>
+                                {[...new Set(conventions.map(c => c.offer_details?.title || c.offer_title))].filter(Boolean).map(title => (
+                                    <option key={title} value={title}>{title}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
-                    <button className="btn-clear-filters">
+                    <button className="btn-clear-filters" onClick={() => {
+                        setStatusFilter('All');
+                        setOfferFilter('All');
+                        setActiveTab('All documents');
+                    }}>
                         <Filter size={14} /> Clear Filters
                     </button>
                 </div>
@@ -131,48 +209,55 @@ const CompanyDocuments = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {documents.map(doc => (
-                                <tr key={doc.id}>
-                                    <td>
-                                        <div className="doc-student-cell">
-                                            <img src={doc.student?.profile_picture || "https://ui-avatars.com/api/?name=" + (doc.student?.first_name || 'Student')} alt="avatar" className="doc-s-avatar" />
-                                            <div className="doc-s-info">
-                                                <h4>{doc.student?.first_name} {doc.student?.last_name}</h4>
-                                                <p>{doc.student?.university}</p>
+                            {filteredDocs().map(doc => {
+                                const isConv = doc.offer_details || doc.offer;
+                                const student = isConv ? doc.student_details : doc.student;
+                                const studentName = isConv ? `${student?.first_name} ${student?.last_name}` : student?.full_name;
+                                const title = isConv ? (doc.offer_details?.title || doc.offer_title) : doc.subject;
+
+                                return (
+                                    <tr key={doc.id + (isConv ? '-c' : '-r')}>
+                                        <td>
+                                            <div className="doc-student-cell">
+                                                <img src={student?.profile_picture || "https://ui-avatars.com/api/?name=" + (studentName || 'Student')} alt="avatar" className="doc-s-avatar" />
+                                                <div className="doc-s-info">
+                                                    <h4>{studentName}</h4>
+                                                    <p>{student?.university || student?.domain || 'Student'}</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="doc-offer-cell">
-                                            <h5>{doc.offer?.title}</h5>
-                                            <p>{doc.offer_type} • {doc.duration} months</p>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <StatusPill status={doc.status} />
-                                    </td>
-                                    <td>
-                                        <div className="doc-gen-cell">
-                                            <h6>{new Date(doc.created_at).toLocaleDateString()}</h6>
-                                            <p>Updated {new Date(doc.updated_at).toLocaleDateString()}</p>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="doc-actions">
-                                            {doc.pdf_file ? (
-                                                <a href={conventionService.download(doc.id)} className="doc-action-btn" download>
-                                                    <Download size={18} />
-                                                </a>
-                                            ) : (
-                                                <button className="doc-action-btn" disabled style={{ opacity: 0.3 }}><Download size={18} /></button>
-                                            )}
-                                            <button className="doc-action-btn" onClick={() => navigate(`/dashboard/company/conventions/${doc.id}`)}>
-                                                <Edit3 size={18} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td>
+                                            <div className="doc-offer-cell">
+                                                <h5>{title}</h5>
+                                                <p>{isConv ? 'Internship Agreement' : 'Reference Letter'}</p>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <StatusPill status={doc.status || 'Generated'} />
+                                        </td>
+                                        <td>
+                                            <div className="doc-gen-cell">
+                                                <h6>{new Date(doc.created_at || doc.issue_date).toLocaleDateString()}</h6>
+                                                <p>Updated {new Date(doc.updated_at || doc.issue_date).toLocaleDateString()}</p>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="doc-actions">
+                                                {(doc.pdf_file || doc.pdf_url) ? (
+                                                    <a href={isConv ? conventionService.download(doc.id) : doc.pdf_url} className="doc-action-btn" download target="_blank" rel="noreferrer">
+                                                        <Download size={18} />
+                                                    </a>
+                                                ) : (
+                                                    <button className="doc-action-btn" disabled style={{ opacity: 0.3 }}><Download size={18} /></button>
+                                                )}
+                                                <button className="doc-action-btn" onClick={() => navigate(isConv ? `/dashboard/company/conventions/${doc.id}` : `/dashboard/company/references/${doc.id}`)}>
+                                                    <Edit3 size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -184,47 +269,57 @@ const CompanyDocuments = () => {
                     <h3><Sparkles size={18} color="#9e59ff" /> Quick generate</h3>
 
                     <span className="widget-label">Select Student</span>
-                    <div className="widget-select">
-                        <span>Select an active intern...</span>
-                        <ChevronDown size={16} />
-                    </div>
+                    <select
+                        className="widget-select-input"
+                        value={selectedStudent}
+                        onChange={(e) => setSelectedStudent(e.target.value)}
+                    >
+                        <option value="">Select an active intern...</option>
+                        {interns.map(i => (
+                            <option key={i.id} value={i.student}>{i.student_name}</option>
+                        ))}
+                    </select>
 
                     <span className="widget-label">Document Type</span>
-                    <div className="widget-select filled">
-                        <span>Convention de stage</span>
-                        <ChevronDown size={16} />
-                    </div>
+                    <select
+                        className="widget-select-input filled"
+                        value={genType}
+                        onChange={(e) => setGenType(e.target.value)}
+                    >
+                        <option value="Convention">Convention de stage</option>
+                        <option value="Reference">Reference Letter</option>
+                    </select>
 
-                    <button className="btn-widget-gen">Generate</button>
+                    <button className="btn-widget-gen" onClick={handleGenerate}>Generate</button>
                 </div>
 
                 <div className="widget-status-sum">
                     <h3>Status summary</h3>
                     <div className="status-list">
                         <div className="status-list-item">
-                            <div className="s-item-left"><div className="s-item-dot" style={{ background: '#5d6785' }}></div> Draft</div>
-                            <div className="s-item-right">05</div>
+                            <div className="s-item-left"><div className="s-item-dot" style={{ background: '#5d6785' }}></div> Pending Student</div>
+                            <div className="s-item-right">{stats?.pending_student_signature || 0}</div>
                         </div>
                         <div className="status-list-item">
-                            <div className="s-item-left"><div className="s-item-dot" style={{ background: '#9e59ff' }}></div> Sent</div>
-                            <div className="s-item-right">12</div>
+                            <div className="s-item-left"><div className="s-item-dot" style={{ background: '#9e59ff' }}></div> Pending Company</div>
+                            <div className="s-item-right">{stats?.pending_company_signature || 0}</div>
                         </div>
                         <div className="status-list-item">
-                            <div className="s-item-left"><div className="s-item-dot" style={{ background: '#db2777' }}></div> Signed</div>
-                            <div className="s-item-right">28</div>
+                            <div className="s-item-left"><div className="s-item-dot" style={{ background: '#db2777' }}></div> Pending Admin</div>
+                            <div className="s-item-right">{stats?.pending_admin_validation || 0}</div>
                         </div>
                         <div className="status-list-item">
-                            <div className="s-item-left"><div className="s-item-dot" style={{ background: '#10b981' }}></div> Finalized</div>
-                            <div className="s-item-right">45</div>
+                            <div className="s-item-left"><div className="s-item-dot" style={{ background: '#10b981' }}></div> Validated</div>
+                            <div className="s-item-right">{stats?.validated || 0}</div>
                         </div>
                     </div>
 
                     <div className="activity-block">
-                        <span className="widget-label">Activity this month</span>
+                        <span className="widget-label">Total Documents</span>
                         <div className="activity-main">
-                            18 <div className="activity-trend"><TrendingUp size={16} /> 12%</div>
+                            {(conventions.length + references.length)} <div className="activity-trend"><TrendingUp size={16} /></div>
                         </div>
-                        <span className="activity-sub">Letters generated successfully</span>
+                        <span className="activity-sub">Conventions and letters generated</span>
                     </div>
                 </div>
 

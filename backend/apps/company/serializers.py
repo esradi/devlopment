@@ -1,9 +1,12 @@
 from rest_framework import serializers
 from apps.accounts.models import Company
-from apps.offers.models import Application
-from apps.matching.models import MatchScore
 from .models import CompanyDocument, Interview, CompanyReview
+from apps.specialities.models import Domain, Skill
+from apps.offers.models import Offer, Application
+from apps.matching.models import MatchScore
+from django.db.models import Avg, Count
 from django.utils import timezone
+from rest_framework import serializers
 
 class CompanyLogoSerializer(serializers.ModelSerializer):
     logo = serializers.ImageField(max_length=None, use_url=True, required=True)
@@ -17,31 +20,69 @@ class CompanyLogoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Logo file size must be under 5MB.")
         return value
 
+class DomainSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Domain
+        fields = ['id', 'name']
+
 class CompanyProfileSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
-
+    
+    # Aliases and derived fields for frontend
+    contact_email = serializers.EmailField(source='user.email', read_only=True)
+    size_range = serializers.CharField(source='company_size', read_only=True)
+    is_verified = serializers.SerializerMethodField()
+    location = serializers.SerializerMethodField()
+    
+    preferred_domains = DomainSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
     total_reviews = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+    strength = serializers.SerializerMethodField()
 
     class Meta:
         model = Company
         fields = [
-            'id', 'user_id', 'user_email', 'company_name', 'company_type', 
-            'country', 'city', 'address', 'postal_code', 'website', 
-            'nif', 'registre_commerce', 'industry', 'company_size', 
-            'description', 'logo', 'referral_source', 'verification_status',
-            'average_rating', 'total_reviews'
+            'id', 'user_id', 'user_email', 'contact_email', 'company_name', 'company_type', 
+            'country', 'city', 'address', 'postal_code', 'location', 'website', 
+            'nif', 'registre_commerce', 'industry', 'company_size', 'size_range',
+            'description', 'mission', 'values', 'logo', 'referral_source', 
+            'verification_status', 'is_verified', 'preferred_domains',
+            'average_rating', 'total_reviews', 'stats', 'strength'
         ]
         read_only_fields = ['id', 'user_id', 'user_email', 'verification_status']
 
+    def get_is_verified(self, obj):
+        return obj.verification_status == 'verified'
+
+    def get_location(self, obj):
+        parts = [p for p in [obj.city, obj.country] if p]
+        return ", ".join(parts) if parts else "Algeria"
+
     def get_average_rating(self, obj):
-        from django.db.models import Avg
         avg = obj.reviews.aggregate(Avg('rating'))['rating__avg']
         return round(avg, 1) if avg else 0.0
 
     def get_total_reviews(self, obj):
         return obj.reviews.count()
+
+    def get_stats(self, obj):
+        return {
+            "offers_count": Offer.objects.filter(company=obj).count(),
+            "applications_count": Application.objects.filter(offer__company=obj).count(),
+            "active_offers": Offer.objects.filter(company=obj, status='active').count()
+        }
+
+    def get_strength(self, obj):
+        score = 0
+        if obj.company_name: score += 20
+        if obj.logo: score += 20
+        if obj.description and len(obj.description) > 50: score += 20
+        if obj.website: score += 10
+        if obj.mission: score += 15
+        if obj.values: score += 15
+        return min(score, 100)
 
 class CompanyUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -50,7 +91,7 @@ class CompanyUpdateSerializer(serializers.ModelSerializer):
             'company_name', 'company_type', 'country', 'city', 
             'address', 'postal_code', 'website', 'nif', 
             'registre_commerce', 'industry', 'company_size', 
-            'description', 'referral_source'
+            'description', 'mission', 'values', 'preferred_domains', 'referral_source'
         ]
 
 class CompanyVerificationStatusSerializer(serializers.ModelSerializer):
