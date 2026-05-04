@@ -1,36 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Users, 
-    Plus, 
-    Search, 
-    Hash, 
-    ChevronRight, 
-    MessageSquare, 
+import {
+    Users,
+    Plus,
+    Search,
+    Hash,
+    ChevronRight,
+    MessageSquare,
     BookOpen,
     Shield,
     TrendingUp
 } from 'lucide-react';
 import StudyGroupChat from '../../components/StudyGroupChat';
+import { groupService } from '../../services/api';
 
 const StudentGroups = ({ userData }) => {
     const [myGroups, setMyGroups] = useState([]);
     const [suggestedGroups, setSuggestedGroups] = useState([]);
     const [activeGroupId, setActiveGroupId] = useState(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchGroups = async () => {
             try {
-                const token = localStorage.getItem('access_token');
-                const response = await fetch('http://127.0.0.1:8000/api/groups/', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await response.json();
-                setMyGroups(data.my_groups || []);
+                const data = await groupService.getAll();
+                const myGroupsData = Array.isArray(data) ? data : data?.results || [];
+                setMyGroups(myGroupsData);
                 setSuggestedGroups(data.suggested_groups || []);
-                if (data.my_groups && data.my_groups.length > 0) {
-                    setActiveGroupId(data.my_groups[0].id);
+                if (myGroupsData.length > 0 && !isMobile) {
+                    setActiveGroupId(myGroupsData[0].id);
                 }
             } catch (error) {
                 console.error('Error fetching groups:', error);
@@ -49,9 +54,9 @@ const StudentGroups = ({ userData }) => {
     }
 
     return (
-        <div className="groups-layout" style={{ display: 'flex', height: 'calc(100vh - 110px)', overflow: 'hidden' }}>
+        <div className="groups-layout" style={{ display: 'flex', height: 'calc(100vh - 110px)', overflow: 'hidden', flexDirection: isMobile ? 'column' : 'row' }}>
             {/* Sidebar List */}
-            <div className="groups-sidebar" style={{ width: '320px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', background: '#050505' }}>
+            <div className="groups-sidebar" style={{ width: isMobile ? '100%' : '320px', display: activeGroupId && isMobile ? 'none' : 'flex', borderRight: '1px solid rgba(255,255,255,0.05)', flexDirection: 'column', background: '#050505' }}>
                 <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <h2 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>Study Groups</h2>
@@ -61,8 +66,8 @@ const StudentGroups = ({ userData }) => {
                     </div>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} />
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             placeholder="Find a group..."
                             style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', color: '#fff', fontSize: '13px' }}
                         />
@@ -73,7 +78,7 @@ const StudentGroups = ({ userData }) => {
                     <h4 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444', marginBottom: '12px', marginLeft: '8px' }}>My Channels</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         {myGroups.map(group => (
-                            <div 
+                            <div
                                 key={group.id}
                                 onClick={() => setActiveGroupId(group.id)}
                                 style={{
@@ -102,7 +107,7 @@ const StudentGroups = ({ userData }) => {
                     <h4 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444', marginTop: '32px', marginBottom: '12px', marginLeft: '8px' }}>Suggestions</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {suggestedGroups.map(group => (
-                            <div 
+                            <div
                                 key={group.id}
                                 style={{
                                     padding: '12px',
@@ -128,7 +133,12 @@ const StudentGroups = ({ userData }) => {
             {/* Chat Area */}
             <div style={{ flex: 1 }}>
                 {activeGroup ? (
-                    <StudyGroupChat group={activeGroup} currentUser={userData} />
+                    <>
+                        {isMobile && (
+                            <button onClick={() => setActiveGroupId(null)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '22px', padding: '12px 16px', cursor: 'pointer' }}>← Back</button>
+                        )}
+                        <StudyGroupChat group={activeGroup} currentUser={userData} />
+                    </>
                 ) : (
                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
                         <Users size={64} style={{ marginBottom: '24px' }} />

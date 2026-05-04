@@ -168,7 +168,7 @@
     letter-spacing: 0.5px;
 }
 
-.field-group input, 
+.field-group input,
 .select-input select {
     background: #0d0d12;
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -354,16 +354,44 @@
     background: #22222b;
 }
 
-.link-icon.github { color: #fff; }
-.link-icon.cv { color: #9e59ff; }
-.link-icon.linkedin { color: #0a66c2; }
-.link-icon.portfolio { color: #ff1b90; }
+.link-icon.github {
+    color: #fff;
+}
 
-.link-text { flex: 1; }
-.link-text h4 { font-size: 0.95rem; margin-bottom: 0.2rem; }
-.link-text .status { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.5px; }
-.link-text .status.connected { color: #9e59ff; }
-.link-text .status.empty { color: #4a4a58; }
+.link-icon.cv {
+    color: #9e59ff;
+}
+
+.link-icon.linkedin {
+    color: #0a66c2;
+}
+
+.link-icon.portfolio {
+    color: #ff1b90;
+}
+
+.link-text {
+    flex: 1;
+}
+
+.link-text h4 {
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+}
+
+.link-text .status {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.link-text .status.connected {
+    color: #9e59ff;
+}
+
+.link-text .status.empty {
+    color: #4a4a58;
+}
 
 .link-action {
     background: #2a2a35;
@@ -424,8 +452,13 @@
     font-weight: 500;
 }
 
-.checklist li.done { color: #10b981; }
-.checklist li.pending { color: #64748b; }
+.checklist li.done {
+    color: #10b981;
+}
+
+.checklist li.pending {
+    color: #64748b;
+}
 
 .checklist li .circle {
     width: 16px;
@@ -595,29 +628,41 @@
     background: rgba(251, 191, 36, 0.1);
     border-color: rgba(251, 191, 36, 0.3);
 }
+
 .skill-pill.expert .skill-level,
-.skill-pill.expert .skill-stars { color: #fbbf24; }
+.skill-pill.expert .skill-stars {
+    color: #fbbf24;
+}
 
 .skill-pill.advanced {
     background: rgba(16, 185, 129, 0.1);
     border-color: rgba(16, 185, 129, 0.3);
 }
+
 .skill-pill.advanced .skill-level,
-.skill-pill.advanced .skill-stars { color: #10b981; }
+.skill-pill.advanced .skill-stars {
+    color: #10b981;
+}
 
 .skill-pill.intermediate {
     background: rgba(59, 130, 246, 0.1);
     border-color: rgba(59, 130, 246, 0.3);
 }
+
 .skill-pill.intermediate .skill-level,
-.skill-pill.intermediate .skill-stars { color: #3b82f6; }
+.skill-pill.intermediate .skill-stars {
+    color: #3b82f6;
+}
 
 .skill-pill.beginner {
     background: rgba(158, 89, 255, 0.1);
     border-color: rgba(158, 89, 255, 0.3);
 }
+
 .skill-pill.beginner .skill-level,
-.skill-pill.beginner .skill-stars { color: #9e59ff; }
+.skill-pill.beginner .skill-stars {
+    color: #9e59ff;
+}
 
 /* Print Media Query for CV Export */
 @media print {
@@ -625,13 +670,13 @@
         background: #fff;
         color: #000;
     }
-    
+
     .complete-profile-page {
         background: #fff !important;
         color: #000 !important;
         padding: 0;
     }
-    
+
     .no-print {
         display: none !important;
     }
@@ -653,17 +698,19 @@
         page-break-inside: avoid;
     }
 
-    .header-text h1, .section-title h2, .skill-name {
+    .header-text h1,
+    .section-title h2,
+    .skill-name {
         color: #000 !important;
         background: none !important;
         -webkit-text-fill-color: #000 !important;
     }
-    
+
     .header-text p {
         color: #666 !important;
     }
 
-    .field-group input, 
+    .field-group input,
     .select-input select {
         background: #fff !important;
         color: #000 !important;
@@ -680,9 +727,87 @@
         color: #000;
     }
 
-    .skill-level, .tag-pill, .tag-chip {
+    .skill-level,
+    .tag-pill,
+    .tag-chip {
         color: #333 !important;
         background: #f0f0f0 !important;
         border: 1px solid #ddd !important;
+    }
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+    .complete-profile-page {
+        padding: 70px 20px 40px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .header-text h1 {
+        font-size: 2rem;
+    }
+
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .personal-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .avatar-edit-container {
+        margin: 0 auto;
+    }
+
+    .field-row {
+        grid-template-columns: 1fr;
+    }
+
+    .pref-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .page-header-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .complete-profile-page {
+        padding: 70px 12px 32px;
+    }
+
+    .header-text h1 {
+        font-size: 1.6rem;
+    }
+
+    .profile-section.card {
+        padding: 1.5rem;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .card-actions-row {
+        flex-direction: column;
+    }
+
+    .progress-ring-container svg {
+        width: 100px;
+        height: 100px;
     }
 }

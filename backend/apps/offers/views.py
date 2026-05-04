@@ -450,6 +450,10 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         if Application.objects.filter(student=student_profile, offer=offer).exists():
             return Response({'error': 'You have already applied to this offer.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Inject student into request data
+        mutable_data = request.data.copy()
+        mutable_data['student'] = student_profile.id
+        request._full_data = mutable_data
         response = super().create(request, *args, **kwargs)
         
         # Log Events

@@ -56,7 +56,10 @@ const StudentMessages = ({ userData }) => {
             const msgs = Array.isArray(msgData) ? msgData : msgData?.results || msgData?.messages || [];
             const convs = groupIntoConversations(msgs, myId);
             setConversations(convs);
-            if (convs.length > 0 && !activeConvId) setActiveConvId(convs[0].id);
+            if (convs.length > 0 && !activeConvId) {
+                const isMobile = window.innerWidth <= 768;
+                if (!isMobile) setActiveConvId(convs[0].id);
+            }
 
             const alertsList = Array.isArray(notifData) ? notifData : notifData?.results || notifData?.notifications || [];
             setAlerts(alertsList);
@@ -74,14 +77,14 @@ const StudentMessages = ({ userData }) => {
         if (wsMessage && wsMessage.type === 'chat_message') {
             const newMsg = wsMessage.message;
             const otherId = String(newMsg.sender) === String(myId) ? newMsg.receiver : newMsg.sender;
-            
+
             setConversations(prev => {
                 const existingConv = prev.find(c => String(c.id) === String(otherId));
                 let updatedConvs;
-                
+
                 if (existingConv) {
                     if (existingConv.messages.some(m => m.id === newMsg.id)) return prev;
-                    
+
                     updatedConvs = prev.map(c => {
                         if (String(c.id) === String(otherId)) {
                             return {
@@ -171,7 +174,7 @@ const StudentMessages = ({ userData }) => {
     };
 
     const activeConv = conversations.find(c => String(c.id) === String(activeConvId));
-    const filteredConversations = conversations.filter(c => 
+    const filteredConversations = conversations.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -179,21 +182,21 @@ const StudentMessages = ({ userData }) => {
 
     return (
         <div className="messages-container">
-            <div className="messages-sidebar">
+            <div className={`messages-sidebar ${activeConvId && activeTab === 'messages' ? 'hidden' : ''}`}>
                 <div className="messages-sidebar-header">
                     <div className="header-top">
                         <h2>Messaging Hub</h2>
                     </div>
-                    
+
                     <div className="messages-tabs">
-                        <button 
+                        <button
                             className={`m-tab ${activeTab === 'messages' ? 'active' : ''}`}
                             onClick={() => setActiveTab('messages')}
                         >
                             <MessageSquare size={16} />
                             <span>Chats</span>
                         </button>
-                        <button 
+                        <button
                             className={`m-tab ${activeTab === 'alerts' ? 'active' : ''}`}
                             onClick={() => setActiveTab('alerts')}
                         >
@@ -205,9 +208,9 @@ const StudentMessages = ({ userData }) => {
 
                     <div className="messages-search">
                         <Search size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="Search chats..." 
+                        <input
+                            type="text"
+                            placeholder="Search chats..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -240,8 +243,8 @@ const StudentMessages = ({ userData }) => {
                         </div>
                     ) : (
                         filteredConversations.map(conv => (
-                            <div 
-                                key={conv.id} 
+                            <div
+                                key={conv.id}
                                 className={`conversation-item ${String(activeConvId) === String(conv.id) ? 'active' : ''}`}
                                 onClick={() => setActiveConvId(conv.id)}
                             >
@@ -262,7 +265,7 @@ const StudentMessages = ({ userData }) => {
                 </div>
             </div>
 
-            <div className="messages-main">
+            <div className={`messages-main ${activeConvId && activeTab === 'messages' ? 'visible' : ''}`}>
                 {activeTab === 'alerts' ? (
                     <div className="no-chat-selected">
                         <div className="empty-state-icon">
@@ -274,6 +277,12 @@ const StudentMessages = ({ userData }) => {
                 ) : activeConv ? (
                     <>
                         <div className="chat-header">
+                            <button 
+                                className="back-btn-mobile"
+                                onClick={() => setActiveConvId(null)}
+                            >
+                                ←
+                            </button>
                             <div className="chat-user-info">
                                 <div className="avatar-wrapper">
                                     <img src={activeConv.avatar} alt={activeConv.name} className="chat-avatar" />
@@ -300,15 +309,15 @@ const StudentMessages = ({ userData }) => {
                                         <div className={`message-bubble ${isMe ? 'sent' : 'received'}`}>
                                             {msg.message_type === 'image' && msg.attachment && (
                                                 <div className="message-attachment image">
-                                                    <img 
-                                                        src={msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`} 
-                                                        alt="Attachment" 
-                                                        onClick={() => window.open(msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`)} 
+                                                    <img
+                                                        src={msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`}
+                                                        alt="Attachment"
+                                                        onClick={() => window.open(msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`)}
                                                     />
                                                 </div>
                                             )}
                                             {msg.message_type === 'file' && msg.attachment && (
-                                                <div 
+                                                <div
                                                     className="message-attachment file"
                                                     onClick={() => {
                                                         const url = msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`;
@@ -337,28 +346,28 @@ const StudentMessages = ({ userData }) => {
 
                         <form className="chat-input-area" onSubmit={handleSendMessage}>
                             <div className="chat-input-wrapper">
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef} 
-                                    style={{ display: 'none' }} 
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    style={{ display: 'none' }}
                                     onChange={handleFileUpload}
                                 />
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     className={`tool-btn ${isUploading ? 'uploading' : ''}`}
                                     onClick={() => fileInputRef.current.click()}
                                     disabled={isUploading}
                                 >
                                     <Plus size={22} />
                                 </button>
-                                
-                                <input 
-                                    type="text" 
-                                    placeholder="Write a message..." 
+
+                                <input
+                                    type="text"
+                                    placeholder="Write a message..."
                                     value={messageInput}
                                     onChange={(e) => setMessageInput(e.target.value)}
                                 />
-                                
+
                                 <button type="submit" className="send-btn" disabled={!messageInput.trim() || isUploading}>
                                     <Send size={20} />
                                 </button>

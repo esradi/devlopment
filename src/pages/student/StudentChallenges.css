@@ -370,3 +370,61 @@
     align-items: center;
     gap: 12px;
 }
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+    .student-challenges-page {
+        padding: 70px 20px 40px;
+    }
+
+    .challenges-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .challenges-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .quiz-actions {
+        flex-direction: column;
+    }
+
+    .quiz-actions .btn-primary,
+    .quiz-actions .btn-secondary {
+        width: 100%;
+        text-align: center;
+    }
+
+    .quiz-result-card {
+        padding: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-challenges-page {
+        padding: 70px 12px 32px;
+    }
+
+    .challenges-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .challenges-header p {
+        font-size: 0.95rem;
+    }
+
+    .quiz-question {
+        padding: 20px;
+    }
+
+    .quiz-option {
+        padding: 12px 16px;
+    }
+
+    .challenge-toast {
+        right: 12px;
+        left: 12px;
+        bottom: 16px;
+    }
+}

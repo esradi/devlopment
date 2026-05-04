@@ -164,7 +164,18 @@ const Navbar = ({ role, setUserRole }) => {
                 <ul className="menu-list">
                     {publicLinks.map((link) => (
                         <li key={link.id}>
-                            <a href={`/#${link.id}`} className="nav-link" onClick={(e) => { e.preventDefault(); scrollToSection(link.id); }}>
+                            <a 
+                                href={`/#${link.id}`} 
+                                className="nav-link" 
+                                onClick={(e) => { 
+                                    e.preventDefault(); 
+                                    if (link.id === 'opportunities' && role === 'student') {
+                                        navigate('/dashboard/student/offers');
+                                    } else {
+                                        scrollToSection(link.id); 
+                                    }
+                                }}
+                            >
                                 {link.label}
                             </a>
                         </li>

@@ -44,8 +44,10 @@ const OfferDetails = ({ setUserRole }) => {
                 setOffer(details);
                 setIsFavorite(details.is_favorite);
                 setUserData(me);
-                setSimilarRoles(recs.filter(r => String(r.id) !== String(id)).slice(0, 3));
-                const existingApp = apps.find(a => String(a.offer) === String(id));
+                const recsArray = Array.isArray(recs) ? recs : recs?.results || recs?.data || [];
+                setSimilarRoles(recsArray.filter(r => String(r.id) !== String(id)).slice(0, 3));
+                const appsArray = Array.isArray(apps) ? apps : apps?.results || apps?.data || [];
+                const existingApp = appsArray.find(a => String(a.offer) === String(id));
                 if (existingApp) {
                     setApplication(existingApp);
                 }
@@ -62,7 +64,10 @@ const OfferDetails = ({ setUserRole }) => {
         setIsApplying(true);
         try {
             await applicationService.apply(id, coverLetter);
-            navigate('/dashboard/student');
+            // Refresh the application state locally
+            const apps = await applicationService.getMine();
+            const existingApp = apps.find(a => String(a.offer) === String(id));
+            if (existingApp) setApplication(existingApp);
         } catch (error) {
             console.error("Failed to apply:", error);
         } finally {
@@ -92,9 +97,9 @@ const OfferDetails = ({ setUserRole }) => {
         <div className="student-dashboard offer-details-page">
             <main className="dashboard-main offer-main">
                 <div className="back-nav">
-                    <button onClick={() => navigate('/dashboard/student')} className="back-btn">
+                    <button onClick={() => navigate('/dashboard/student/offers')} className="back-btn">
                         <ChevronLeft size={20} />
-                        Back to Dashboard
+                        Back to Offers
                     </button>
                 </div>
 

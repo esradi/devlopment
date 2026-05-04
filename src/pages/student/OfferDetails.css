@@ -3,6 +3,7 @@
     background-color: #0b0f19; 
     min-height: 100vh;
     color: #e2e8f0;
+    padding-top: 80px;
 }
 
 .offer-main {
@@ -593,28 +594,79 @@
     line-height: 1.5;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
+/* ===== RESPONSIVE MOBILE ===== */
+
+@media (max-width: 768px) {
+    .offer-main {
+        padding: 70px 16px 40px;
+    }
+
+    .offer-header-panel {
+        flex-direction: column;
+        gap: 20px;
+        padding: 1.5rem;
+    }
+
+    .offer-title {
+        font-size: 1.6rem;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .action-buttons-col {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-primary,
+    .btn-secondary-dark {
+        width: 100%;
+    }
+
     .offer-content-grid {
         grid-template-columns: 1fr;
     }
-    
-    .offer-header-panel {
-        flex-direction: column;
-        gap: 2rem;
-    }
-    
-    .header-actions {
-        width: 100%;
-        justify-content: space-between;
-    }
-    
-    .action-buttons-col {
-        flex-direction: row;
-        width: 100%;
-    }
-    
-    .requirements-grid, .similar-roles-grid {
+
+    .requirements-grid {
         grid-template-columns: 1fr;
+    }
+
+    .similar-roles-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .apply-footer {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .offer-main {
+        padding: 70px 12px 32px;
+    }
+
+    .offer-title {
+        font-size: 1.4rem;
+    }
+
+    .offer-meta-main {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .company-tags {
+        flex-wrap: wrap;
+    }
+
+    .match-score-circle {
+        width: 60px;
+        height: 60px;
     }
 }

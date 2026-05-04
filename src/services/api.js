@@ -217,8 +217,8 @@ export const applicationService = {
 export const quizService = {
     getQuiz: (id) => api.get(`/quizzes/${id}/`),
     submitQuiz: (id, answers) => api.post(`/quizzes/${id}/submit/`, { answers }),
-    getAvailableQuizzes: () => api.get('/student/quizzes/available/'),
-    getQuizDetails: (id) => api.get(`/student/quizzes/${id}/`),
+    getAvailableQuizzes: () => api.get('/challenges/skillchallenge/'),
+    getQuizDetails: (id) => api.get(`/challenges/skillchallenge/${id}/`),
 };
 
 export const messageService = {
@@ -293,3 +293,12 @@ export const adminService = {
 
 // Alias for backwards compatibility if needed
 export const dashboardService = studentService;
+
+export const groupService = {
+    getAll: () => api.get('/groups/groups/'),
+    create: (data) => api.post('/groups/groups/', data),
+    join: (id) => api.post(`/groups/groups/${id}/join/`),
+    leave: (id) => api.post(`/groups/groups/${id}/leave/`),
+    getMessages: (id) => api.get(`/groups/groups/${id}/messages/`),
+    sendMessage: (id, data) => api.post(`/groups/groups/${id}/messages/`, data),
+};

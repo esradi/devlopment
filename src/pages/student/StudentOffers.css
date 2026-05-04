@@ -284,3 +284,73 @@
     font-size: 12px;
     color: #9e59ff;
 }
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+    .student-offers-page {
+        padding: 70px 20px 40px;
+    }
+
+    .offers-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .offers-header-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .offers-header-actions .icon-btn {
+        display: none;
+    }
+
+    .offers-header-actions .search-bar {
+        width: 100%;
+    }
+
+    .filters-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .offers-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-offers-page {
+        padding: 90px 12px 32px;
+    }
+
+    .offers-header-content h1 {
+        font-size: 20px;
+    }
+
+    .card-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .card-actions {
+        width: 100%;
+    }
+
+    .btn-details,
+    .btn-apply {
+        flex: 1;
+        text-align: center;
+    }
+
+    .advanced-filters select {
+        font-size: 12px;
+        padding: 6px 30px 6px 12px;
+    }
+}
