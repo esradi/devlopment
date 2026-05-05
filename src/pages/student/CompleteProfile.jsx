@@ -1,18 +1,18 @@
-import React, { useState, useRef } from 'react';
-import { dashboardService } from '../../services/api';
+import React, { useState, useRef, useEffect } from 'react';
+import { dashboardService, studentService } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    User, 
-    Mail, 
-    Phone, 
-    MapPin, 
-    GraduationCap, 
-    Briefcase, 
-    Plus, 
-    X, 
-    Github, 
-    Linkedin, 
-    Globe, 
+import {
+    User,
+    Mail,
+    Phone,
+    MapPin,
+    GraduationCap,
+    Briefcase,
+    Plus,
+    X,
+    Github,
+    Linkedin,
+    Globe,
     FileText,
     CheckCircle2,
     Camera,
@@ -28,42 +28,73 @@ import html2pdf from 'html2pdf.js';
 import './CompleteProfile.css';
 
 const ALL_WILAYAS = [
-    "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", 
-    "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers", 
-    "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma", 
-    "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh", 
-    "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", 
+    "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar",
+    "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers",
+    "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma",
+    "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh",
+    "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued",
     "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent", "Ghardaïa",
     "Relizane", "Timimoun", "Bordj Badji Mokhtar", "Ouled Djellal", "Béni Abbès", "In Salah", "In Guezzam",
     "Touggourt", "Djanet", "El M'Ghair", "El Meniaa"
 ];
 
 const ALL_DOMAINS = [
-    "Engineering", "UI/UX Design", "Backend Dev", "Frontend Dev", "Mobile Dev", 
-    "Cloud Computing", "AI/ML", "SecOps", "Data Science", "Marketing", "Finance", 
+    "Engineering", "UI/UX Design", "Backend Dev", "Frontend Dev", "Mobile Dev",
+    "Cloud Computing", "AI/ML", "SecOps", "Data Science", "Marketing", "Finance",
     "Human Resources", "Product Management", "Quality Assurance", "Game Dev"
 ];
 
 const CompleteProfile = ({ userData, onSave }) => {
-    const [skills, setSkills] = useState([
-        { name: 'REACT.JS', level: 'Expert' }, 
-        { name: 'NODE.JS', level: 'Intermediate' }, 
-        { name: 'FIGMA', level: 'Advanced' }, 
-        { name: 'PYTHON', level: 'Beginner' }
-    ]);
-    const [locations, setLocations] = useState(['Algiers', 'Oran']);
-    const [domains, setDomains] = useState(['Engineering', 'UI/UX Design', 'Backend Dev']);
+    const [skills, setSkills] = useState([]);
+    const [locations, setLocations] = useState([]);
+    const [domains, setDomains] = useState([]);
     const [offerType, setOfferType] = useState('Stage');
     const [duration, setDuration] = useState('6M');
     const [isSaving, setIsSaving] = useState(false);
     const [showWilayaDropdown, setShowWilayaDropdown] = useState(false);
     const [showDomainDropdown, setShowDomainDropdown] = useState(false);
-    
-    // File upload & share states
     const fileInputRef = useRef(null);
     const [profileImage, setProfileImage] = useState(null);
     const [isCopied, setIsCopied] = useState(false);
     const contentRef = useRef(null);
+
+    useEffect(() => {
+        const loadProfile = async () => {
+            try {
+                const data = await studentService.getProfile();
+                if (data) {
+                    setLocations(data.wilaya ? [data.wilaya] : ['Algiers']);
+                    const backendSkills = data.skills || [];
+                    if (backendSkills.length > 0) {
+                        setSkills(backendSkills.map(s => ({
+                            name: s.skill?.name || s.name || 'Skill',
+                            level: s.is_verified ? 'Expert' : 'Intermediate'
+                        })));
+                    } else {
+                        setSkills([
+                            { name: 'REACT.JS', level: 'Expert' },
+                            { name: 'NODE.JS', level: 'Intermediate' },
+                            { name: 'FIGMA', level: 'Advanced' },
+                            { name: 'PYTHON', level: 'Beginner' }
+                        ]);
+                    }
+                    setDomains(data.domain ? [data.domain] : ['Engineering', 'UI/UX Design', 'Backend Dev']);
+                    if (data.profile_picture) {
+                        setProfileImage(`http://localhost:8000${data.profile_picture}`);
+                    }
+                    setGithubProfile({ added: !!data.github_url, url: data.github_url || '' });
+                    setLinkedinProfile({ added: !!data.linkedin_url, url: data.linkedin_url || '' });
+                    setPortfolio({ added: !!data.portfolio_url, url: data.portfolio_url || '' });
+                }
+            } catch (err) {
+                console.error("Failed to load profile:", err);
+                setSkills([{ name: 'REACT.JS', level: 'Expert' }, { name: 'NODE.JS', level: 'Intermediate' }]);
+                setLocations(['Algiers']);
+                setDomains(['Engineering', 'UI/UX Design', 'Backend Dev']);
+            }
+        };
+        loadProfile();
+    }, []);
 
     const handleShareProfile = () => {
         navigator.clipboard.writeText('https://stage.io/p/amine-benali-1234');
@@ -74,18 +105,19 @@ const CompleteProfile = ({ userData, onSave }) => {
     const handleExportCV = () => {
         const element = contentRef.current;
         const opt = {
-            margin:       [10, 10, 10, 10],
-            filename:     `CV-${userData?.first_name || 'Amine'}-${userData?.last_name || 'Benali'}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0d0d12' },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            margin: [10, 10, 10, 10],
+            filename: `CV-${userData?.first_name || 'Amine'}-${userData?.last_name || 'Benali'}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0d0d12' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         html2pdf().set(opt).from(element).save();
     };
 
     // Interactive Demo States
-    const [githubProfile, setGithubProfile] = useState({ added: false, url: '' });
-    const [portfolio, setPortfolio] = useState({ added: false, url: '' });
+    const [githubProfile, setGithubProfile] = useState({ added: !!userData?.profile?.github_url, url: userData?.profile?.github_url || '' });
+    const [linkedinProfile, setLinkedinProfile] = useState({ added: !!userData?.profile?.linkedin_url, url: userData?.profile?.linkedin_url || '' });
+    const [portfolio, setPortfolio] = useState({ added: !!userData?.profile?.portfolio_url, url: userData?.profile?.portfolio_url || '' });
 
     const handleAddDomain = (domain) => {
         if (!domains.includes(domain)) {
@@ -121,11 +153,11 @@ const CompleteProfile = ({ userData, onSave }) => {
     };
 
     const interactiveVariants = {
-        hover: { 
+        hover: {
             scale: 1.05,
             transition: { duration: 0.25 }
         },
-        tap: { 
+        tap: {
             scale: 1.08,
             transition: { duration: 0.1 }
         }
@@ -133,8 +165,8 @@ const CompleteProfile = ({ userData, onSave }) => {
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
-        visible: { 
-            opacity: 1, 
+        visible: {
+            opacity: 1,
             y: 0,
             transition: { duration: 0.5, staggerChildren: 0.1 }
         }
@@ -146,7 +178,7 @@ const CompleteProfile = ({ userData, onSave }) => {
     };
 
     return (
-        <motion.div 
+        <motion.div
             className="complete-profile-page"
             variants={containerVariants}
             initial="hidden"
@@ -179,10 +211,10 @@ const CompleteProfile = ({ userData, onSave }) => {
                         </div>
                     </div>
                 </div>
-                
+
                 <div className="printable-actions page-header-actions no-print">
                     <button className="action-btn share-btn" onClick={handleShareProfile}>
-                        {isCopied ? <CheckCircle2 size={18} /> : <Share2 size={18} />} 
+                        {isCopied ? <CheckCircle2 size={18} /> : <Share2 size={18} />}
                         {isCopied ? 'Link Copied!' : 'Share Portfolio'}
                     </button>
                     <button className="action-btn export-btn" onClick={handleExportCV}>
@@ -202,20 +234,20 @@ const CompleteProfile = ({ userData, onSave }) => {
                         <div className="personal-info-grid">
                             <div className="avatar-side">
                                 <div className="avatar-edit-container">
-                                    <img 
-                                        src={profileImage || userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} 
-                                        alt="Profile" 
-                                        className="large-avatar" 
+                                    <img
+                                        src={profileImage || userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`}
+                                        alt="Profile"
+                                        className="large-avatar"
                                     />
                                     <button className="edit-badge" onClick={() => fileInputRef.current?.click()}>
                                         <Camera size={14} />
                                     </button>
-                                    <input 
-                                        type="file" 
-                                        ref={fileInputRef} 
-                                        onChange={handleFileChange} 
-                                        accept="image/*" 
-                                        style={{ display: 'none' }} 
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileChange}
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
                                     />
                                 </div>
                             </div>
@@ -283,7 +315,7 @@ const CompleteProfile = ({ userData, onSave }) => {
                             <Briefcase size={20} className="icon-purple" />
                             <h2>Offer Preferences</h2>
                         </div>
-                        
+
                         <div className="pref-group" style={{ position: 'relative' }}>
                             <label>INTEREST DOMAINS</label>
                             <div className="tags-container">
@@ -292,7 +324,7 @@ const CompleteProfile = ({ userData, onSave }) => {
                                         {d} <X size={12} onClick={() => setDomains(domains.filter(dom => dom !== d))} style={{ cursor: 'pointer' }} />
                                     </span>
                                 ))}
-                                <motion.span 
+                                <motion.span
                                     className="tag-pill add interactive"
                                     whileHover="hover"
                                     whileTap="tap"
@@ -305,11 +337,11 @@ const CompleteProfile = ({ userData, onSave }) => {
                                     >+</motion.span> Add
                                 </motion.span>
                             </div>
-                            
+
                             {/* Domain Dropdown */}
                             <AnimatePresence>
                                 {showDomainDropdown && (
-                                    <motion.div 
+                                    <motion.div
                                         className="custom-dropdown-menu"
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
@@ -317,8 +349,8 @@ const CompleteProfile = ({ userData, onSave }) => {
                                     >
                                         <div className="custom-dropdown-content">
                                             {ALL_DOMAINS.filter(d => !domains.includes(d)).map((domain, idx) => (
-                                                <div 
-                                                    key={idx} 
+                                                <div
+                                                    key={idx}
                                                     className="custom-dropdown-item"
                                                     onClick={() => handleAddDomain(domain)}
                                                 >
@@ -360,7 +392,7 @@ const CompleteProfile = ({ userData, onSave }) => {
                                         {l} <X size={12} onClick={() => setLocations(locations.filter(loc => loc !== l))} style={{ cursor: 'pointer' }} />
                                     </span>
                                 ))}
-                                <motion.span 
+                                <motion.span
                                     className="tag-chip add-dashed interactive"
                                     whileHover="hover"
                                     whileTap="tap"
@@ -373,11 +405,11 @@ const CompleteProfile = ({ userData, onSave }) => {
                                     >+</motion.span> Add Wilaya
                                 </motion.span>
                             </div>
-                            
+
                             {/* Wilaya Dropdown */}
                             <AnimatePresence>
                                 {showWilayaDropdown && (
-                                    <motion.div 
+                                    <motion.div
                                         className="custom-dropdown-menu"
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
@@ -385,8 +417,8 @@ const CompleteProfile = ({ userData, onSave }) => {
                                     >
                                         <div className="custom-dropdown-content">
                                             {ALL_WILAYAS.filter(w => !locations.includes(w)).map((wilaya, idx) => (
-                                                <div 
-                                                    key={idx} 
+                                                <div
+                                                    key={idx}
                                                     className="custom-dropdown-item"
                                                     onClick={() => handleAddWilaya(wilaya)}
                                                 >
@@ -414,7 +446,7 @@ const CompleteProfile = ({ userData, onSave }) => {
                                             {s.level === 'Beginner' && <><Star size={10} fill="currentColor" /><Star size={10} opacity={0.3} /><Star size={10} opacity={0.3} /></>}
                                             {s.level === 'Intermediate' && <><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" /><Star size={10} opacity={0.3} /></>}
                                             {s.level === 'Advanced' && <><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" /></>}
-                                            {s.level === 'Expert' && <><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" color="#fbbf24"/></>}
+                                            {s.level === 'Expert' && <><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" /><Star size={10} fill="currentColor" color="#fbbf24" /></>}
                                         </div>
                                     </div>
                                 ))}
@@ -440,7 +472,7 @@ const CompleteProfile = ({ userData, onSave }) => {
                                 </div>
                                 <button className="link-action"><RefreshCw size={14} /></button>
                             </div>
-                            <motion.div 
+                            <motion.div
                                 className={`link-item ${!githubProfile.added ? 'interactive' : ''}`}
                                 whileHover={!githubProfile.added ? "hover" : ""}
                                 whileTap={!githubProfile.added ? "tap" : ""}
@@ -458,15 +490,25 @@ const CompleteProfile = ({ userData, onSave }) => {
                                     {githubProfile.added ? <Eye size={14} /> : <Plus size={14} />}
                                 </button>
                             </motion.div>
-                            <div className="link-item">
+                            <motion.div
+                                className={`link-item ${!linkedinProfile.added ? 'interactive' : ''}`}
+                                whileHover={!linkedinProfile.added ? "hover" : ""}
+                                whileTap={!linkedinProfile.added ? "tap" : ""}
+                                variants={interactiveVariants}
+                                onClick={!linkedinProfile.added ? () => setLinkedinProfile({ added: true, url: 'linkedin.com/in/amine' }) : undefined}
+                            >
                                 <div className="link-icon linkedin"><Linkedin size={18} /></div>
                                 <div className="link-text">
                                     <h4>LinkedIn</h4>
-                                    <span className="status connected">CONNECTED</span>
+                                    <span className={`status ${linkedinProfile.added ? 'connected' : 'empty'}`}>
+                                        {linkedinProfile.added ? linkedinProfile.url : 'NOT ADDED YET'}
+                                    </span>
                                 </div>
-                                <button className="link-action"><Eye size={14} /></button>
-                            </div>
-                            <motion.div 
+                                <button className={`link-action ${linkedinProfile.added ? '' : 'add'}`}>
+                                    {linkedinProfile.added ? <Eye size={14} /> : <Plus size={14} />}
+                                </button>
+                            </motion.div>
+                            <motion.div
                                 className={`link-item ${!portfolio.added ? 'interactive' : ''}`}
                                 whileHover={!portfolio.added ? "hover" : ""}
                                 whileTap={!portfolio.added ? "tap" : ""}
@@ -494,25 +536,43 @@ const CompleteProfile = ({ userData, onSave }) => {
                             <span className="badge-rising"><Award size={12} /> RISING STAR</span>
                         </div>
                         <ul className="checklist">
-                            <li className="done"><CheckCircle2 size={16} /> Profile photo updated</li>
-                            <li className="pending"><div className="circle"></div> Add GitHub link (+5% strength)</li>
-                            <li className="pending"><div className="circle"></div> Select domains of interest (+10%)</li>
+                            <li className={profileImage ? "done" : "pending"}>
+                                {profileImage ? <CheckCircle2 size={16} /> : <div className="circle"></div>}
+                                Profile photo updated
+                            </li>
+                            <li className={githubProfile.added ? "done" : "pending"}>
+                                {githubProfile.added ? <CheckCircle2 size={16} /> : <div className="circle"></div>}
+                                Add GitHub link (+5% strength)
+                            </li>
+                            <li className={domains.length > 0 ? "done" : "pending"}>
+                                {domains.length > 0 ? <CheckCircle2 size={16} /> : <div className="circle"></div>}
+                                Select domains of interest (+10%)
+                            </li>
                         </ul>
-                        <button 
-                            className="btn-save-go" 
+                        <button
+                            className="btn-save-go"
                             disabled={isSaving}
                             onClick={async () => {
                                 setIsSaving(true);
                                 try {
                                     const payload = {
-                                        // Map current local states to backend fields
-                                        wilaya: locations[0], 
-                                        academic_year: "Master 2",
-                                        speciality: userData?.profile?.speciality,
+                                        first_name: userData?.first_name || '',
+                                        last_name: userData?.last_name || '',
+                                        phone: userData?.phone || '',
+                                        wilaya: locations[0] || userData?.profile?.wilaya || '',
+                                        academic_year: userData?.profile?.academic_year || 'Master 2',
+                                        speciality: userData?.profile?.speciality || '',
+                                        university: userData?.profile?.university || '',
+                                        domain: domains[0] || userData?.profile?.domain || '',
+                                        github_url: githubProfile?.url || userData?.profile?.github_url || '',
+                                        portfolio_url: portfolio?.url || userData?.profile?.portfolio_url || '',
+                                        linkedin_url: linkedinProfile?.url || userData?.profile?.linkedin_url || '',
+                                        offer_type: offerType,
+                                        duration: duration,
                                         skill_names: skills.map(s => s.name)
                                     };
-                                    await dashboardService.updateProfile(payload);
-                                    if(onSave) onSave();
+                                    await studentService.updateProfile(payload);
+                                    if (onSave) onSave();
                                 } catch (error) {
                                     console.error("Failed to complete profile:", error);
                                 } finally {

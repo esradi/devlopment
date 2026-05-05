@@ -56,3 +56,45 @@ class AdminExporter:
         wb.save(buffer)
         buffer.seek(0)
         return buffer
+
+    @staticmethod
+    def export_applications_to_excel(queryset):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Applications Monitoring"
+
+        # Headers
+        headers = [
+            "ID", "Candidate Name", "Candidate Email", "Offer Title", 
+            "Company", "Status", "Applied Date", "Last Updated"
+        ]
+        
+        # Style Headers
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="9E59FF", end_color="9E59FF", fill_type="solid")
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+
+        # Data
+        for row, app in enumerate(queryset, 2):
+            ws.cell(row=row, column=1, value=app.id)
+            ws.cell(row=row, column=2, value=app.student.user.get_full_name())
+            ws.cell(row=row, column=3, value=app.student.user.email)
+            ws.cell(row=row, column=4, value=app.offer.title)
+            ws.cell(row=row, column=5, value=app.company.company_name)
+            ws.cell(row=row, column=6, value=app.status.upper())
+            ws.cell(row=row, column=7, value=app.created_at.strftime("%Y-%m-%d %H:%M"))
+            ws.cell(row=row, column=8, value=app.updated_at.strftime("%Y-%m-%d %H:%M"))
+
+        # Column width
+        for col in range(1, len(headers) + 1):
+            ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 25
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return buffer

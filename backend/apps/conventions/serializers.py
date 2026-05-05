@@ -13,6 +13,7 @@ class ConventionSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'student', 'student_details', 'offer', 'offer_details', 
             'company', 'company_details', 'status', 'start_date', 'end_date', 
+            'student_signed', 'company_signed', 'admin_signed',
             'pdf_file', 'created_at', 'updated_at'
         ]
         read_only_fields = ['status', 'company', 'pdf_file', 'created_at', 'updated_at']

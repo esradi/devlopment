@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import {
-    ChevronRight, MapPin, Search, MessageSquare,
-    Settings, LayoutDashboard, Briefcase, Send,
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    ChevronRight, MapPin, Search, MessageSquare, 
+    Settings, LayoutDashboard, Briefcase, Send, 
     Calendar, CheckCircle2, ChevronDown, Download,
     Github, Code, Link as LinkIcon, RefreshCcw, FileText, Clock,
-    Folder, User, LogOut, Check, X
+    Folder, User, LogOut, Check, X, PenTool, Fingerprint
 } from 'lucide-react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { companyService, offerService } from '../../services/api';
+import CompanySidebar from '../../components/CompanySidebar';
+import { companyService, offerService, conventionService } from '../../services/api';
 import './CompanyApplicationDetail.css';
 
 const MatchScoreRing = ({ score }) => {
@@ -45,21 +46,114 @@ const CompanyApplicationDetail = () => {
     const [status, setStatus] = useState('');
     const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
+    // Toast State
+    const [toastMessage, setToastMessage] = useState(null);
+    const showToast = (message) => {
+        setToastMessage(message);
+        setTimeout(() => setToastMessage(null), 3000);
+    };
+
+    // Signature State
+    const [showSignatureModal, setShowSignatureModal] = useState(false);
+    const [signingMethod, setSigningMethod] = useState(null); // 'fingerprint' or 'manual'
+    const [isSigning, setIsSigning] = useState(false);
+    const canvasRef = useRef(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+
+    const startDrawing = (e) => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        setIsDrawing(true);
+    };
+
+    const draw = (e) => {
+        if (!isDrawing) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+        
+        ctx.lineTo(x, y);
+        ctx.stroke();
+    };
+
+    const stopDrawing = () => {
+        setIsDrawing(false);
+    };
+
+    const clearCanvas = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+    };
+
+    useEffect(() => {
+        if (showSignatureModal && signingMethod === 'manual' && canvasRef.current) {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+        }
+    }, [showSignatureModal, signingMethod]);
+
+    const handleFingerprintSign = async () => {
+        try {
+            setIsSigning(true);
+            showToast("Please use Manual Signature if Fingerprint hardware is not detected.");
+            setSigningMethod('manual');
+        } catch (err) {
+            console.error("Fingerprint failed:", err);
+            setSigningMethod('manual');
+        } finally {
+            setIsSigning(false);
+        }
+    };
+
+    const handleSubmitManualSignature = async () => {
+        if (!canvasRef.current) return;
+        const signatureImage = canvasRef.current.toDataURL('image/png');
+        
+        try {
+            setIsSigning(true);
+            await conventionService.signCompany(application.convention_id, {
+                manual: true,
+                signature_image: signatureImage
+            });
+            setShowSignatureModal(false);
+            // Refresh data
+            const appData = await companyService.getApplicationDetails(applicationId);
+            setApplication(appData);
+            showToast("Convention signed successfully! ✅");
+        } catch (err) {
+            console.error("Signature submission failed:", err);
+            showToast("Failed to submit signature. Please try again. ❌");
+        } finally {
+            setIsSigning(false);
+        }
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const appData = await companyService.getApplicationDetails(applicationId); // line 65
+                const appData = await companyService.getApplicationDetails(applicationId);
                 setApplication(appData);
                 setStatus(appData.status);
                 setOffer({
                     title: appData.offer_title,
                     id: appData.offer
                 });
-                // if (offerId || appData.offer) {
-                //     const offerData = await offerService.getDetails(offerId || appData.offer);
-                //     setOffer(offerData);
-                // }
             } catch (err) {
                 console.error("Failed to fetch application details:", err);
             } finally {
@@ -125,8 +219,25 @@ const CompanyApplicationDetail = () => {
                             </div>
                         </div>
                         <div className="ap-header-actions">
-                            <button className="ap-btn-gradient"><RefreshCcw size={16} /> Update Status</button>
-                            <button className="ap-btn-outline" onClick={() => navigate('/dashboard/company/interviews')}><Calendar size={16} /> Schedule Interview</button>
+                            {application.status === 'accepted' && application.convention_status === 'pending_company_signature' && (
+                                <button 
+                                    className="ap-btn-gradient" 
+                                    style={{ background: 'linear-gradient(135deg, #9e59ff 0%, #ff1b90 100%)' }}
+                                    onClick={() => {
+                                        setSigningMethod(null);
+                                        setShowSignatureModal(true);
+                                    }}
+                                >
+                                    <PenTool size={16}/> Sign Convention
+                                </button>
+                            )}
+                            {application.status === 'accepted' && application.convention_id && application.convention_status !== 'pending_company_signature' && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontWeight: '600', marginRight: '15px' }}>
+                                    <Check size={18} /> Convention Signed
+                                </div>
+                            )}
+                            <button className="ap-btn-gradient" onClick={() => setShowStatusDropdown(!showStatusDropdown)}><RefreshCcw size={16}/> Update Status</button>
+                            <button className="ap-btn-outline" onClick={() => navigate('/dashboard/company/interviews')}><Calendar size={16}/> Schedule Interview</button>
                         </div>
                     </div>
 
@@ -368,6 +479,178 @@ const CompanyApplicationDetail = () => {
 
                 </div>
             </main>
+            <AnimatePresence>
+                {showSignatureModal && (
+                    <motion.div 
+                        className="modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            zIndex: 10000, padding: '20px'
+                        }}
+                    >
+                        <motion.div 
+                            className="signature-modal-card"
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            style={{
+                                background: '#0D1117', border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '24px', width: '100%', maxWidth: '500px',
+                                padding: '32px', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                            }}
+                        >
+                            <button 
+                                onClick={() => setShowSignatureModal(false)}
+                                style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#8892b0', cursor: 'pointer' }}
+                            >
+                                <X size={24} />
+                            </button>
+
+                            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                                <div style={{ 
+                                    width: '64px', height: '64px', borderRadius: '20px', 
+                                    background: 'rgba(158, 89, 255, 0.1)', display: 'flex', 
+                                    alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+                                }}>
+                                    <PenTool size={32} color="#9e59ff" />
+                                </div>
+                                <h2 style={{ color: '#fff', fontSize: '1.5rem', marginBottom: '8px' }}>Sign Convention</h2>
+                                <p style={{ color: '#8892b0' }}>Choose your preferred method to sign the document</p>
+                            </div>
+
+                            {!signingMethod ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <button 
+                                        className="ap-btn-dark"
+                                        style={{ 
+                                            display: 'flex', alignItems: 'center', gap: '16px', 
+                                            padding: '20px', borderRadius: '16px', textAlign: 'left',
+                                            border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)',
+                                            width: '100%', cursor: 'pointer'
+                                        }}
+                                        onClick={() => setSigningMethod('fingerprint')}
+                                    >
+                                        <div style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px' }}>
+                                            <Fingerprint size={24} color="#10b981" />
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#fff', fontWeight: '600' }}>Biometric Authentication</div>
+                                            <div style={{ color: '#8892b0', fontSize: '0.85rem' }}>Use your device fingerprint sensor</div>
+                                        </div>
+                                    </button>
+
+                                    <button 
+                                        className="ap-btn-dark"
+                                        style={{ 
+                                            display: 'flex', alignItems: 'center', gap: '16px', 
+                                            padding: '20px', borderRadius: '16px', textAlign: 'left',
+                                            border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)',
+                                            width: '100%', cursor: 'pointer'
+                                        }}
+                                        onClick={() => setSigningMethod('manual')}
+                                    >
+                                        <div style={{ padding: '10px', background: 'rgba(158, 89, 255, 0.1)', borderRadius: '12px' }}>
+                                            <PenTool size={24} color="#9e59ff" />
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#fff', fontWeight: '600' }}>Manual Signature</div>
+                                            <div style={{ color: '#8892b0', fontSize: '0.85rem' }}>Draw your signature on screen</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            ) : signingMethod === 'fingerprint' ? (
+                                <div style={{ textAlign: 'center', padding: '20px' }}>
+                                    <motion.div
+                                        animate={{ scale: [1, 1.1, 1] }}
+                                        transition={{ repeat: Infinity, duration: 2 }}
+                                        style={{ marginBottom: '24px' }}
+                                    >
+                                        <Fingerprint size={64} color="#9e59ff" />
+                                    </motion.div>
+                                    <p style={{ color: '#fff', marginBottom: '24px' }}>Please touch your fingerprint sensor...</p>
+                                    <button className="ap-btn-gradient" onClick={handleFingerprintSign} disabled={isSigning} style={{ width: '100%' }}>
+                                        {isSigning ? 'Authenticating...' : 'Try Again'}
+                                    </button>
+                                    <button 
+                                        className="btn-text" 
+                                        style={{ display: 'block', margin: '16px auto', color: '#8892b0', background: 'none', border: 'none', cursor: 'pointer' }}
+                                        onClick={() => setSigningMethod('manual')}
+                                    >
+                                        Switch to Manual Signature
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="manual-signature-container">
+                                    <div style={{ position: 'relative', background: '#050505', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                                        <canvas 
+                                            ref={canvasRef}
+                                            width={440}
+                                            height={200}
+                                            onMouseDown={startDrawing}
+                                            onMouseMove={draw}
+                                            onMouseUp={stopDrawing}
+                                            onMouseLeave={stopDrawing}
+                                            onTouchStart={startDrawing}
+                                            onTouchMove={draw}
+                                            onTouchEnd={stopDrawing}
+                                            style={{ cursor: 'crosshair', display: 'block', width: '100%' }}
+                                        />
+                                        <div style={{ position: 'absolute', bottom: '10px', right: '10px', pointerEvents: 'none', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>
+                                            Sign here
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                                        <button className="ap-btn-dark" style={{ flex: 1 }} onClick={clearCanvas}>Clear</button>
+                                        <button className="ap-btn-gradient" style={{ flex: 2 }} onClick={handleSubmitManualSignature} disabled={isSigning}>
+                                            {isSigning ? 'Signing...' : 'Confirm Signature'}
+                                        </button>
+                                    </div>
+                                    <button 
+                                        className="btn-text" 
+                                        style={{ display: 'block', margin: '16px auto', color: '#8892b0', background: 'none', border: 'none', cursor: 'pointer' }}
+                                        onClick={() => setSigningMethod(null)}
+                                    >
+                                        Back to methods
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {toastMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                        style={{
+                            position: 'fixed', bottom: '32px', right: '32px',
+                            background: 'rgba(13, 17, 23, 0.9)', backdropFilter: 'blur(10px)',
+                            color: '#fff', padding: '16px 24px', borderRadius: '16px',
+                            border: '1px solid rgba(158, 89, 255, 0.3)',
+                            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                            fontWeight: '600', zIndex: 11000,
+                            display: 'flex', alignItems: 'center', gap: '12px'
+                        }}
+                    >
+                        <div style={{ 
+                            width: '24px', height: '24px', borderRadius: '50%', 
+                            background: toastMessage.includes('❌') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                            {toastMessage.includes('❌') ? <X size={14} color="#ef4444" /> : <Check size={14} color="#10b981" />}
+                        </div>
+                        {toastMessage}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

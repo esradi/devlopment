@@ -39,50 +39,52 @@ const handleApiError = async (response) => {
 };
 
 export const api = {
-    // async get(endpoint, includeAuth = true) {
-    //     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    //         headers: getHeaders(false, includeAuth)
-    //     });
-    //     if (!response.ok) {
-    //         if (response.status === 401) {
-    //             console.warn('Unauthorized access - redirecting to login');
-    //         }
-    //         await handleApiError(response);
-    //     }
-    //     return response.json();
-    // },
-    async get(endpoint, paramsOrAuth = true) {
-        let includeAuth = true;
-        let url = `${API_BASE_URL}${endpoint}`;
+    async get(endpoint, options = true) {
+        const includeAuth = typeof options === 'boolean' ? options : (options.includeAuth !== false);
+        const responseType = typeof options === 'object' ? options.responseType : 'json';
+        const params = typeof options === 'object' ? options.params : null;
 
-        if (typeof paramsOrAuth === 'object') {
-            const flatParams = paramsOrAuth.params || paramsOrAuth;
-            const queryString = new URLSearchParams(paramsOrAuth).toString();
-            if (queryString) url += `?${queryString}`;
-        } else {
-            includeAuth = paramsOrAuth;
+        let url = `${API_BASE_URL}${endpoint}`;
+        if (params) {
+            const searchParams = new URLSearchParams();
+            Object.entries(params).forEach(([key, val]) => {
+                if (val !== undefined && val !== null) searchParams.append(key, val);
+            });
+            const queryString = searchParams.toString();
+            if (queryString) {
+                url += (url.includes('?') ? '&' : '?') + queryString;
+            }
         }
 
         const response = await fetch(url, {
             headers: getHeaders(false, includeAuth)
         });
+
         if (!response.ok) {
             if (response.status === 401) console.warn('Unauthorized access');
             await handleApiError(response);
         }
+
+        if (responseType === 'blob') return response.blob();
         return response.json();
     },
 
-    async post(endpoint, data, includeAuth = true) {
+    async post(endpoint, data, options = true) {
+        const includeAuth = typeof options === 'boolean' ? options : (options.includeAuth !== false);
+        const responseType = typeof options === 'object' ? options.responseType : 'json';
+
         const isFormData = data instanceof FormData;
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: getHeaders(isFormData, includeAuth),
             body: isFormData ? data : JSON.stringify(data)
         });
+
         if (!response.ok) {
             await handleApiError(response);
         }
+
+        if (responseType === 'blob') return response.blob();
         return response.json();
     },
 
@@ -128,6 +130,10 @@ export const authService = {
     verifyEmail: (data) => api.post('/verify-email/', data, false),
     getMe: () => api.get('/auth/me/'),
     updateMe: (data) => api.patch('/auth/me/', data),
+
+    // Webauthn methods
+    getWebauthnRegistrationOptions: () => api.post('/webauthn/register/options/', {}),
+    verifyWebauthnRegistration: (data) => api.post('/webauthn/register/verify/', data),
 };
 
 export const studentService = {
@@ -195,11 +201,19 @@ export const referenceService = {
 export const conventionService = {
     getConventions: () => api.get('/conventions/'),
     getDetails: (id) => api.get(`/conventions/${id}/`),
-    signCompany: (id, webauthnResponse) => api.post(`/conventions/${id}/sign-company/`, {
-        confirmed: true,
-        webauthn_response: webauthnResponse
-    }),
-    download: (id) => `${API_BASE_URL}/conventions/${id}/download/`,
+    signStudent: (id, payload) => api.post(`/conventions/${id}/sign-student/`,
+        payload.manual ? payload : { confirmed: true, webauthn_response: payload }
+    ),
+    signCompany: (id, payload) => api.post(`/conventions/${id}/sign-company/`,
+        payload.manual ? payload : { confirmed: true, webauthn_response: payload }
+    ),
+    validateAdmin: (id, payload) => api.post(`/conventions/${id}/validate_admin/`,
+        payload.manual ? payload : { webauthn_response: payload }
+    ),
+    download: (id, vCode) => vCode
+        ? `${API_BASE_URL}/conventions/${id}/download/?v=${vCode}`
+        : `${API_BASE_URL}/conventions/${id}/download/`,
+    notifyReminder: (id, target) => api.post(`/conventions/${id}/notify-reminder/`, { target }),
 };
 
 export const offerService = {
@@ -217,8 +231,8 @@ export const applicationService = {
 export const quizService = {
     getQuiz: (id) => api.get(`/quizzes/${id}/`),
     submitQuiz: (id, answers) => api.post(`/quizzes/${id}/submit/`, { answers }),
-    getAvailableQuizzes: () => api.get('/student/quizzes/available/'),
-    getQuizDetails: (id) => api.get(`/student/quizzes/${id}/`),
+    getAvailableQuizzes: () => api.get('/challenges/skillchallenge/'),
+    getQuizDetails: (id) => api.get(`/challenges/skillchallenge/${id}/`),
 };
 
 export const messageService = {
@@ -246,23 +260,30 @@ export const notificationService = {
 
 export const adminService = {
     getDashboard: () => api.get('/admin/dashboard/'),
-    getUsers: (role) => api.get(role ? `/admin/users/?role=${role}` : '/admin/users/'),
+    getUsers: (params) => api.get('/admin/users/', { params }),
     getUserActivity: (id) => api.get(`/admin/users/${id}/activity/`),
     verifyUser: (id) => api.post(`/admin/users/${id}/verify/`),
     updateUserStatus: (id, data) => api.post(`/admin/users/${id}/status/`, data),
 
-    getCompanies: () => api.get('/admin/companies/'),
+    getCompanies: (params) => api.get('/admin/companies/', { params }),
     verifyCompany: (id) => api.post(`/admin/companies/${id}/verify/`),
     rejectCompany: (id, reason) => api.post(`/admin/companies/${id}/reject/`, { reason }),
 
-    getValidations: (status) => api.get(status ? `/admin/internships/?status=${status}` : '/admin/internships/'),
-    getValidationDetails: (id) => api.get(`/admin/validations/${id}/`),
-    approveValidation: (id, data) => api.post(`/admin/internships/${id}/validate/`, { ...data, status: 'approved' }),
-    rejectValidation: (id, data) => api.post(`/admin/internships/${id}/validate/`, { ...data, status: 'rejected' }),
+    getValidations: (params) => api.get('/admin/applications/', { params }),
+    getValidationDetails: (id) => api.get(`/admin/applications/${id}/`),
+    getConventionStats: () => api.get('/admin/applications/stats/'),
+    exportApplications: (params) => api.get('/admin/applications/export/', { params, responseType: 'blob' }),
+    autoSignAllConventions: () => api.post('/admin/applications/auto_sign_all/'),
+    signAllForApplication: (id) => api.post(`/admin/applications/${id}/sign_all_for_application/`),
+    initConvention: (id) => api.post(`/admin/applications/${id}/init_convention/`),
+    acceptApplication: (id) => api.post(`/admin/applications/${id}/accept_application/`),
+    rejectApplication: (id, reason) => api.post(`/admin/applications/${id}/reject_application/`, { reason }),
+    bulkDelete: (ids) => api.post('/admin/applications/bulk_delete/', { ids }),
+    bulkAccept: (ids) => api.post('/admin/applications/bulk_accept/', { ids }),
+    bulkSign: (ids) => api.post('/admin/applications/bulk_sign/', { ids }),
     activateUser: (id) => api.post(`/admin/users/${id}/activate/`),
 
-    getPortfolios: (status) => api.get(status ? `/admin/portfolios/?status=${status}` : '/admin/portfolios/'),
-    reviewPortfolio: (id, data) => api.post(`/admin/portfolios/${id}/review/`, data),
+    getAdminChallenges: (params) => api.get('/admin/challenges/', { params }),
 
     getAnalytics: () => api.get('/admin/analytics/'),
     getAlerts: () => api.get('/admin/alerts/'),
@@ -291,5 +312,13 @@ export const adminService = {
     search: (query) => api.get(`/admin/search/?q=${query}`),
 };
 
-// Alias for backwards compatibility if needed
 export const dashboardService = studentService;
+
+export const groupService = {
+    getAll: () => api.get('/groups/groups/'),
+    create: (data) => api.post('/groups/groups/', data),
+    join: (id) => api.post(`/groups/groups/${id}/join/`),
+    leave: (id) => api.post(`/groups/groups/${id}/leave/`),
+    getMessages: (id) => api.get(`/groups/groups/${id}/messages/`),
+    sendMessage: (id, data) => api.post(`/groups/groups/${id}/messages/`, data),
+};

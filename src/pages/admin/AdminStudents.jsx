@@ -23,6 +23,7 @@ const AdminStudents = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [activating, setActivating] = useState(null);
     const [exporting, setExporting] = useState(false);
@@ -117,7 +118,8 @@ const AdminStudents = () => {
     const filteredStudents = students.filter(student => {
         const matchesSearch = (student.first_name + ' ' + student.last_name).toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'All' || (statusFilter === 'Active' && student.is_active) || (statusFilter === 'Inactive' && !student.is_active);
-        return matchesSearch && matchesStatus;
+        const matchesDate = !dateFilter || (student.created_at && new Date(student.created_at).toISOString().split('T')[0] === dateFilter);
+        return matchesSearch && matchesStatus && matchesDate;
     });
 
     if (loading) {
@@ -183,14 +185,37 @@ const AdminStudents = () => {
                     />
                 </div>
 
+                <div className="search-box" style={{ width: 'auto' }}>
+                    <input 
+                        type="date" 
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        title="Filter by join date"
+                        style={{ background: 'transparent', border: 'none', color: '#fff', outline: 'none' }}
+                    />
+                </div>
+
                 <div className="segmented-control status-filters">
                     {['All', 'Active', 'Inactive'].map(status => (
                         <button 
                             key={status}
                             className={`segment-btn ${statusFilter === status ? 'active' : ''}`}
                             onClick={() => setStatusFilter(status)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                         >
                             {status}
+                            <span style={{
+                                background: statusFilter === status ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)',
+                                borderRadius: '10px',
+                                padding: '0 6px',
+                                fontSize: '10px',
+                                fontWeight: 700
+                            }}>
+                                {status === 'All' ? students.length
+                                : status === 'Active' ? students.filter(s => s.is_active).length
+                                : status === 'Inactive' ? students.filter(s => !s.is_active).length
+                                : 0}
+                            </span>
                         </button>
                     ))}
                 </div>

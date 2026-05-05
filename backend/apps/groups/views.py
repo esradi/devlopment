@@ -28,7 +28,11 @@ class StudyGroupListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsStudent]
 
     def get(self, request):
-        student = request.user.student_profile
+        from apps.accounts.models import Student
+        try:
+            student = Student.objects.get(user=request.user)
+        except Student.DoesNotExist:
+            return Response({'my_groups': [], 'suggested_groups': []})
         
         # My groups
         my_groups = StudyGroup.objects.filter(

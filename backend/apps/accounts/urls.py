@@ -19,6 +19,8 @@ urlpatterns = [
     path('delete-account/', views.delete_account, name='delete_account'),
     path('students/', views.StudentListView.as_view(), name='student_list'),
     path('students/<int:pk>/', views.StudentDetailView.as_view(), name='student_detail'),
-    path('auth/webauthn/signing-options/', views.WebauthnSigningOptionsView.as_view(), name='webauthn_signing_options'),
-    path('auth/webauthn/verify-signing/', views.WebauthnVerifySigningView.as_view(), name='webauthn_verify_signing'),
+    path('webauthn/register/options/', views.WebauthnRegistrationOptionsView.as_view(), name='webauthn_registration_options'),
+    path('webauthn/register/verify/', views.WebauthnVerifyRegistrationView.as_view(), name='webauthn_verify_registration'),
+    path('webauthn/sign/options/', views.WebauthnSigningOptionsView.as_view(), name='webauthn_signing_options'),
+    path('webauthn/sign/verify/', views.WebauthnVerifySigningView.as_view(), name='webauthn_verify_signing'),
 ]

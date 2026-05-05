@@ -1,315 +1,405 @@
-import React from 'react';
-import { 
-    Download, 
-    ArrowUpRight, 
-    CheckCircle2, 
-    Clock, 
-    FileText,
-    FileSpreadsheet,
-    Filter
+import React, { useState, useEffect } from 'react';
+import {
+    Download, ArrowUpRight, CheckCircle2, Clock, FileText,
+    FileSpreadsheet, Users, Building2, Briefcase, ShieldCheck,
+    Loader2, RefreshCw, AlertCircle, TrendingUp, Award
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { adminService } from '../../services/api';
 import './AdminReports.css';
 
-const AdminReports = () => {
+/* ─── tiny reusable pieces ──────────────────────────────────── */
+const SectionLabel = ({ children }) => (
+    <div className="rep-section-label">{children}</div>
+);
 
-    const topCompanies = [
-        { name: 'Sonatrach', sector: 'Energy / Oil & Gas', initial: 'S', color: '#1a1a1a', textCol: '#9ca3af', count: 42 },
-        { name: 'Ooredoo', sector: 'Telecommunications', initial: 'O', color: '#ff1b90', textCol: '#fff', bg: 'rgba(255, 27, 144, 0.1)', border: '#ff1b90', isPink: true },
-        { name: 'Yassir', sector: 'Technology / SaaS', initial: 'Y', color: '#1a1a1a', textCol: '#9ca3af', count: 28 },
-        { name: 'Air Algérie', sector: 'Aviation', initial: 'A', color: '#1a1a1a', textCol: '#9ca3af', count: 19 },
-    ];
+const KpiCard = ({ title, value, sub, icon: Icon, iconColor, iconBg, delay = 0 }) => (
+    <motion.div
+        className="rep-kpi-card"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay }}
+        whileHover={{ y: -3 }}
+    >
+        <div className="rep-kpi-top">
+            <span className="rep-kpi-title">{title}</span>
+            <div className="rep-kpi-icon" style={{ background: iconBg }}>
+                <Icon size={15} color={iconColor} />
+            </div>
+        </div>
+        <div className="rep-kpi-value">{value}</div>
+        <div className="rep-kpi-sub">{sub}</div>
+    </motion.div>
+);
+
+const FunnelBar = ({ label, value, max, color, delay }) => {
+    const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+    return (
+        <div className="rep-funnel-row">
+            <span className="rep-funnel-label">{label}</span>
+            <div className="rep-funnel-track">
+                <motion.div
+                    className="rep-funnel-fill"
+                    style={{ background: color }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.9, delay, ease: 'easeOut' }}
+                />
+            </div>
+            <span className="rep-funnel-num">{value}</span>
+            <span className="rep-funnel-pct">{pct}%</span>
+        </div>
+    );
+};
+
+/* ─── main component ─────────────────────────────────────────── */
+const AdminReports = () => {
+    const [dashboard, setDashboard] = useState(null);
+    const [analytics, setAnalytics] = useState(null);
+    const [convStats, setConvStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [exporting, setExporting] = useState(null); // track which export is running
+
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [dash, ana, conv] = await Promise.all([
+                adminService.getDashboard(),
+                adminService.getAnalytics(),
+                adminService.getConventionStats(),
+            ]);
+            setDashboard(dash);
+            setAnalytics(ana);
+            setConvStats(conv);
+        } catch (err) {
+            console.error('Reports load error:', err);
+            setError('Could not load analytics. Check backend connection.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchData(); }, []);
+
+    const runExport = async (key, fn) => {
+        setExporting(key);
+        try { await fn(); } catch (e) { console.error(e); } finally { setExporting(null); }
+    };
+
+    /* ── derived values ── */
+    const stats            = dashboard?.stats || {};
+    const funnel           = analytics?.funnel || {};
+    const specialities     = analytics?.specialities || [];
+    const skills           = analytics?.skills || [];
+
+    const totalStudents        = stats?.users?.students ?? 0;
+    const totalCompanies       = stats?.users?.companies ?? 0;
+    const totalApplications    = stats?.applications?.total ?? 0;
+    const activeOffers         = stats?.offers?.active ?? 0;
+    const pendingConventions   = convStats?.pending_admin ?? 0;
+    const validatedConventions = convStats?.validated ?? 0;
+    const totalConventions     = convStats?.total ?? 0;
+    const inProgressConventions= convStats?.in_progress ?? 0;
+
+    // Use funnel.accepted (distinct students accepted) — dashboard's applications.accepted
+    // returns students_with_internship (validated conventions), not accepted applications
+    const acceptedApplications = funnel.accepted ?? stats?.applications?.accepted ?? 0;
+    const pendingApplications  = stats?.applications?.pending ?? 0;
+
+    const placementRate   = totalStudents > 0 ? Math.round((acceptedApplications / totalStudents) * 100) : 0;
+    const conventionRate  = totalConventions > 0 ? Math.round((validatedConventions / totalConventions) * 100) : 0;
+    const maxSpec         = specialities.length > 0 ? Math.max(...specialities.map(s => s.applications || 1)) : 1;
+    // Pending actions - correct field paths from dashboard API
+    const pendingCompanyVerif = stats?.validations?.company ?? 0;
+    const pendingStudentIds   = stats?.users?.pending_id_verifications ?? 0;
+    const expiredOffers       = stats?.offers?.expired ?? 0;
+
+    /* ── loading / error states ── */
+    if (loading) return (
+        <div className="rep-center-state">
+            <Loader2 size={38} color="#9e59ff" style={{ animation: 'spin 1s linear infinite' }} />
+            <p>Loading live analytics…</p>
+        </div>
+    );
+
+    if (error) return (
+        <div className="rep-center-state">
+            <AlertCircle size={38} color="#f87171" />
+            <p style={{ color: '#f87171' }}>{error}</p>
+            <button className="rep-retry-btn" onClick={fetchData}>Retry</button>
+        </div>
+    );
 
     return (
         <div className="admin-reports-page">
-            {/* Header Section */}
-            <div className="reports-header-section">
-                <div className="reports-header-text">
-                    <h1>Reports & Analytics</h1>
-                    <p>Analyze internship outcomes and export detailed reports for your university. Monitor performance trends and industry partnerships.</p>
+
+            {/* ══════════════ STICKY HEADER ══════════════ */}
+            <div className="rep-page-header">
+                <div>
+                    <h1>Reports &amp; Analytics</h1>
+                    <p>Live data — all metrics pulled directly from the platform database.</p>
                 </div>
-                <div className="reports-header-dropdowns">
-                    <div className="rep-dropdown-group">
-                        <label>ACADEMIC YEAR</label>
-                        <select className="rep-dark-select"><option>2025/2026</option></select>
-                    </div>
-                    <div className="rep-dropdown-group">
-                        <label>SEMESTER</label>
-                        <select className="rep-dark-select"><option>All Semesters</option></select>
-                    </div>
-                    <div className="rep-dropdown-group">
-                        <label>DEPARTMENT</label>
-                        <select className="rep-dark-select"><option>All Departments</option></select>
-                    </div>
-                </div>
-            </div>
-
-            {/* Top Stat Cards */}
-            <div className="reports-stats-grid">
-                <motion.div className="rep-stat-card" whileHover={{ y: -2 }}>
-                    <span className="rep-stat-title">PLACEMENT RATE</span>
-                    <div className="rep-stat-val-row">
-                        <h2>72%</h2>
-                        <span className="rep-trend positive"><ArrowUpRight size={14}/> +4%</span>
-                    </div>
-                </motion.div>
-                
-                <motion.div className="rep-stat-card" whileHover={{ y: -2 }}>
-                    <span className="rep-stat-title">INTERNSHIPS COMPLETED</span>
-                    <div className="rep-stat-val-row">
-                        <h2>315</h2>
-                        <span className="rep-trend target"><CheckCircle2 size={12}/> Target: 400</span>
-                    </div>
-                </motion.div>
-
-                <motion.div className="rep-stat-card" whileHover={{ y: -2 }}>
-                    <span className="rep-stat-title">ACTIVE PARTNERS</span>
-                    <div className="rep-stat-val-row">
-                        <h2>84</h2>
-                        <span className="rep-trend new-item"><span className="rep-diamond">✦</span> +12 new</span>
-                    </div>
-                </motion.div>
-
-                <motion.div className="rep-stat-card" whileHover={{ y: -2 }}>
-                    <span className="rep-stat-title">AVG DURATION</span>
-                    <div className="rep-stat-val-row">
-                        <h2>4.5m</h2>
-                        <span className="rep-trend optimal"><Clock size={12}/> Optimal</span>
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* Huge Chart Card */}
-            <div className="rep-chart-card">
-                <div className="rep-chart-header">
-                    <div>
-                        <h3>Internship placements over time</h3>
-                        <p>Monthly volume of student internship approvals from Oct to Jun</p>
-                    </div>
-                    <div className="rep-chart-legend">
-                        <span className="legend-item"><span className="legend-dot purple"></span> CURRENT YEAR</span>
-                        <span className="legend-item"><span className="legend-dot gray"></span> PREV. YEAR</span>
-                    </div>
-                </div>
-                
-                {/* SVG Curve Approximation */}
-                <div className="rep-svg-container">
-                    <svg viewBox="0 0 800 250" preserveAspectRatio="none" className="rep-smooth-curve">
-                        <defs>
-                            <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="rgba(158, 89, 255, 0.4)" />
-                                <stop offset="100%" stopColor="rgba(158, 89, 255, 0.0)" />
-                            </linearGradient>
-                            <linearGradient id="purpleLine" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="#9e59ff" />
-                                <stop offset="100%" stopColor="#c4b5fd" />
-                            </linearGradient>
-                        </defs>
-                        {/* Gradient Fill under curve */}
-                        <path 
-                            d="M0,180 C80,180 120,190 180,180 C260,166 280,130 320,140 C360,150 380,240 420,240 C460,240 480,50 520,50 C560,50 580,230 620,230 C660,230 680,40 720,40 C760,40 780,220 800,220 L800,250 L0,250 Z" 
-                            fill="url(#purpleGrad)" 
-                        />
-                        {/* the stroke line itself */}
-                        <path 
-                            d="M0,180 C80,180 120,190 180,180 C260,166 280,130 320,140 C360,150 380,240 420,240 C460,240 480,50 520,50 C560,50 580,230 620,230 C660,230 680,40 720,40 C760,40 780,220 800,220" 
-                            fill="none" 
-                            stroke="url(#purpleLine)" 
-                            strokeWidth="3" 
-                        />
-                    </svg>
-                    
-                    <div className="rep-x-axis">
-                        <span>OCT</span><span>NOV</span><span>DEC</span><span>JAN</span>
-                        <span>FEB</span><span>MAR</span><span>APR</span><span>MAY</span><span>JUN</span>
-                    </div>
+                <div className="rep-header-actions">
+                    <button className="rep-ghost-btn" onClick={fetchData}>
+                        <RefreshCw size={14} /> Refresh
+                    </button>
+                    <button
+                        className="rep-primary-btn"
+                        onClick={() => runExport('students', adminService.exportUsers.bind(null, 'student'))}
+                        disabled={exporting === 'students'}
+                    >
+                        {exporting === 'students'
+                            ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                            : <Download size={14} />}
+                        Export Students
+                    </button>
                 </div>
             </div>
 
-            {/* Split Grid: Programs & Top Companies */}
-            <div className="rep-split-grid">
-                <div className="rep-panel-card">
-                    <h3>Placement by Program</h3>
-                    <div className="rep-program-bars">
-                        <div className="prog-bar-group">
-                            <div className="prog-bar-labels">
-                                <span className="prog-name">SOFTWARE ENGINEERING</span>
-                                <span className="prog-val">124 INTERNS</span>
-                            </div>
-                            <div className="prog-bar-rail"><div className="prog-bar-fill grad-pink" style={{width: '80%'}}></div></div>
-                        </div>
+            {/* ══════════════ ROW 1 — KPI STRIP ══════════════ */}
+            <SectionLabel>Platform Overview</SectionLabel>
+            <div className="rep-kpi-grid">
+                <KpiCard delay={0}    title="PLACEMENT RATE"        value={`${placementRate}%`}      sub={`${acceptedApplications} accepted out of ${totalStudents} students`} icon={Users}       iconColor="#9e59ff" iconBg="rgba(158,89,255,0.12)" />
+                <KpiCard delay={0.05} title="ACTIVE OFFERS"         value={activeOffers}              sub={`${totalApplications} applications received in total`}               icon={Briefcase}   iconColor="#ec4899" iconBg="rgba(236,72,153,0.12)" />
+                <KpiCard delay={0.1}  title="PARTNER COMPANIES"     value={totalCompanies}            sub="Registered companies on the platform"                                icon={Building2}   iconColor="#34d399" iconBg="rgba(52,211,153,0.12)" />
+                <KpiCard delay={0.15} title="CONVENTION COMPLETION" value={`${conventionRate}%`}      sub={`${validatedConventions} validated out of ${totalConventions} total`} icon={ShieldCheck}  iconColor="#a855f7" iconBg="rgba(168,85,247,0.12)" />
+            </div>
 
-                        <div className="prog-bar-group">
-                            <div className="prog-bar-labels">
-                                <span className="prog-name">DATA SCIENCE</span>
-                                <span className="prog-val">82 INTERNS</span>
-                            </div>
-                            <div className="prog-bar-rail"><div className="prog-bar-fill grad-pink-short" style={{width: '60%'}}></div></div>
-                        </div>
+            {/* ══════════════ ROW 2 — MAIN CONTENT + SIDEBAR ══════════════ */}
+            <div className="rep-two-col">
 
-                        <div className="prog-bar-group">
-                            <div className="prog-bar-labels">
-                                <span className="prog-name">CYBERSECURITY</span>
-                                <span className="prog-val">54 INTERNS</span>
-                            </div>
-                            <div className="prog-bar-rail"><div className="prog-bar-fill red" style={{width: '35%'}}></div></div>
-                        </div>
+                {/* ── LEFT COLUMN ── */}
+                <div className="rep-main-col">
 
-                        <div className="prog-bar-group">
-                            <div className="prog-bar-labels">
-                                <span className="prog-name">MECHANICAL ENGINEERING</span>
-                                <span className="prog-val">45 INTERNS</span>
+                    {/* Funnel */}
+                    <SectionLabel>Internship Pipeline</SectionLabel>
+                    <div className="rep-card">
+                        <div className="rep-card-head">
+                            <div>
+                                <h3>Student Journey Funnel</h3>
+                                <p>From registration to a fully signed convention</p>
                             </div>
-                            <div className="prog-bar-rail"><div className="prog-bar-fill purple" style={{width: '30%'}}></div></div>
+                            <span className="rep-live-badge">● LIVE</span>
                         </div>
-                    </div>
-                </div>
-
-                <div className="rep-panel-card">
-                    <h3>Top Hiring Companies</h3>
-                    <div className="rep-hiring-table">
-                        <div className="rep-table-header">
-                            <span>COMPANY</span>
-                            <span>SECTOR</span>
-                            <span>INTERN COUNT</span>
-                        </div>
-                        <div className="rep-table-rows">
-                            {topCompanies.map((comp, i) => (
-                                <div className="rep-table-row" key={i}>
-                                    <div className="rep-comp-name">
-                                        <div 
-                                            className="rep-comp-logo" 
-                                            style={{
-                                                backgroundColor: comp.bg || '#2a2a2a', 
-                                                color: comp.textCol,
-                                                border: comp.border ? `1px solid ${comp.border}` : 'none'
-                                            }}
-                                        >
-                                            {comp.initial}
-                                        </div>
-                                        <span>{comp.name}</span>
-                                    </div>
-                                    <div className="rep-comp-sector">{comp.sector}</div>
-                                    <div className="rep-comp-count">
-                                        <div className={`count-badge ${comp.isPink ? 'pink' : ''}`}>
-                                            {comp.count || 35}
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className="rep-funnel-list">
+                            {[
+                                { label: 'Registered',         value: funnel.registered ?? totalStudents,       color: '#9e59ff' },
+                                { label: 'Applied to Offers',  value: funnel.applied ?? totalApplications,      color: '#c084fc' },
+                                { label: 'Accepted',           value: funnel.accepted ?? acceptedApplications,  color: '#ec4899' },
+                                { label: 'Convention Signed',  value: funnel.signed_convention ?? validatedConventions, color: '#34d399' },
+                            ].map((s, i) => (
+                                <FunnelBar
+                                    key={i}
+                                    label={s.label}
+                                    value={s.value}
+                                    max={funnel.registered ?? totalStudents}
+                                    color={s.color}
+                                    delay={i * 0.12}
+                                />
                             ))}
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Split Grid 2: Type & Locations */}
-            <div className="rep-split-grid">
-                <div className="rep-panel-card donut-panel">
-                    <h3>Internship Type</h3>
-                    <div className="rep-donut-row">
-                        <div className="rep-donut-chart">
-                            <svg viewBox="0 0 120 120">
-                                <circle cx="60" cy="60" r="50" fill="none" stroke="#2a2a2a" strokeWidth="12" />
-                                <circle cx="60" cy="60" r="50" fill="none" stroke="#c4b5fd" strokeWidth="12" strokeDasharray="314" strokeDashoffset="160" />
-                                <circle cx="60" cy="60" r="50" fill="none" stroke="#6b21a8" strokeWidth="12" strokeDasharray="314" strokeDashoffset="260" strokeLinecap="round" transform="rotate(180 60 60)" />
-                                <circle cx="60" cy="60" r="50" fill="none" stroke="#fbcfe8" strokeWidth="12" strokeDasharray="314" strokeDashoffset="280" strokeLinecap="round" transform="rotate(-90 60 60)" />
+                    {/* Applications by Speciality */}
+                    <SectionLabel>Academic Breakdown</SectionLabel>
+                    <div className="rep-card">
+                        <div className="rep-card-head">
+                            <div>
+                                <h3>Applications by Speciality</h3>
+                                <p>Which fields are most active on the platform</p>
+                            </div>
+                        </div>
+                        {specialities.length > 0 ? (
+                            <div className="rep-spec-list">
+                                {specialities.slice(0, 7).map((s, i) => {
+                                    const pct = maxSpec > 0 ? Math.round((s.applications / maxSpec) * 100) : 0;
+                                    const COLORS = ['#9e59ff','#ec4899','#34d399','#fbbf24','#60a5fa','#f87171','#a78bfa'];
+                                    return (
+                                        <div key={i} className="rep-spec-row">
+                                            <span className="rep-spec-name">{(s.speciality || 'Unknown').toUpperCase()}</span>
+                                            <div className="rep-spec-track">
+                                                <motion.div
+                                                    className="rep-spec-fill"
+                                                    style={{ background: COLORS[i % COLORS.length] }}
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${pct}%` }}
+                                                    transition={{ duration: 0.8, delay: i * 0.07 }}
+                                                />
+                                            </div>
+                                            <span className="rep-spec-val">{s.applications}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="rep-empty">No application data yet — students need to apply to offers.</div>
+                        )}
+                    </div>
+
+                    {/* Skills Demand vs Supply */}
+                    {skills.length > 0 && (
+                        <>
+                            <SectionLabel>Skill Gap Analysis</SectionLabel>
+                            <div className="rep-card">
+                                <div className="rep-card-head">
+                                    <div>
+                                        <h3>Market Demand vs Student Supply</h3>
+                                        <p>Purple = required by offers · Gray = declared by students</p>
+                                    </div>
+                                    <Award size={18} color="#9e59ff" />
+                                </div>
+                                <div className="rep-skills-grid-head">
+                                    <span>SKILL</span><span>DEMAND</span><span>SUPPLY</span>
+                                </div>
+                                {skills.slice(0, 8).map((sk, i) => {
+                                    const m = Math.max(sk.demand, sk.supply, 1);
+                                    return (
+                                        <div key={i} className="rep-skill-row">
+                                            <span className="rep-skill-name">{sk.skill?.toUpperCase()}</span>
+                                            <div className="rep-skill-bar-wrap">
+                                                <div className="rep-skill-track">
+                                                    <motion.div className="rep-skill-fill purple"
+                                                        initial={{ width: 0 }} animate={{ width: `${(sk.demand/m)*100}%` }}
+                                                        transition={{ duration: 0.7, delay: i * 0.05 }} />
+                                                </div>
+                                                <span className="rep-skill-num purple">{sk.demand}</span>
+                                            </div>
+                                            <div className="rep-skill-bar-wrap">
+                                                <div className="rep-skill-track">
+                                                    <motion.div className="rep-skill-fill gray"
+                                                        initial={{ width: 0 }} animate={{ width: `${(sk.supply/m)*100}%` }}
+                                                        transition={{ duration: 0.7, delay: i * 0.05 }} />
+                                                </div>
+                                                <span className="rep-skill-num gray">{sk.supply}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* ── RIGHT SIDEBAR ── */}
+                <div className="rep-side-col">
+
+                    {/* Convention Status */}
+                    <SectionLabel>Legal Pipeline</SectionLabel>
+                    <div className="rep-card">
+                        <div className="rep-card-head">
+                            <div>
+                                <h3>Convention Status</h3>
+                                <p>Current signing stage breakdown</p>
+                            </div>
+                            <ShieldCheck size={16} color="#a855f7" />
+                        </div>
+                        <div className="rep-conv-list">
+                            {[
+                                { label: 'Awaiting Your Signature', value: pendingConventions,    color: '#f87171', bg: 'rgba(248,113,113,0.07)' },
+                                { label: 'Partner Signing',         value: inProgressConventions, color: '#fbbf24', bg: 'rgba(251,191,36,0.07)'  },
+                                { label: 'Fully Validated',         value: validatedConventions,  color: '#34d399', bg: 'rgba(52,211,153,0.07)'  },
+                                { label: 'Total Created',           value: totalConventions,      color: '#a855f7', bg: 'rgba(168,85,247,0.07)'  },
+                            ].map((item, i) => (
+                                <div key={i} className="rep-conv-row" style={{ background: item.bg }}>
+                                    <span className="rep-conv-label">{item.label}</span>
+                                    <span className="rep-conv-val" style={{ color: item.color }}>{item.value}</span>
+                                </div>
+                            ))}
+                        </div>
+                        {/* mini donut */}
+                        <div className="rep-donut-mini-wrap">
+                            <svg viewBox="0 0 80 80" className="rep-donut-mini">
+                                <circle cx="40" cy="40" r="32" fill="none" stroke="#2a2a2a" strokeWidth="10" />
+                                {totalConventions > 0 && (
+                                    <circle cx="40" cy="40" r="32" fill="none" stroke="#34d399" strokeWidth="10"
+                                        strokeDasharray={`${(validatedConventions / totalConventions) * 201} 201`}
+                                        strokeLinecap="round"
+                                        transform="rotate(-90 40 40)" />
+                                )}
                             </svg>
-                            <div className="donut-center-text">
-                                <strong>PFE</strong>
-                                <span>48% DOMINANT</span>
-                            </div>
-                        </div>
-                        <div className="rep-donut-legend">
-                            <div className="d-legend-item">
-                                <span className="d-dot purple"></span>
-                                <div className="d-text"><strong>PFE (Final Year)</strong><span>48% - 151 students</span></div>
-                            </div>
-                            <div className="d-legend-item">
-                                <span className="d-dot pink"></span>
-                                <div className="d-text"><strong>Summer Internship</strong><span>32% - 101 students</span></div>
-                            </div>
-                            <div className="d-legend-item">
-                                <span className="d-dot dark-purple"></span>
-                                <div className="d-text"><strong>Observations</strong><span>20% - 63 students</span></div>
+                            <div className="rep-donut-mini-label">
+                                <strong>{conventionRate}%</strong>
+                                <span>Done</span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="rep-panel-card">
-                    <h3>Internship Locations</h3>
-                    <div className="rep-locations-list">
-                        <div className="rep-loc-item">
-                            <span className="loc-name">ALGIERS</span>
-                            <div className="loc-bar-bg"><div className="loc-bar-fill purple-light" style={{width: '75%'}}></div></div>
-                            <span className="loc-val">236</span>
-                        </div>
-                        <div className="rep-loc-item">
-                            <span className="loc-name">ORAN</span>
-                            <div className="loc-bar-bg"><div className="loc-bar-fill pink-light" style={{width: '45%'}}></div></div>
-                            <span className="loc-val">142</span>
-                        </div>
-                        <div className="rep-loc-item">
-                            <span className="loc-name">REMOTE</span>
-                            <div className="loc-bar-bg"><div className="loc-bar-fill purple-dark" style={{width: '30%'}}></div></div>
-                            <span className="loc-val">94</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Downloads Section */}
-            <div className="rep-downloads-card">
-                <div className="dl-top-row">
-                    <div className="dl-title">
-                        <h3>Download Reports</h3>
-                        <p>Generate and download official academic records and placement summaries.</p>
-                    </div>
-                    <div className="dl-actions">
-                        <button className="dl-filter-btn"><Filter size={14}/> More Filters</button>
-                        <button className="dl-export-btn"><Download size={14}/> Export All</button>
-                    </div>
-                </div>
-
-                <div className="dl-grid">
-                    <div className="dl-file-card">
-                        <div className="dl-icon-box red-bg"><FileText size={20} color="#ef4444"/></div>
-                        <div className="dl-file-info">
-                            <h4>Full Placement Report</h4>
-                            <span>PDF • 12.4 MB • UPDATED 2H AGO</span>
-                        </div>
-                        <button className="dl-small-btn"><Download size={14}/></button>
-                    </div>
-
-                    <div className="dl-file-card">
-                        <div className="dl-icon-box green-bg"><FileSpreadsheet size={20} color="#10b981"/></div>
-                        <div className="dl-file-info">
-                            <h4>Company Participation</h4>
-                            <span>CSV • 2.1 MB • UPDATED 1D AGO</span>
-                        </div>
-                        <button className="dl-small-btn"><Download size={14}/></button>
-                    </div>
-
-                    <div className="dl-file-card">
-                        <div className="dl-icon-box red-bg"><FileText size={20} color="#ef4444"/></div>
-                        <div className="dl-file-info">
-                            <h4>Student Performance Summary</h4>
-                            <span>PDF • 8.7 MB • UPDATED 4D AGO</span>
-                        </div>
-                        <button className="dl-small-btn"><Download size={14}/></button>
+                    {/* Quick Exports */}
+                    <SectionLabel>Data Exports</SectionLabel>
+                    <div className="rep-card rep-exports-card">
+                        {[
+                            {
+                                key: 'students',
+                                icon: FileText, iconColor: '#ef4444', iconBg: 'rgba(239,68,68,0.1)',
+                                title: 'Students List',
+                                sub: 'XLSX · all students + status',
+                                action: () => adminService.exportUsers('student'),
+                                available: true,
+                            },
+                            {
+                                key: 'apps',
+                                icon: FileSpreadsheet, iconColor: '#10b981', iconBg: 'rgba(16,185,129,0.1)',
+                                title: 'Applications',
+                                sub: 'XLSX · with convention info',
+                                action: () => adminService.exportApplications({}),
+                                available: true,
+                            },
+                            {
+                                key: 'conv',
+                                icon: FileText, iconColor: '#a855f7', iconBg: 'rgba(168,85,247,0.1)',
+                                title: 'Signed Conventions',
+                                sub: 'Available per-convention below',
+                                action: null,
+                                available: false,
+                            },
+                        ].map((ex) => (
+                            <div key={ex.key} className={`rep-export-row ${!ex.available ? 'disabled' : ''}`}>
+                                <div className="rep-export-icon" style={{ background: ex.iconBg }}>
+                                    <ex.icon size={16} color={ex.iconColor} />
+                                </div>
+                                <div className="rep-export-info">
+                                    <span className="rep-export-title">{ex.title}</span>
+                                    <span className="rep-export-sub">{ex.sub}</span>
+                                </div>
+                                {ex.available ? (
+                                    <button
+                                        className="rep-dl-btn"
+                                        onClick={() => runExport(ex.key, ex.action)}
+                                        disabled={exporting === ex.key}
+                                    >
+                                        {exporting === ex.key
+                                            ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                                            : <Download size={13} />}
+                                    </button>
+                                ) : (
+                                    <div className="rep-dl-btn disabled"><Download size={13} /></div>
+                                )}
+                            </div>
+                        ))}
                     </div>
 
-                    <div className="dl-file-card">
-                        <div className="dl-icon-box green-bg"><FileSpreadsheet size={20} color="#10b981"/></div>
-                        <div className="dl-file-info">
-                            <h4>Internship Duration Trends</h4>
-                            <span>CSV • 1.5 MB • UPDATED 1W AGO</span>
-                        </div>
-                        <button className="dl-small-btn"><Download size={14}/></button>
+                    {/* Quick Stats summary */}
+                    <SectionLabel>Pending Actions</SectionLabel>
+                    <div className="rep-card">
+                        {[
+                            { label: 'Pending Applications',  value: pendingApplications,  color: '#fbbf24' },
+                            { label: 'Unverified Companies',  value: pendingCompanyVerif,  color: '#f87171' },
+                            { label: 'Unverified Student IDs',value: pendingStudentIds,    color: '#f87171' },
+                            { label: 'Expired Active Offers', value: expiredOffers,        color: '#f87171' },
+                        ].map((a, i) => (
+                            <div key={i} className="rep-action-row">
+                                <span className="rep-action-label">{a.label}</span>
+                                <span className="rep-action-val" style={{ color: a.value > 0 ? a.color : '#4b5563' }}>
+                                    {a.value > 0 ? a.value : '✓'}
+                                </span>
+                            </div>
+                        ))}
                     </div>
+
                 </div>
             </div>
-
         </div>
     );
 };

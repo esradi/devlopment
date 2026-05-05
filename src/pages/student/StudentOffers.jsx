@@ -21,7 +21,7 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [viewMode, setViewMode] = useState('recommended'); // 'recommended' | 'all'
     const [allOffers, setAllOffers] = useState([]);
-    
+
     // Advanced Filters State
     const [filters, setFilters] = useState({
         domain: 'all',
@@ -30,7 +30,7 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
         telework: 'all',
         city: 'all'
     });
-    
+
     const handleReset = () => {
         setSearchTerm('');
         setFilters({ domain: 'all', duration: 'all', remun: 'all', telework: 'all', city: 'all' });
@@ -50,9 +50,9 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
 
     // Filter recommendations or all offers by search term locally for immediate feedback
     const baseSource = viewMode === 'recommended' ? recommendations : allOffers;
-    const filteredOffers = baseSource.filter(offer => 
-        (offer.title?.toLowerCase().includes(searchTerm.toLowerCase()) || '') || 
-        (offer.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) || '')
+    const filteredOffers = baseSource.filter(offer =>
+        offer.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        offer.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleLoadMore = () => {
@@ -73,6 +73,7 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
         visible: { y: 0, opacity: 1 }
     };
 
+
     return (
         <div className="student-offers-page">
             {/* Header */}
@@ -91,28 +92,26 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if(e.key === 'Enter' && showToast) showToast(`Searching for "${e.target.value}"...`);
+                                    if (e.key === 'Enter' && showToast) showToast(`Searching for "${e.target.value}"...`);
                                 }}
                             />
                         </div>
                         <button className="icon-btn" onClick={() => showToast && showToast("No new notifications")}>
                             <Bell size={20} />
                         </button>
-                        <div className="avatar-wrapper small">
-                            <img src={userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar" />
-                        </div>
+
                     </div>
                 </div>
 
                 {/* Scope Toggles */}
                 <div className="offers-scope-toggles" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                    <button 
+                    <button
                         className={`filter-tab ${viewMode === 'recommended' ? 'active' : ''}`}
                         onClick={() => setViewMode('recommended')}
                     >
                         Recommended for You ({recommendations.length})
                     </button>
-                    <button 
+                    <button
                         className={`filter-tab ${viewMode === 'all' ? 'active' : ''}`}
                         onClick={() => setViewMode('all')}
                     >
@@ -122,34 +121,34 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
 
                 {/* Filters */}
                 <div className="filters-row advanced-filters">
-                    <select value={filters.domain} onChange={e => setFilters({...filters, domain: e.target.value})}>
+                    <select value={filters.domain} onChange={e => setFilters({ ...filters, domain: e.target.value })}>
                         <option value="all">Secteur: All</option>
                         <option value="dev">Software Engineering</option>
                         <option value="design">UI/UX Design</option>
                         <option value="data">Data Science</option>
                     </select>
 
-                    <select value={filters.duration} onChange={e => setFilters({...filters, duration: e.target.value})}>
+                    <select value={filters.duration} onChange={e => setFilters({ ...filters, duration: e.target.value })}>
                         <option value="all">Durée: All</option>
                         <option value="3m">1 - 3 Mois</option>
                         <option value="6m">4 - 6 Mois</option>
                         <option value="12m">12+ Mois</option>
                     </select>
 
-                    <select value={filters.remun} onChange={e => setFilters({...filters, remun: e.target.value})}>
+                    <select value={filters.remun} onChange={e => setFilters({ ...filters, remun: e.target.value })}>
                         <option value="all">Rémunération: All</option>
                         <option value="paid">Rémunéré (Paid)</option>
                         <option value="unpaid">Non Rémunéré</option>
                     </select>
 
-                    <select value={filters.telework} onChange={e => setFilters({...filters, telework: e.target.value})}>
+                    <select value={filters.telework} onChange={e => setFilters({ ...filters, telework: e.target.value })}>
                         <option value="all">Télétravail: All</option>
                         <option value="remote">100% Remote</option>
                         <option value="hybrid">Hybride</option>
                         <option value="onsite">Sur Site</option>
                     </select>
 
-                    <select value={filters.city} onChange={e => setFilters({...filters, city: e.target.value})}>
+                    <select value={filters.city} onChange={e => setFilters({ ...filters, city: e.target.value })}>
                         <option value="all">Ville: All</option>
                         <option value="algiers">Alger</option>
                         <option value="oran">Oran</option>
@@ -163,14 +162,9 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
             </header>
 
             {/* Offers Grid */}
-            <motion.div
-                className="offers-grid"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-            >
+            <div className="offers-grid">
                 {filteredOffers.map((offer) => (
-                    <motion.div key={offer.id} className="offer-card-detailed" variants={itemVariants}>
+                    <div key={offer.id} className="offer-card-detailed">
                         <div className="card-top">
                             <div className="company-logo">
                                 {offer.company_logo ? (
@@ -185,18 +179,18 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
                                 <h3>{offer.title}</h3>
                                 <p>{offer.company_name} — {offer.wilaya || 'Algeria'}</p>
                             </div>
-                            <Heart 
-                                size={20} 
-                                className="favorite-icon standalone" 
+                            <Heart
+                                size={20}
+                                className="favorite-icon standalone"
                                 onClick={() => onToggleFavorite && onToggleFavorite(offer.id)}
-                                style={{ color: offer.is_favorite ? '#ff1b90' : '#8892b0', cursor: 'pointer', transition: 'transform 0.2s', transform: offer.is_favorite ? 'scale(1.1)' : 'scale(1)' }} 
+                                style={{ color: offer.is_favorite ? '#ff1b90' : '#8892b0', cursor: 'pointer', transition: 'transform 0.2s', transform: offer.is_favorite ? 'scale(1.1)' : 'scale(1)' }}
                             />
                         </div>
-                        
+
                         <div className="card-body">
-                            <p className="offer-description" dangerouslySetInnerHTML={{ __html: offer.description?.substring(0, 150) + '...' }}></p>
+                            <p className="offer-description">{(offer.description || offer.requirements || 'No description available').substring(0, 150)}...</p>
                         </div>
-                        
+
                         <div className="card-tags">
                             {offer.offer_types?.map((type, i) => (
                                 <span key={i} className={`tag ${i === 0 ? 'pfe' : 'intern'}`}>{type.name}</span>
@@ -219,10 +213,10 @@ const StudentOffers = ({ userData, recommendations, recentApps, handleMatchHover
                                 </button>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 ))}
-            </motion.div>
-            
+            </div>
+
             <div className="archived-offers">
                 <p>You've seen all the latest offers from the last 30 days.</p>
                 <button className="load-more-btn" onClick={handleLoadMore} disabled={isLoadingMore}>

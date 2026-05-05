@@ -22,10 +22,11 @@ const StudentChallenges = ({ userData }) => {
         try {
             setLoading(true);
             const data = await quizService.getAvailableQuizzes();
-            setQuizzes(data);
+            const list = Array.isArray(data) ? data : data?.results || [];
+            setQuizzes(list);
         } catch (err) {
             console.error("Failed to load quizzes:", err);
-            showToast("Error loading available challenges");
+            setQuizzes([]); // ← ne pas afficher l'erreur, juste vide
         } finally {
             setLoading(false);
         }

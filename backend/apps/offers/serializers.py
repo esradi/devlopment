@@ -158,13 +158,27 @@ class ApplicationSerializer(serializers.ModelSerializer):
     company_name = serializers.ReadOnlyField(source='offer.company.company_name')
     company_logo = serializers.ImageField(source='offer.company.logo', read_only=True)
 
+    convention_id = serializers.ReadOnlyField(source='convention.id')
+    convention_status = serializers.ReadOnlyField(source='convention.status')
+    convention_student_signed = serializers.BooleanField(source='convention.student_signed', read_only=True, default=False)
+    convention_company_signed = serializers.BooleanField(source='convention.company_signed', read_only=True, default=False)
+    convention_admin_signed = serializers.BooleanField(source='convention.admin_signed', read_only=True, default=False)
+    convention_pdf = serializers.SerializerMethodField()
+
+    def get_convention_pdf(self, obj):
+        if hasattr(obj, 'convention') and obj.convention and obj.convention.pdf_file:
+            return obj.convention.pdf_file.url
+        return None
+
     class Meta:
         model = Application
         fields = [
             'id', 'student', 'student_name', 'offer', 'offer_title',
             'company', 'company_name', 'company_logo',
             'status', 'cover_letter', 'company_notes',
-            'match_score', 'created_at', 'updated_at'
+            'match_score', 'convention_id', 'convention_status',
+            'convention_student_signed', 'convention_company_signed', 'convention_admin_signed',
+            'convention_pdf', 'created_at', 'updated_at'
         ]
         read_only_fields = ['company', 'status', 'company_notes', 'created_at', 'updated_at']
 

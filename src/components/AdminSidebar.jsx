@@ -25,7 +25,7 @@ const AdminSidebar = ({ activePath, userData, isOpen, onClose }) => {
         { path: 'companies', label: 'Companies/Partners', icon: Handshake, route: '/dashboard/admin/companies' },
         { path: 'internships', label: 'Internships', icon: Briefcase, route: '/dashboard/admin/internships' },
         { path: 'validation', label: 'Validation', icon: CheckSquare, route: '/dashboard/admin/validation' },
-        { path: 'skills', label: 'Skill Verification', icon: Award, route: '/dashboard/admin/skills' },
+        { path: 'skills', label: 'Automated Skills', icon: Award, route: '/dashboard/admin/skills' },
         { path: 'reports', label: 'Reports', icon: BarChart2, route: '/dashboard/admin/reports' },
         { path: 'settings', label: 'Settings', icon: Settings, route: '/dashboard/admin/settings' }
     ];

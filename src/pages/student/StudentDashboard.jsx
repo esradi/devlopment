@@ -29,6 +29,7 @@ import {
     BarChart3,
     Users,
     Menu,
+    BookOpen,
     X
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -43,6 +44,8 @@ import CompleteProfile from './CompleteProfile';
 import StudentChallenges from './StudentChallenges';
 import StudentAnalytics from './StudentAnalytics';
 import StudentGroups from './StudentGroups';
+import StudentInternship from './StudentInternship';
+import StudentResources from './StudentResources';
 import NotificationBell from '../../components/NotificationBell';
 import './StudentDashboard.css';
 
@@ -121,6 +124,8 @@ const StudentDashboard = ({ setUserRole }) => {
                     studentService.getDashboard(),
                     applicationService.getMine()
                 ]);
+                console.log("profileRes:", profileRes);
+
 
                 setUserData({
                     ...profileRes,
@@ -165,31 +170,35 @@ const StudentDashboard = ({ setUserRole }) => {
     const stats = [
         {
             label: 'Active Offers',
-            value: (recommendations || []).length > 0 ? (recommendations || []).length : '...',
+            value: loading ? '...' : (recommendations || []).length,
             change: '+12% new',
             positive: true,
-            icon: <Briefcase size={20} color="#9e59ff" />
+            icon: <Briefcase size={20} color="#9e59ff" />,
+            tab: 'offers'
         },
         {
             label: 'Applications',
             value: userData?.dashboardStats?.total_applications || '0',
             change: `${userData?.dashboardStats?.pending_applications || '0'} pending`,
             positive: true,
-            icon: <Send size={20} color="#db2777" />
+            icon: <Send size={20} color="#db2777" />,
+            tab: 'applications'
         },
         {
             label: 'Offers Accepted',
             value: userData?.dashboardStats?.accepted_applications || '0',
             change: 'Accepted/Received',
             positive: true,
-            icon: <Zap size={20} color="#9e59ff" />
+            icon: <Zap size={20} color="#9e59ff" />,
+            tab: 'applications'
         },
         {
             label: 'Verified Skills',
             value: userData?.dashboardStats?.verified_skills || '0',
             change: `of ${userData?.dashboardStats?.total_skills || '0'} total skills`,
             positive: true,
-            icon: <CheckCircle2 size={20} color="#10b981" />
+            icon: <CheckCircle2 size={20} color="#10b981" />,
+            tab: 'challenges'
         },
     ];
 
@@ -294,6 +303,14 @@ const StudentDashboard = ({ setUserRole }) => {
                         <Users size={20} />
                         <span>Study Groups</span>
                     </Link>
+                    <Link to="/dashboard/student/internship" className={`nav-item ${activeTab === 'internship' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                        <Calendar size={20} />
+                        <span>Internship Tracking</span>
+                    </Link>
+                    <Link to="/dashboard/student/resources" className={`nav-item ${activeTab === 'resources' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                        <BookOpen size={20} />
+                        <span>Resources</span>
+                    </Link>
                     <Link to="/dashboard/student/settings" className={`nav-item ${activeTab === 'settings' || activeTab === 'complete-profile' ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         <Settings size={20} />
                         <span>Settings</span>
@@ -335,7 +352,7 @@ const StudentDashboard = ({ setUserRole }) => {
             </aside>
 
             {/* Main Content */}
-            <main className="dashboard-main" style={['offers', 'applications', 'favorites', 'messages', 'settings', 'complete-profile', 'challenges', 'analytics', 'groups'].includes(activeTab) ? { padding: '110px 0 0 0' } : {}}>
+            <main className="dashboard-main" style={['offers', 'applications', 'favorites', 'messages', 'settings', 'complete-profile', 'challenges', 'analytics', 'groups', 'internship', 'resources'].includes(activeTab) ? { padding: '110px 0 0 0' } : {}}>
                 {activeTab === 'dashboard' ? (
                     <>
                         <header className="dashboard-header">
@@ -370,7 +387,14 @@ const StudentDashboard = ({ setUserRole }) => {
                             animate="visible"
                         >
                             {stats.map((stat, index) => (
-                                <motion.div key={index} className={`stat-card ${stat.label === 'MATCH SCORE' ? 'highlight' : ''}`} variants={itemVariants}>
+                                <motion.div 
+                                    key={index} 
+                                    className={`stat-card ${stat.label === 'MATCH SCORE' ? 'highlight' : ''}`} 
+                                    variants={itemVariants}
+                                    whileHover={{ y: -5, boxShadow: '0 10px 30px rgba(158, 89, 255, 0.1)' }}
+                                    onClick={() => navigate(`/dashboard/student/${stat.tab}`)}
+                                    style={{ cursor: 'pointer' }}
+                                >
                                     <div className="stat-header">
                                         <span>{stat.label}</span>
                                         {stat.icon}
@@ -583,10 +607,12 @@ const StudentDashboard = ({ setUserRole }) => {
                     <StudentGroups
                         userData={userData}
                     />
-                ) : activeTab === 'messages' ? (
-                    <StudentMessages
+                ) : activeTab === 'internship' ? (
+                    <StudentInternship
                         userData={userData}
                     />
+                ) : activeTab === 'resources' ? (
+                    <StudentResources />
                 ) : activeTab === 'settings' ? (
                     <StudentSettings
                         userData={userData}

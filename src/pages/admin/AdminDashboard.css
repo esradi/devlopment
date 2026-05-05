@@ -131,6 +131,14 @@
     margin: 0 auto;
 }
 
+@media (max-width: 1200px) {
+    .admin-dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        padding: 40px 24px;
+    }
+}
+
 .dashboard-header-text h1 {
     font-size: 32px;
     font-weight: 700;
@@ -150,6 +158,13 @@
     gap: 32px; /* Doubled gap for more space */
     margin-bottom: 64px; /* More space below stats */
     width: 100%;
+}
+
+@media (max-width: 768px) {
+    .admin-stats-grid {
+        flex-direction: column;
+        gap: 16px;
+    }
 }
 
 .admin-stat-card {

@@ -72,6 +72,12 @@
     margin-bottom: 30px;
 }
 
+@media (max-width: 1024px) {
+    .students-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .students-stat-card {
     background-color: #161616;
     border: 1px solid #2a2a2a;
@@ -174,6 +180,20 @@
     gap: 15px;
     margin-bottom: 20px;
     flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+    .search-box {
+        min-width: 100%;
+    }
+    .segmented-control {
+        width: 100%;
+        overflow-x: auto;
+    }
+    .export-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 .search-box {

@@ -763,3 +763,69 @@
 .mt-auto {
     margin-top: auto;
 }
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+    .student-settings-page {
+        padding: 24px 20px 120px;
+    }
+    .settings-content-layout {
+        flex-direction: column;
+    }
+    .settings-right-col {
+        width: 100%;
+    }
+    .sticky-sidebar {
+        position: static;
+    }
+    .settings-header h1 {
+        font-size: 24px;
+    }
+    .settings-tabs-nav {
+        gap: 16px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .portfolio-grid {
+        grid-template-columns: 1fr;
+    }
+    .security-cards-row {
+        grid-template-columns: 1fr;
+    }
+    .pref-row-2 {
+        grid-template-columns: 1fr;
+    }
+    .settings-floating-actions {
+        padding: 16px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-settings-page {
+        padding: 16px 12px 100px;
+    }
+    .settings-header h1 {
+        font-size: 20px;
+    }
+    .settings-card {
+        padding: 20px 16px;
+    }
+    .toggle-row {
+        padding: 16px;
+    }
+    .btn-save-changes {
+        padding: 12px 20px;
+        font-size: 13px;
+    }
+    .settings-tabs-nav {
+        gap: 12px;
+    }
+    .settings-nav-item {
+        font-size: 12px;
+        white-space: nowrap;
+    }
+}

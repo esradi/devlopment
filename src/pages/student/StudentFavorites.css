@@ -415,3 +415,65 @@
     cursor: pointer;
     display: flex;
 }
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+    .student-favorites-page {
+        padding: 70px 20px 40px;
+    }
+
+    .favorites-header {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .favorites-header h1 {
+        font-size: 24px;
+    }
+
+    .btn-clear-all {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .favorites-filters {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .select-wrapper {
+        width: 100%;
+    }
+
+    .favorites-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-favorites-page {
+        padding: 70px 12px 32px;
+    }
+
+    .favorites-header h1 {
+        font-size: 20px;
+    }
+
+    .card-actions-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .company-loc {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .toast-notification {
+        right: 12px;
+        left: 12px;
+        bottom: 20px;
+    }
+}

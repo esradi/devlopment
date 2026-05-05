@@ -10,7 +10,9 @@ from apps.admin_panel.views import (
     AdminAnalyticsView,
     AdminAlertsView,
     AdminActivityFeedView,
-    GlobalSearchView
+    GlobalSearchView,
+    AdminApplicationViewSet,
+    AdminChallengeSubmissionViewSet
 )
 
 router = DefaultRouter()
@@ -19,6 +21,8 @@ router.register(r'internships', InternshipValidationViewSet, basename='admin-int
 router.register(r'users', AdminUserViewSet, basename='admin-users')
 router.register(r'companies', AdminCompanyViewSet, basename='admin-companies')
 router.register(r'portfolios', AdminPortfolioViewSet, basename='admin-portfolios')
+router.register(r'applications', AdminApplicationViewSet, basename='admin-applications')
+router.register(r'challenges', AdminChallengeSubmissionViewSet, basename='admin-challenges')
 
 urlpatterns = [
     path('dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),

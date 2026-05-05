@@ -20,10 +20,12 @@ from apps.admin_panel.serializers import (
     AdminUserSerializer,
     AdminCompanySerializer,
     AdminPortfolioReviewSerializer,
-    AdminDomainTreeSerializer
+    AdminDomainTreeSerializer,
+    AdminApplicationSerializer
 )
 from apps.notifications.services import NotificationService
 from apps.api.permissions import IsUniversityAdmin
+from apps.offers.models import Application
 
 User = get_user_model()
 
@@ -50,11 +52,30 @@ class AdminDashboardView(APIView):
 
         # 1. Core Totals
         total_students = safe_count(Student.objects.all())
-        students_with_internship = 0
-        try:
-            students_with_internship = Convention.objects.filter(status='validated').values('student').distinct().count()
-        except: pass
         
+        # Calculate Distribution
+        # In Internship: Validated convention and end_date in future or null
+        students_in_internship = safe_count(
+            Student.objects.filter(
+                conventions__status='validated',
+                conventions__end_date__gte=now.date()
+            ).distinct()
+        )
+        
+        # Completed: Validated convention and end_date in past
+        students_completed = safe_count(
+            Student.objects.filter(
+                conventions__status='validated',
+                conventions__end_date__lt=now.date()
+            ).distinct()
+        )
+        
+        # Searching: Total - (In Internship + Completed)
+        # Note: A student could technically be searching again after completing, but for this chart, 
+        # we usually want to know where they are in the lifecycle.
+        students_searching = total_students - students_in_internship - students_completed
+        if students_searching < 0: students_searching = 0
+
         # 2. Verification Queue
         pending_id_verifications = safe_count(User.objects.filter(role='student', id_verified=False).exclude(Q(national_id_card='') | Q(national_id_card__isnull=True)))
         pending_company_validations = safe_count(Company.objects.filter(verification_status='pending'))
@@ -90,13 +111,13 @@ class AdminDashboardView(APIView):
                 },
                 "applications": {
                     "total": safe_count(Application.objects.all()),
-                    "accepted": students_with_internship,
+                    "accepted": safe_count(Application.objects.filter(status='accepted')),
                     "pending": safe_count(Application.objects.filter(status='pending'))
                 },
                 "distribution": {
-                    "searching": total_students - students_with_internship,
-                    "internship": students_with_internship,
-                    "completed": 0 
+                    "searching": students_searching,
+                    "internship": students_in_internship,
+                    "completed": students_completed
                 },
                 "heartbeat": {
                     "interviews_this_week": interviews_this_week
@@ -153,6 +174,270 @@ class BaseAdminViewSet(viewsets.ModelViewSet):
         instance = serializer.save()
         log_admin_action(self.request, f"{instance._meta.model_name}_update", instance, serializer.validated_data)
 
+class AdminApplicationViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsUniversityAdmin]
+    serializer_class = AdminApplicationSerializer
+    queryset = Application.objects.select_related('student__user', 'offer', 'company').all()
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['student__user__first_name', 'student__user__last_name', 'offer__title', 'company__company_name']
+
+    def get_queryset(self):
+        qs = Application.objects.select_related(
+            'student__user', 
+            'offer', 
+            'company', 
+            'convention'
+        ).all()
+        
+        status_filter = self.request.query_params.get('status')
+        company_id = self.request.query_params.get('company')
+        date_filter = self.request.query_params.get('date')
+        
+        if status_filter:
+            if status_filter.lower() == 'validated':
+                qs = qs.filter(convention__status='validated')
+            else:
+                qs = qs.filter(status=status_filter.lower())
+        if company_id:
+            qs = qs.filter(company_id=company_id)
+        if date_filter:
+            qs = qs.filter(created_at__date=date_filter)
+        return qs
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Get convention-specific statistics for the admin"""
+        from apps.conventions.models import Convention
+        from django.db.models import Count
+        
+        # We want to know how many conventions are in which state
+        stats = Convention.objects.values('status').annotate(count=Count('id'))
+        
+        # Formalize the output
+        data = {
+            'pending_admin': Convention.objects.filter(status='pending_admin_validation').count(),
+            'in_progress': Convention.objects.filter(status__in=['pending_student_signature', 'pending_company_signature']).count(),
+            'validated': Convention.objects.filter(status='validated').count(),
+            'total': Convention.objects.count()
+        }
+        return Response(data)
+
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        """Export filtered applications to Excel"""
+        from apps.admin_panel.exports import AdminExporter
+        from django.http import HttpResponse
+        from django.utils import timezone
+        
+        queryset = self.filter_queryset(self.get_queryset())
+        buffer = AdminExporter.export_applications_to_excel(queryset)
+        
+        filename = f"applications_monitor_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+    @action(detail=False, methods=['post'])
+    def bulk_accept(self, request):
+        """Accept multiple applications at once (University Approval)"""
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({"error": "No IDs provided"}, status=400)
+        
+        # Only accept those that are 'accepted' by company
+        count = Application.objects.filter(id__in=ids, status='accepted').update(status='university_approved')
+        return Response({"message": f"Successfully approved {count} applications."})
+
+    @action(detail=False, methods=['post'])
+    def bulk_sign(self, request):
+        """Sign multiple conventions at once (Auto-Sign simulation)"""
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({"error": "No IDs provided"}, status=400)
+            
+        from apps.conventions.models import Convention
+        from django.utils import timezone
+        
+        # Get apps that are university_approved
+        apps = Application.objects.filter(id__in=ids, status='university_approved')
+        count = 0
+        for app in apps:
+            conv, _ = Convention.objects.get_or_create(
+                application=app,
+                defaults={
+                    'student': app.student,
+                    'company': app.company,
+                    'offer': app.offer,
+                    'internship_title': app.offer.title,
+                    'start_date': timezone.now().date(),
+                    'end_date': timezone.now().date() + timezone.timedelta(days=90),
+                }
+            )
+            if not conv.admin_signed:
+                conv.admin_signed = True
+                conv.admin_signature_date = timezone.now()
+                # To make it fully validated in simulation:
+                conv.student_signed = True
+                conv.company_signed = True
+                conv.status = 'validated'
+                conv.save()
+                count += 1
+                
+        return Response({"message": f"Successfully signed {count} conventions."})
+
+    @action(detail=False, methods=['post'])
+    def bulk_delete(self, request):
+        """Delete multiple applications at once"""
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({"error": "No IDs provided"}, status=400)
+            
+        count, _ = Application.objects.filter(id__in=ids).delete()
+        return Response({"message": f"Successfully deleted {count} records."})
+
+    @action(detail=False, methods=['post'])
+    def auto_sign_all(self, request):
+        """Simulate signature for ALL pending conventions in the system"""
+        from apps.conventions.models import Convention
+        from django.utils import timezone
+        
+        # Get all conventions that are NOT validated
+        pending_convs = Convention.objects.exclude(status__in=['validated', 'rejected'])
+        count = pending_convs.count()
+        
+        for conv in pending_convs:
+            conv.student_signed = True
+            conv.student_signed_at = timezone.now()
+            conv.company_signed = True
+            conv.company_signed_at = timezone.now()
+            conv.admin_signed = True
+            conv.admin_signed_at = timezone.now()
+            conv.status = 'validated'
+            conv.save()
+            
+            # Regenerate PDF
+            from apps.conventions.services.convention_service import ConventionService
+            try:
+                ConventionService.regenerate_pdf(conv, final=True)
+            except: pass
+            
+        return Response({"message": f"Successfully simulated signatures for {count} conventions."})
+
+    @action(detail=True, methods=['post'])
+    def accept_application(self, request, pk=None):
+        """University approves the application, only possible if Company already accepted"""
+        app = self.get_object()
+        if app.status != 'accepted':
+            return Response(
+                {"error": "This application hasn't been accepted by the company yet. University can only approve company-accepted applications."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        app.status = 'university_approved'
+        app.save()
+        
+        # Log action
+        from apps.admin_panel.utils import log_admin_action
+        log_admin_action(request, "university_approve", app, {})
+        
+        return Response({"message": "University has approved the application."})
+
+    @action(detail=True, methods=['post'])
+    def init_convention(self, request, pk=None):
+        """Accept application and create convention if missing, but don't sign yet"""
+        app = self.get_object()
+        from apps.conventions.models import Convention
+        from django.utils import timezone
+        
+        if app.status != 'university_approved':
+            return Response(
+                {"error": "Application must be approved by the university before initializing a convention."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        conv, created = Convention.objects.get_or_create(
+            application=app,
+            defaults={
+                'student': app.student,
+                'company': app.company,
+                'offer': app.offer,
+                'internship_title': app.offer.title,
+                'start_date': timezone.now().date(),
+                'end_date': timezone.now().date() + timezone.timedelta(days=90),
+            }
+        )
+        return Response({
+            "convention_id": conv.id,
+            "status": conv.status,
+            "admin_signed": conv.admin_signed,
+            "message": "Convention initialized successfully."
+        })
+
+    @action(detail=True, methods=['post'])
+    def sign_all_for_application(self, request, pk=None):
+        """Automatically create convention if missing, and sign it for all parties"""
+        app = self.get_object()
+        from apps.conventions.models import Convention
+        from django.utils import timezone
+        
+        # Ensure application is approved by university
+        if app.status != 'university_approved':
+            return Response(
+                {"error": "Application must be approved by the university before signing."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Get or create convention
+        conv, created = Convention.objects.get_or_create(
+            application=app,
+            defaults={
+                'student': app.student,
+                'company': app.company,
+                'offer': app.offer,
+                'internship_title': app.offer.title,
+                'start_date': timezone.now().date(),
+                'end_date': timezone.now().date() + timezone.timedelta(days=90),
+            }
+        )
+        
+        # Sign for everyone
+        conv.student_signed = True
+        conv.student_signed_at = timezone.now()
+        conv.company_signed = True
+        conv.company_signed_at = timezone.now()
+        conv.admin_signed = True
+        conv.admin_signed_at = timezone.now()
+        conv.status = 'validated'
+        conv.save()
+        
+        # Regenerate PDF
+        from apps.conventions.services.convention_service import ConventionService
+        try:
+            ConventionService.regenerate_pdf(conv, final=True)
+        except: pass
+        
+        return Response({"message": "Convention created and signed successfully."})
+
+    @action(detail=True, methods=['post'])
+    def reject_application(self, request, pk=None):
+        """Reject an application and update the database status"""
+        app = self.get_object()
+        app.status = 'rejected'
+        app.save()
+        
+        # Log action
+        log_admin_action(request, "application_reject", app, {"reason": request.data.get('reason')})
+        
+        # Notify student
+        try:
+            NotificationService.notify_application_status_update(app)
+        except: pass
+        
+        return Response({"message": "Application rejected successfully."})
+
 class InternshipValidationViewSet(BaseAdminViewSet):
     serializer_class = InternshipValidationSerializer
     queryset = InternshipValidation.objects.select_related('application__student__user', 'application__offer__company__user')
@@ -160,7 +445,10 @@ class InternshipValidationViewSet(BaseAdminViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         status_filter = self.request.query_params.get('status')
-        if status_filter: return qs.filter(status=status_filter)
+        date_filter = self.request.query_params.get('date')
+        
+        if status_filter: qs = qs.filter(status=status_filter)
+        if date_filter: qs = qs.filter(application__created_at__date=date_filter)
         return qs
 
     @action(detail=True, methods=['post'])
@@ -200,9 +488,11 @@ class AdminUserViewSet(BaseAdminViewSet):
         role = self.request.query_params.get('role')
         search = self.request.query_params.get('search')
         verified = self.request.query_params.get('verified')
+        date_filter = self.request.query_params.get('date')
         
         if role: qs = qs.filter(role=role)
         if verified: qs = qs.filter(id_verified=(verified.lower() == 'true'))
+        if date_filter: qs = qs.filter(created_at__date=date_filter)
         if search:
             qs = qs.filter(
                 Q(email__icontains=search) | 
@@ -309,9 +599,11 @@ class AdminCompanyViewSet(BaseAdminViewSet):
         status = self.request.query_params.get('status')
         industry = self.request.query_params.get('industry')
         search = self.request.query_params.get('search')
+        date_filter = self.request.query_params.get('date')
         
         if status: qs = qs.filter(verification_status=status)
         if industry: qs = qs.filter(industry__icontains=industry)
+        if date_filter: qs = qs.filter(created_at__date=date_filter)
         if search:
             qs = qs.filter(
                 Q(company_name__icontains=search) | 
@@ -581,3 +873,23 @@ class AdminActivityFeedView(APIView):
 
         activities.sort(key=lambda x: x['timestamp'], reverse=True)
         return Response({'activities': activities[:50]})
+
+from apps.challenges.models import SkillChallengeSubmission
+from .serializers import AdminChallengeSubmissionSerializer
+
+class AdminChallengeSubmissionViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Read-only viewset for Admins to view automatically graded challenge submissions.
+    """
+    permission_classes = [permissions.IsAdminUser]
+    serializer_class = AdminChallengeSubmissionSerializer
+    queryset = SkillChallengeSubmission.objects.select_related('student__user', 'challenge').order_by('-submitted_at')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['student__user__first_name', 'student__user__last_name', 'challenge__skill_name', 'challenge__title']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        date_filter = self.request.query_params.get('date')
+        if date_filter:
+            qs = qs.filter(submitted_at__date=date_filter)
+        return qs

@@ -75,10 +75,22 @@
     margin-bottom: 30px;
 }
 
+@media (max-width: 1024px) {
+    .companies-top-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .companies-metrics-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .companies-metrics-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 .company-metric-card {
@@ -221,6 +233,20 @@
     gap: 12px;
     margin-bottom: 24px;
     flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+    .companies-toolbar .search-box {
+        min-width: 100%;
+    }
+    .filter-dropdowns {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .add-partner-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 .companies-toolbar .search-box {

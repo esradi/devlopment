@@ -450,6 +450,10 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         if Application.objects.filter(student=student_profile, offer=offer).exists():
             return Response({'error': 'You have already applied to this offer.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Inject student into request data
+        mutable_data = request.data.copy()
+        mutable_data['student'] = student_profile.id
+        request._full_data = mutable_data
         response = super().create(request, *args, **kwargs)
         
         # Log Events
@@ -664,10 +668,19 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
         log_application_event(application, 'accepted', 'Your application has been accepted by the company.')
 
+        # AUTOMATIC CONVENTION GENERATION
+        try:
+            from apps.conventions.services.convention_service import ConventionService
+            if not hasattr(application, 'convention') or application.convention is None:
+                ConventionService.generate_convention(application)
+                print(f"DEBUG: Convention automatically generated for application {application.id}")
+        except Exception as e:
+            print(f"DEBUG: Failed to auto-generate convention: {e}")
+
         from apps.notifications.services import NotificationService
         NotificationService.notify_application_accepted(application)
 
-        return Response({'message': 'Application accepted'})
+        return Response({'message': 'Application accepted and convention generated'})
 
     @action(detail=True, methods=['post'])
     def refuse(self, request, pk=None):

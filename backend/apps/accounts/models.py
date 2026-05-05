@@ -147,6 +147,18 @@ class WebauthnAuthentication(models.Model):
     
     class Meta:
         db_table = 'api_webauthnauthentication'
+
+class WebauthnRegistration(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="webauthn_reg_profile",
+    )
+    challenge = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_webauthnregistration'
 class StudentBadge(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='badges')
     badge_name = models.CharField(max_length=100)
