@@ -5,6 +5,7 @@ import {
     Shield, Save, Sparkles, Building, Target, Heart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { companyService } from '../../services/api';
 import './CompanyProfile.css';
 
 const EditCompanyProfile = () => {

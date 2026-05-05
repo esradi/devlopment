@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-    ChevronLeft, Send, Sparkles, 
-    Target, MapPin, Clock, 
+import {
+    ChevronLeft, Send, Sparkles,
+    Target, MapPin, Clock,
     Briefcase, Code, FileText, CheckCircle2, Save
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -15,7 +15,7 @@ const EditOffer = () => {
     const [options, setOptions] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    
+
     // Form State
     const [formData, setFormData] = useState({
         title: '',
@@ -38,9 +38,9 @@ const EditOffer = () => {
                     companyService.getOfferOptions(),
                     companyService.getOfferDetails(offerId)
                 ]);
-                
+
                 setOptions(opts);
-                
+
                 // Map the nested objects/IDs from the backend to the flat form structure
                 setFormData({
                     title: offerData.title || '',
@@ -54,7 +54,7 @@ const EditOffer = () => {
                     duration_ids: offerData.durations?.map(d => d.id) || [],
                     skill_ids: offerData.skills?.map(s => s.id) || []
                 });
-                
+
             } catch (err) {
                 console.error("Failed to fetch data:", err);
             } finally {
@@ -85,11 +85,11 @@ const EditOffer = () => {
         setSubmitting(true);
         try {
             await companyService.updateOffer(offerId, formData);
-            alert("Offer updated successfully!");
+            //alert("Offer updated successfully!");
             navigate('/dashboard/company/offers');
         } catch (err) {
             console.error("Failed to update offer:", err);
-            alert("Error updating the offer.");
+            //alert("Error updating the offer.");
         } finally {
             setSubmitting(false);
         }
@@ -112,9 +112,9 @@ const EditOffer = () => {
             </header>
 
             <form className="co-form-container" onSubmit={handleSubmit}>
-                
+
                 {/* Section 1: Informations Principales */}
-                <motion.div className="co-form-card" initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{delay: 0.1}}>
+                <motion.div className="co-form-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                     <div className="co-card-header">
                         <div className="co-icon-box pink"><Briefcase size={20} /></div>
                         <h2>Main Information</h2>
@@ -122,10 +122,10 @@ const EditOffer = () => {
                     <div className="co-card-body">
                         <div className="co-input-group full-width">
                             <label>Job Title <span className="co-required">*</span></label>
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 name="title"
-                                placeholder="e.g., Fullstack React/Node Developer" 
+                                placeholder="e.g., Fullstack React/Node Developer"
                                 value={formData.title}
                                 onChange={handleInputChange}
                                 required
@@ -133,9 +133,9 @@ const EditOffer = () => {
                         </div>
                         <div className="co-input-group full-width">
                             <label>Internship Description <span className="co-required">*</span></label>
-                            <textarea 
+                            <textarea
                                 name="description"
-                                placeholder="Describe the main missions..." 
+                                placeholder="Describe the main missions..."
                                 rows="6"
                                 value={formData.description}
                                 onChange={handleInputChange}
@@ -144,9 +144,9 @@ const EditOffer = () => {
                         </div>
                         <div className="co-input-group full-width">
                             <label>Conditions & Requirements</label>
-                            <textarea 
+                            <textarea
                                 name="requirements"
-                                placeholder="Specific requirements..." 
+                                placeholder="Specific requirements..."
                                 rows="3"
                                 value={formData.requirements}
                                 onChange={handleInputChange}
@@ -156,7 +156,7 @@ const EditOffer = () => {
                 </motion.div>
 
                 {/* Section 2: Détails Logistiques */}
-                <motion.div className="co-form-card" initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{delay: 0.2}}>
+                <motion.div className="co-form-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                     <div className="co-card-header">
                         <div className="co-icon-box purple"><MapPin size={20} /></div>
                         <h2>Logistical Details</h2>
@@ -166,10 +166,10 @@ const EditOffer = () => {
                             <label>Location / Wilaya</label>
                             <div className="co-input-with-icon">
                                 <MapPin size={18} className="co-input-icon" />
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     name="wilaya"
-                                    placeholder="e.g., Algiers, Remote..." 
+                                    placeholder="e.g., Algiers, Remote..."
                                     value={formData.wilaya}
                                     onChange={handleInputChange}
                                 />
@@ -179,10 +179,10 @@ const EditOffer = () => {
                             <label>Compensation</label>
                             <div className="co-input-with-icon">
                                 <Sparkles size={18} className="co-input-icon" />
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     name="salary"
-                                    placeholder="e.g., 30,000 DZD" 
+                                    placeholder="e.g., 30,000 DZD"
                                     value={formData.salary}
                                     onChange={handleInputChange}
                                 />
@@ -193,7 +193,7 @@ const EditOffer = () => {
                             <label>Work Mode</label>
                             <div className="co-chip-cloud">
                                 {options?.locations?.map(loc => (
-                                    <button 
+                                    <button
                                         type="button"
                                         key={loc.id}
                                         className={`co-chip ${formData.location_ids.includes(loc.id) ? 'active' : ''}`}
@@ -209,20 +209,20 @@ const EditOffer = () => {
                 </motion.div>
 
                 {/* Section 3: Criteria & Skills */}
-                <motion.div className="co-form-card" initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{delay: 0.3}}>
+                <motion.div className="co-form-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                     <div className="co-card-header">
                         <div className="co-icon-box teal"><Target size={20} /></div>
                         <h2>Matching Criteria</h2>
                     </div>
                     <div className="co-card-body">
-                         <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>Select skills and domains to refine the matching algorithm.</p>
-                         
-                         <div className="co-grid-2">
+                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>Select skills and domains to refine the matching algorithm.</p>
+
+                        <div className="co-grid-2">
                             <div className="co-selector-group">
                                 <label>Activity Domains</label>
                                 <div className="co-chip-cloud">
                                     {options?.domains?.map(domain => (
-                                        <button 
+                                        <button
                                             type="button"
                                             key={domain.id}
                                             className={`co-chip ${formData.domain_ids.includes(domain.id) ? 'active' : ''}`}
@@ -238,7 +238,7 @@ const EditOffer = () => {
                                 <label>Internship Type</label>
                                 <div className="co-chip-cloud">
                                     {options?.offer_types?.map(type => (
-                                        <button 
+                                        <button
                                             type="button"
                                             key={type.id}
                                             className={`co-chip ${formData.offer_type_ids.includes(type.id) ? 'active' : ''}`}
@@ -255,7 +255,7 @@ const EditOffer = () => {
                             <label>Desired Duration</label>
                             <div className="co-chip-cloud">
                                 {options?.durations?.map(dur => (
-                                    <button 
+                                    <button
                                         type="button"
                                         key={dur.id}
                                         className={`co-chip ${formData.duration_ids.includes(dur.id) ? 'active' : ''}`}
@@ -267,11 +267,11 @@ const EditOffer = () => {
                             </div>
                         </div>
 
-                         <div className="co-selector-group mt-4">
+                        <div className="co-selector-group mt-4">
                             <label className="co-pink-label"><Code size={16} /> Technical Skills</label>
                             <div className="co-chip-cloud">
                                 {options?.skills?.map(skill => (
-                                    <button 
+                                    <button
                                         type="button"
                                         key={skill.id}
                                         className={`co-chip skill-chip ${formData.skill_ids.includes(skill.id) ? 'active' : ''}`}

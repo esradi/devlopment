@@ -165,7 +165,7 @@ export const companyService = {
     createOffer: (data) => api.post('/offers/', data),
     getOfferOptions: () => api.get('/offers/options/'),
     getOfferDetails: (id) => api.get(`/offers/${id}/`),
-    updateOffer: (id, data) => api.put(`/offers/${id}/`),
+    updateOffer: (id, data) => api.put(`/offers/${id}/`, data),
     deleteOffer: (id) => api.delete(`/offers/${id}/`),
     getOfferApplicants: (offerId, params = {}) => api.get(`/applications/offer/${offerId}/`, params),
     getApplications: (params = {}) => api.get('/applications/company/list/', params),
