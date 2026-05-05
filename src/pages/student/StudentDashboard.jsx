@@ -111,40 +111,45 @@ const StudentDashboard = ({ setUserRole }) => {
         }
     };
 
+    const fetchData = async (showLoading = true) => {
+        try {
+            if (showLoading) setLoading(true);
+            const [profileRes, dashboardRes, appsRes] = await Promise.all([
+                authService.getMe(),
+                studentService.getDashboard(),
+                applicationService.getMine()
+            ]);
+            
+            setUserData({
+                ...profileRes,
+                dashboardStats: dashboardRes?.stats || {},
+                recentActivity: dashboardRes?.recent_activity || [],
+                completeness: dashboardRes?.profile_completeness || 0
+            });
+            setRecentApps(Array.isArray(appsRes) ? appsRes : appsRes?.results || appsRes?.data || []);
+            setRecommendations(dashboardRes?.recommended_offers || []);
+        } catch (err) {
+            console.error("Failed to fetch dashboard data:", err);
+            if (err.message.includes('401')) {
+                handleLogout();
+            }
+        } finally {
+            if (showLoading) setLoading(false);
+        }
+    };
+
     useEffect(() => {
         setActiveTab(getTabFromPath(location.pathname));
     }, [location.pathname]);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const [profileRes, dashboardRes, appsRes] = await Promise.all([
-                    authService.getMe(),          // ← change from studentService.getProfile()
-                    studentService.getDashboard(),
-                    applicationService.getMine()
-                ]);
-                console.log("profileRes:", profileRes);
-
-
-                setUserData({
-                    ...profileRes,
-                    dashboardStats: dashboardRes?.stats || {},
-                    recentActivity: dashboardRes?.recent_activity || [],
-                    completeness: dashboardRes?.profile_completeness || 0
-                });
-                setRecentApps(Array.isArray(appsRes) ? appsRes : appsRes?.results || appsRes?.data || []);
-                setRecommendations(dashboardRes?.recommended_offers || []);
-            } catch (err) {
-                console.error("Failed to fetch dashboard data:", err);
-                if (err.message.includes('401')) {
-                    handleLogout();
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
+        
+        const handleProfileUpdate = () => {
+            fetchData(false);
+        };
+        window.addEventListener('profileUpdated', handleProfileUpdate);
+        return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
     }, []);
 
     const fetchBreakdown = async (offerId) => {
@@ -262,7 +267,7 @@ const StudentDashboard = ({ setUserRole }) => {
                         onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                         onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                     >
-                        <img src={userData?.profile_picture ? `http://localhost:8000${userData.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
+                        <img src={userData?.profile?.profile_picture ? `http://localhost:8000${userData.profile.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
                         <div>
                             <h4>{userData?.first_name || userData?.email?.split('@')[0] || 'Student'}</h4>
                             <p>Student Portal / {userData?.completeness > 80 ? 'Active Applicant' : 'New Member'}</p>
@@ -369,7 +374,7 @@ const StudentDashboard = ({ setUserRole }) => {
                             <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                                 <NotificationBell />
                                 <div className="user-profile-toggle" onClick={() => navigate('/dashboard/student/settings')} style={{ cursor: 'pointer' }}>
-                                    <img src={userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="User" style={{ width: '35px', height: '35px', borderRadius: '50%', border: '2px solid rgba(158, 89, 255, 0.3)' }} />
+                                    <img src={userData?.profile?.profile_picture ? `http://localhost:8000${userData.profile.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="User" style={{ width: '35px', height: '35px', borderRadius: '50%', border: '2px solid rgba(158, 89, 255, 0.3)', objectFit: 'cover' }} />
                                 </div>
                             </div>
                         </header>
@@ -620,7 +625,10 @@ const StudentDashboard = ({ setUserRole }) => {
                 ) : activeTab === 'complete-profile' ? (
                     <CompleteProfile
                         userData={userData}
-                        onSave={() => navigate('/dashboard/student')}
+                        onSave={() => {
+                            fetchData(false);
+                            navigate('/dashboard/student');
+                        }}
                     />
                 ) : (
                     <div className="placeholder-pane">
