@@ -56,7 +56,14 @@ const CompleteProfile = ({ userData, onSave }) => {
     const fileInputRef = useRef(null);
     const [profileImage, setProfileImage] = useState(null);
     const [isCopied, setIsCopied] = useState(false);
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [speciality, setSpeciality] = useState('');
+    const [academicYear, setAcademicYear] = useState('Master 2 / Engineering');
+    const [university, setUniversity] = useState('');
     const contentRef = useRef(null);
+    const [linkModal, setLinkModal] = useState({ show: false, type: '', label: '', value: '', icon: null });
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -85,12 +92,36 @@ const CompleteProfile = ({ userData, onSave }) => {
                     setGithubProfile({ added: !!data.github_url, url: data.github_url || '' });
                     setLinkedinProfile({ added: !!data.linkedin_url, url: data.linkedin_url || '' });
                     setPortfolio({ added: !!data.portfolio_url, url: data.portfolio_url || '' });
+                    
+                    // Initialize personal info
+                    setFirstName(data.first_name || userData?.first_name || '');
+                    setLastName(data.last_name || userData?.last_name || '');
+                    setPhone(data.phone || userData?.phone || '');
+                    setSpeciality(data.speciality || userData?.profile?.speciality || '');
+                    setAcademicYear(data.academic_year || userData?.profile?.academic_year || 'Master 2 / Engineering');
+                    setUniversity(data.university || userData?.profile?.university || '');
+                } else {
+                    // Fallback to userData if no profile data
+                    setFirstName(userData?.first_name || '');
+                    setLastName(userData?.last_name || '');
+                    setPhone(userData?.phone || '');
+                    setSpeciality(userData?.profile?.speciality || '');
+                    setAcademicYear(userData?.profile?.academic_year || 'Master 2 / Engineering');
+                    setUniversity(userData?.profile?.university || '');
                 }
             } catch (err) {
                 console.error("Failed to load profile:", err);
                 setSkills([{ name: 'REACT.JS', level: 'Expert' }, { name: 'NODE.JS', level: 'Intermediate' }]);
                 setLocations(['Algiers']);
                 setDomains(['Engineering', 'UI/UX Design', 'Backend Dev']);
+                
+                // Fallback to userData on error
+                setFirstName(userData?.first_name || '');
+                setLastName(userData?.last_name || '');
+                setPhone(userData?.phone || '');
+                setSpeciality(userData?.profile?.speciality || '');
+                setAcademicYear(userData?.profile?.academic_year || 'Master 2 / Engineering');
+                setUniversity(userData?.profile?.university || '');
             }
         };
         loadProfile();
@@ -133,24 +164,82 @@ const CompleteProfile = ({ userData, onSave }) => {
         setShowWilayaDropdown(false);
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Preview local
             const reader = new FileReader();
             reader.onloadend = () => {
                 setProfileImage(reader.result);
             };
             reader.readAsDataURL(file);
+            
+            // Upload to backend immediately
+            try {
+                const formData = new FormData();
+                formData.append('profile_picture', file);
+                const res = await studentService.uploadPicture(formData);
+                
+                // Update localStorage
+                const storedUser = localStorage.getItem('user');
+                if (storedUser && res.profile_picture) {
+                    const userDataObj = JSON.parse(storedUser);
+                    const newUserObj = {
+                        ...userDataObj,
+                        profile: {
+                            ...userDataObj.profile,
+                            profile_picture: res.profile_picture
+                        }
+                    };
+                    localStorage.setItem('user', JSON.stringify(newUserObj));
+                    window.dispatchEvent(new Event('profileUpdated'));
+                }
+            } catch (error) {
+                console.error("Failed to upload profile picture:", error);
+            }
         }
     };
 
-    const handleAddGithub = () => {
-        setGithubProfile({ added: true, url: 'github.com/amine-benali' });
+    const handleOpenLinkModal = (type) => {
+        const configs = {
+            github: { label: 'GitHub Profile', value: githubProfile.url, icon: <Github size={24} /> },
+            linkedin: { label: 'LinkedIn Profile', value: linkedinProfile.url, icon: <Linkedin size={24} /> },
+            portfolio: { label: 'Portfolio Website', value: portfolio.url, icon: <Globe size={24} /> }
+        };
+        setLinkModal({ show: true, type, ...configs[type] });
     };
 
-    const handleAddPortfolio = () => {
-        setPortfolio({ added: true, url: 'amine-portfolio.dev' });
+    const handleSaveLinkModal = () => {
+        const { type, value } = linkModal;
+        if (type === 'github') setGithubProfile({ added: !!value, url: value });
+        if (type === 'linkedin') setLinkedinProfile({ added: !!value, url: value });
+        if (type === 'portfolio') setPortfolio({ added: !!value, url: value });
+        setLinkModal({ ...linkModal, show: false });
     };
+
+    const handleCVUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('cv', file);
+
+        try {
+            setIsSaving(true);
+            await studentService.uploadCV(formData);
+            // Show a custom toast/notification instead of alert if possible, but keep it simple for now
+            alert("CV uploaded successfully!");
+        } catch (error) {
+            console.error("CV upload failed:", error);
+            alert("Failed to upload CV. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleAddGithub = () => handleOpenLinkModal('github');
+    const handleAddLinkedin = () => handleOpenLinkModal('linkedin');
+    const handleAddPortfolio = () => handleOpenLinkModal('portfolio');
 
     const interactiveVariants = {
         hover: {
@@ -235,7 +324,7 @@ const CompleteProfile = ({ userData, onSave }) => {
                             <div className="avatar-side">
                                 <div className="avatar-edit-container">
                                     <img
-                                        src={profileImage || userData?.profile?.profile_picture || `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`}
+                                        src={profileImage || (userData?.profile?.profile_picture ? `http://localhost:8000${userData.profile.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`)}
                                         alt="Profile"
                                         className="large-avatar"
                                     />
@@ -255,11 +344,21 @@ const CompleteProfile = ({ userData, onSave }) => {
                                 <div className="field-row">
                                     <div className="field-group">
                                         <label>FIRST NAME</label>
-                                        <input type="text" defaultValue={userData?.first_name || "Amine"} />
+                                        <input 
+                                            type="text" 
+                                            value={firstName} 
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                            placeholder="Enter your first name"
+                                        />
                                     </div>
                                     <div className="field-group">
                                         <label>LAST NAME</label>
-                                        <input type="text" defaultValue={userData?.last_name || "Benali"} />
+                                        <input 
+                                            type="text" 
+                                            value={lastName} 
+                                            onChange={(e) => setLastName(e.target.value)}
+                                            placeholder="Enter your last name"
+                                        />
                                     </div>
                                 </div>
                                 <div className="field-row">
@@ -274,7 +373,12 @@ const CompleteProfile = ({ userData, onSave }) => {
                                         <label>PHONE</label>
                                         <div className="input-with-icon">
                                             <Phone size={14} />
-                                            <input type="text" defaultValue="+213 5XX XX XX XX" />
+                                            <input 
+                                                type="text" 
+                                                value={phone} 
+                                                onChange={(e) => setPhone(e.target.value)}
+                                                placeholder="+213 5XX XX XX XX"
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -293,9 +397,14 @@ const CompleteProfile = ({ userData, onSave }) => {
                                     <div className="field-group">
                                         <label>EDUCATION LEVEL</label>
                                         <div className="select-input">
-                                            <select>
-                                                <option>Master 2 / Engineering</option>
-                                                <option>Licence 3</option>
+                                            <select 
+                                                value={academicYear}
+                                                onChange={(e) => setAcademicYear(e.target.value)}
+                                            >
+                                                <option value="Master 2 / Engineering">Master 2 / Engineering</option>
+                                                <option value="Master 1">Master 1</option>
+                                                <option value="Licence 3">Licence 3</option>
+                                                <option value="Licence 2">Licence 2</option>
                                             </select>
                                             <ChevronDown size={16} className="chevron" />
                                         </div>
@@ -303,7 +412,12 @@ const CompleteProfile = ({ userData, onSave }) => {
                                 </div>
                                 <div className="field-group">
                                     <label>SPECIALIZATION</label>
-                                    <input type="text" placeholder="e.g. Computer Science" defaultValue={userData?.profile?.speciality} />
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. Computer Science" 
+                                        value={speciality} 
+                                        onChange={(e) => setSpeciality(e.target.value)}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -468,16 +582,31 @@ const CompleteProfile = ({ userData, onSave }) => {
                                 <div className="link-icon cv"><FileText size={18} /></div>
                                 <div className="link-text">
                                     <h4>Curriculum Vitae</h4>
-                                    <span className="status connected">CONNECTED</span>
+                                    <span className={`status ${userData?.profile?.cv ? 'connected' : 'empty'}`}>
+                                        {userData?.profile?.cv ? 'CONNECTED' : 'NOT ADDED YET'}
+                                    </span>
                                 </div>
-                                <button className="link-action"><RefreshCw size={14} /></button>
+                                <button 
+                                    className="link-action" 
+                                    onClick={() => document.getElementById('cv-file-input').click()}
+                                    title="Upload CV"
+                                >
+                                    <RefreshCw size={14} />
+                                </button>
+                                <input 
+                                    id="cv-file-input"
+                                    type="file"
+                                    style={{ display: 'none' }}
+                                    accept=".pdf,.doc,.docx"
+                                    onChange={handleCVUpload}
+                                />
                             </div>
                             <motion.div
-                                className={`link-item ${!githubProfile.added ? 'interactive' : ''}`}
-                                whileHover={!githubProfile.added ? "hover" : ""}
-                                whileTap={!githubProfile.added ? "tap" : ""}
+                                className={`link-item interactive`}
+                                whileHover="hover"
+                                whileTap="tap"
                                 variants={interactiveVariants}
-                                onClick={!githubProfile.added ? handleAddGithub : undefined}
+                                onClick={handleAddGithub}
                             >
                                 <div className="link-icon github"><Github size={18} /></div>
                                 <div className="link-text">
@@ -491,11 +620,11 @@ const CompleteProfile = ({ userData, onSave }) => {
                                 </button>
                             </motion.div>
                             <motion.div
-                                className={`link-item ${!linkedinProfile.added ? 'interactive' : ''}`}
-                                whileHover={!linkedinProfile.added ? "hover" : ""}
-                                whileTap={!linkedinProfile.added ? "tap" : ""}
+                                className={`link-item interactive`}
+                                whileHover="hover"
+                                whileTap="tap"
                                 variants={interactiveVariants}
-                                onClick={!linkedinProfile.added ? () => setLinkedinProfile({ added: true, url: 'linkedin.com/in/amine' }) : undefined}
+                                onClick={handleAddLinkedin}
                             >
                                 <div className="link-icon linkedin"><Linkedin size={18} /></div>
                                 <div className="link-text">
@@ -509,11 +638,11 @@ const CompleteProfile = ({ userData, onSave }) => {
                                 </button>
                             </motion.div>
                             <motion.div
-                                className={`link-item ${!portfolio.added ? 'interactive' : ''}`}
-                                whileHover={!portfolio.added ? "hover" : ""}
-                                whileTap={!portfolio.added ? "tap" : ""}
+                                className={`link-item interactive`}
+                                whileHover="hover"
+                                whileTap="tap"
                                 variants={interactiveVariants}
-                                onClick={!portfolio.added ? handleAddPortfolio : undefined}
+                                onClick={handleAddPortfolio}
                             >
                                 <div className="link-icon portfolio"><Globe size={18} /></div>
                                 <div className="link-text">
@@ -556,22 +685,39 @@ const CompleteProfile = ({ userData, onSave }) => {
                                 setIsSaving(true);
                                 try {
                                     const payload = {
-                                        first_name: userData?.first_name || '',
-                                        last_name: userData?.last_name || '',
-                                        phone: userData?.phone || '',
-                                        wilaya: locations[0] || userData?.profile?.wilaya || '',
-                                        academic_year: userData?.profile?.academic_year || 'Master 2',
-                                        speciality: userData?.profile?.speciality || '',
-                                        university: userData?.profile?.university || '',
-                                        domain: domains[0] || userData?.profile?.domain || '',
-                                        github_url: githubProfile?.url || userData?.profile?.github_url || '',
-                                        portfolio_url: portfolio?.url || userData?.profile?.portfolio_url || '',
-                                        linkedin_url: linkedinProfile?.url || userData?.profile?.linkedin_url || '',
+                                        first_name: firstName,
+                                        last_name: lastName,
+                                        phone: phone,
+                                        wilaya: locations[0] || '',
+                                        academic_year: academicYear,
+                                        speciality: speciality,
+                                        university: university || userData?.profile?.university || '',
+                                        domain: domains[0] || '',
+                                        github_url: githubProfile?.url || '',
+                                        portfolio_url: portfolio?.url || '',
+                                        linkedin_url: linkedinProfile?.url || '',
                                         offer_type: offerType,
                                         duration: duration,
                                         skill_names: skills.map(s => s.name)
                                     };
-                                    await studentService.updateProfile(payload);
+                                    const updatedProfile = await studentService.updateProfile(payload);
+                                    
+                                    // Update localStorage
+                                    const storedUser = localStorage.getItem('user');
+                                    if (storedUser) {
+                                        const userDataObj = JSON.parse(storedUser);
+                                        const newUserObj = {
+                                            ...userDataObj,
+                                            first_name: updatedProfile.first_name || firstName,
+                                            last_name: updatedProfile.last_name || lastName,
+                                            profile: updatedProfile.profile || userDataObj.profile
+                                        };
+                                        localStorage.setItem('user', JSON.stringify(newUserObj));
+                                    }
+                                    
+                                    // Dispatch event for Navbar
+                                    window.dispatchEvent(new Event('profileUpdated'));
+
                                     if (onSave) onSave();
                                 } catch (error) {
                                     console.error("Failed to complete profile:", error);
@@ -588,6 +734,60 @@ const CompleteProfile = ({ userData, onSave }) => {
                     </div>
                 </aside>
             </div>
+            {/* Custom Link Modal */}
+            <AnimatePresence>
+                {linkModal.show && (
+                    <div className="custom-modal-overlay-wrapper">
+                        <motion.div 
+                            className="custom-modal-overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setLinkModal({ ...linkModal, show: false })}
+                        />
+                        <motion.div 
+                            className="custom-modal-content glass"
+                            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                        >
+                            <div className="modal-header">
+                                <div className="modal-icon-title">
+                                    <div className="modal-icon-bg">{linkModal.icon}</div>
+                                    <h3>Connect {linkModal.label}</h3>
+                                </div>
+                                <button className="modal-close" onClick={() => setLinkModal({ ...linkModal, show: false })}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            
+                            <div className="modal-body">
+                                <p>Enter the URL for your {linkModal.label.toLowerCase()} below.</p>
+                                <div className="modal-input-wrapper">
+                                    <input 
+                                        type="text" 
+                                        placeholder={`https://${linkModal.type}.com/yourname`}
+                                        value={linkModal.value}
+                                        onChange={(e) => setLinkModal({ ...linkModal, value: e.target.value })}
+                                        autoFocus
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSaveLinkModal()}
+                                    />
+                                    <div className="input-glow"></div>
+                                </div>
+                            </div>
+
+                            <div className="modal-footer">
+                                <button className="btn-cancel" onClick={() => setLinkModal({ ...linkModal, show: false })}>
+                                    Cancel
+                                </button>
+                                <button className="btn-save-modal" onClick={handleSaveLinkModal}>
+                                    Save Connection
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };

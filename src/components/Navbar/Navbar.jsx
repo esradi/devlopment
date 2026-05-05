@@ -12,6 +12,7 @@ const Navbar = ({ role, setUserRole }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
+    const [currentUser, setCurrentUser] = useState(null);
     const { scrollY } = useScroll();
     const [isScrolled, setIsScrolled] = useState(false);
     const navigate = useNavigate();
@@ -26,18 +27,27 @@ const Navbar = ({ role, setUserRole }) => {
         return () => window.removeEventListener('scroll', updateScroll);
     }, []);
 
-    // Sync role from localStorage
-    useEffect(() => {
+    // Sync role and user from localStorage
+    const syncUser = () => {
         const storedUser = localStorage.getItem('user');
-        if (storedUser && role === 'public') {
+        if (storedUser) {
             try {
                 const userData = JSON.parse(storedUser);
-                if (userData.role) {
+                setCurrentUser(userData);
+                if (role === 'public' && userData.role) {
                     setUserRole(userData.role);
                 }
             } catch (err) { }
+        } else {
+            setCurrentUser(null);
         }
-    }, []);
+    };
+
+    useEffect(() => {
+        syncUser();
+        window.addEventListener('profileUpdated', syncUser);
+        return () => window.removeEventListener('profileUpdated', syncUser);
+    }, [role]);
 
     const fetchUnreadCount = async () => {
         if (role !== 'public' && role) {
@@ -117,10 +127,7 @@ const Navbar = ({ role, setUserRole }) => {
     const getProfileLink = () => {
         let currentRole = role;
         if (currentRole === 'public' || !currentRole) {
-            try {
-                const storedUser = localStorage.getItem('user');
-                if (storedUser) currentRole = JSON.parse(storedUser).role;
-            } catch (err) { }
+            if (currentUser) currentRole = currentUser.role;
         }
         switch (currentRole) {
             case 'student': return '/dashboard/student/complete-profile';
@@ -131,14 +138,20 @@ const Navbar = ({ role, setUserRole }) => {
     };
 
     const getProfileName = () => {
-        try {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                const userData = JSON.parse(storedUser);
-                return (userData.first_name || userData.email || 'A').charAt(0).toUpperCase();
-            }
-        } catch (err) { }
+        if (currentUser) {
+            return (currentUser.first_name || currentUser.email || 'A').charAt(0).toUpperCase();
+        }
         return 'U';
+    };
+
+    const getProfileDisplay = () => {
+        if (currentUser?.profile?.profile_picture) {
+            const picUrl = currentUser.profile.profile_picture.startsWith('http') 
+                ? currentUser.profile.profile_picture 
+                : `http://localhost:8000${currentUser.profile.profile_picture}`;
+            return <img src={picUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />;
+        }
+        return getProfileName();
     };
 
     return (
@@ -210,24 +223,15 @@ const Navbar = ({ role, setUserRole }) => {
 
                             <NotificationCenter role={role} />
 
-                            <div className="profile-container" style={{ marginLeft: '8px' }}>
-                                <div className="profile-trigger" onClick={() => setIsProfileOpen(!isProfileOpen)} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 12px 4px 4px', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                    <div className="profile-avatar" style={{ backgroundColor: '#9e59ff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
-                                        {getProfileName()}
+                                <div className="profile-container" style={{ marginLeft: '8px' }}>
+                                    <div className="profile-trigger" onClick={() => setIsProfileOpen(!isProfileOpen)} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 12px 4px 4px', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                        <div className="profile-avatar" style={{ backgroundColor: '#9e59ff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
+                                            {getProfileDisplay()}
+                                        </div>
+                                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>
+                                            {currentUser ? (currentUser.first_name || currentUser.email?.split('@')[0]) : 'User'}
+                                        </span>
                                     </div>
-                                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>
-                                        {(() => {
-                                            try {
-                                                const storedUser = localStorage.getItem('user');
-                                                if (storedUser) {
-                                                    const userData = JSON.parse(storedUser);
-                                                    return userData.first_name || userData.email.split('@')[0];
-                                                }
-                                            } catch (e) { }
-                                            return 'User';
-                                        })()}
-                                    </span>
-                                </div>
 
                                 <AnimatePresence>
                                     {isProfileOpen && (

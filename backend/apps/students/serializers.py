@@ -30,6 +30,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
     email = serializers.EmailField(source='user.email', read_only=True)
+    phone = serializers.CharField(source='user.phone', read_only=True)
     skills = serializers.SerializerMethodField()
 
     class Meta:
@@ -41,6 +42,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'email',
+            'phone',
             'domain',
             'speciality',
             'university',

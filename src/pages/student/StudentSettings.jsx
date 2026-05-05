@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { dashboardService, authService } from '../../services/api';
+import { studentService, authService } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     CheckCircle2,
@@ -24,6 +24,7 @@ const StudentSettings = ({ userData }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const fileInputRef = useRef(null);
     const [profilePic, setProfilePic] = useState(null);
+    const [linkModal, setLinkModal] = useState({ show: false, type: '', label: '', value: '', icon: null });
 
     const triggerToast = (msg) => {
         setToastMessage(msg);
@@ -62,7 +63,11 @@ const StudentSettings = ({ userData }) => {
                         phone: data.phone || '',
                         wilaya: data.profile?.wilaya || '',
                         educationLevel: data.profile?.academic_year || 'Master 2',
-                        specialization: data.profile?.speciality || ''
+                        specialization: data.profile?.speciality || '',
+                        githubUrl: data.profile?.github_url || '',
+                        linkedinUrl: data.profile?.linkedin_url || '',
+                        portfolioUrl: data.profile?.portfolio_url || '',
+                        cv: data.profile?.cv || ''
                     });
 
                     // Load profile picture from backend
@@ -141,11 +146,66 @@ const StudentSettings = ({ userData }) => {
             try {
                 const formData = new FormData();
                 formData.append('profile_picture', file);
-                await dashboardService.uploadPicture(formData);
+                const res = await studentService.uploadPicture(formData);
+                
+                // Update localStorage
+                const storedUser = localStorage.getItem('user');
+                if (storedUser && res.profile_picture) {
+                    const userDataObj = JSON.parse(storedUser);
+                    const newUserObj = {
+                        ...userDataObj,
+                        profile: {
+                            ...userDataObj.profile,
+                            profile_picture: res.profile_picture
+                        }
+                    };
+                    localStorage.setItem('user', JSON.stringify(newUserObj));
+                    window.dispatchEvent(new Event('profileUpdated'));
+                }
+                
                 triggerToast("Photo uploaded successfully ✅");
             } catch (error) {
                 triggerToast("Failed to upload photo ❌");
             }
+        }
+    };
+
+    const handleOpenLinkModal = (type) => {
+        const configs = {
+            githubUrl: { label: 'GitHub Profile', value: formData.githubUrl, icon: <Github size={24} /> },
+            linkedinUrl: { label: 'LinkedIn Profile', value: formData.linkedinUrl, icon: <Linkedin size={24} /> },
+            portfolioUrl: { label: 'Portfolio Website', value: formData.portfolioUrl, icon: <Globe size={24} /> }
+        };
+        setLinkModal({ show: true, type, ...configs[type] });
+    };
+
+    const handleSaveLinkModal = () => {
+        const { type, value } = linkModal;
+        setFormData(prev => ({ ...prev, [type]: value }));
+        setLinkModal({ ...linkModal, show: false });
+    };
+
+    const handleAddSocial = (type) => {
+        handleOpenLinkModal(type);
+    };
+
+    const handleCVUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const uploadFormData = new FormData();
+        uploadFormData.append('cv', file);
+
+        try {
+            setIsSaving(true);
+            await studentService.uploadCV(uploadFormData);
+            triggerToast("CV uploaded successfully! ✅");
+            setFormData(prev => ({ ...prev, cv: 'connected' })); // Visual feedback
+        } catch (error) {
+            console.error("CV upload failed:", error);
+            triggerToast("Failed to upload CV ❌");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -279,30 +339,43 @@ const StudentSettings = ({ userData }) => {
                             <div className="portfolio-card">
                                 <div className="p-icon-circle doc"><FileTextIcon /></div>
                                 <div className="p-info">
-                                    <h4>Resume_Final_2024.pdf</h4>
-                                    <span>Updated 2 days ago</span>
+                                    <h4>{formData.cv ? 'Curriculum Vitae' : 'No CV Uploaded'}</h4>
+                                    <span>{formData.cv ? 'CONNECTED' : 'Not added yet'}</span>
                                 </div>
-                                <button className="p-action"><Upload size={16} /></button>
+                                <button 
+                                    className="p-action" 
+                                    onClick={() => document.getElementById('settings-cv-upload').click()}
+                                    title="Upload CV"
+                                >
+                                    <Upload size={16} />
+                                </button>
+                                <input 
+                                    id="settings-cv-upload"
+                                    type="file"
+                                    style={{ display: 'none' }}
+                                    accept=".pdf,.doc,.docx"
+                                    onChange={handleCVUpload}
+                                />
                             </div>
-                            <div className="portfolio-card">
+                            <div className="portfolio-card" onClick={() => handleAddSocial('githubUrl')} style={{ cursor: 'pointer' }}>
                                 <div className="p-icon-circle gh"><Github size={18} /></div>
                                 <div className="p-info">
                                     <h4>GITHUB</h4>
-                                    <a href="#" className="p-link">github.com/aminek</a>
+                                    <span className="p-link">{formData.githubUrl || 'Not added yet'}</span>
                                 </div>
                             </div>
-                            <div className="portfolio-card">
+                            <div className="portfolio-card" onClick={() => handleAddSocial('linkedinUrl')} style={{ cursor: 'pointer' }}>
                                 <div className="p-icon-circle li"><Linkedin size={18} /></div>
                                 <div className="p-info">
                                     <h4>LINKEDIN</h4>
-                                    <a href="#" className="p-link">linkedin.com/in/aminek</a>
+                                    <span className="p-link">{formData.linkedinUrl || 'Not added yet'}</span>
                                 </div>
                             </div>
-                            <div className="portfolio-card add-new dashed">
+                            <div className="portfolio-card add-new dashed" onClick={() => handleAddSocial('portfolioUrl')} style={{ cursor: 'pointer' }}>
                                 <div className="p-icon-circle add"><Plus size={18} /></div>
                                 <div className="p-info">
-                                    <h4>Add Portfolio</h4>
-                                    <span>Personal website or Behance</span>
+                                    <h4>{formData.portfolioUrl ? 'PORTFOLIO' : 'Add Portfolio'}</h4>
+                                    <span className="p-link">{formData.portfolioUrl || 'Personal website or Behance'}</span>
                                 </div>
                             </div>
                         </div>
@@ -504,7 +577,7 @@ const StudentSettings = ({ userData }) => {
                         <div className="settings-card text-center profile-avatar-card">
                             <div className="avatar-preview-wrap" onClick={handlePhotoClick} style={{ cursor: 'pointer' }}>
                                 <img
-                                    src={profilePic || `https://ui-avatars.com/api/?name=${formData.firstName}+${formData.lastName}&background=0ea5e9&color=fff&size=120`}
+                                    src={profilePic || (userData?.profile?.profile_picture ? `http://localhost:8000${userData.profile.profile_picture}` : `https://ui-avatars.com/api/?name=${formData.firstName || userData?.first_name}+${formData.lastName || userData?.last_name}&background=0ea5e9&color=fff&size=120`)}
                                     alt="Avatar"
                                     className="avatar-preview-img"
                                 />
@@ -559,10 +632,27 @@ const StudentSettings = ({ userData }) => {
                                 wilaya: formData.wilaya,
                                 academic_year: formData.educationLevel,
                                 speciality: formData.specialization,
-                                // Pass skill names or IDs
+                                github_url: formData.githubUrl,
+                                portfolio_url: formData.portfolioUrl,
+                                linkedin_url: formData.linkedinUrl,
                                 skill_names: skills.map(s => s.skill_name || s)
                             };
-                            await dashboardService.updateProfile(payload);
+                            const updatedProfile = await studentService.updateProfile(payload);
+                            
+                            // Update localStorage
+                            const storedUser = localStorage.getItem('user');
+                            if (storedUser) {
+                                const userDataObj = JSON.parse(storedUser);
+                                const newUserObj = {
+                                    ...userDataObj,
+                                    first_name: updatedProfile.first_name || formData.firstName,
+                                    last_name: updatedProfile.last_name || formData.lastName,
+                                    profile: updatedProfile.profile || userDataObj.profile
+                                };
+                                localStorage.setItem('user', JSON.stringify(newUserObj));
+                                window.dispatchEvent(new Event('profileUpdated'));
+                            }
+                            
                             triggerToast("Settings saved successfully");
                         } catch (error) {
                             console.error("Save error:", error);
@@ -577,6 +667,60 @@ const StudentSettings = ({ userData }) => {
                 </button>
             </div>
 
+            {/* Custom Link Modal */}
+            <AnimatePresence>
+                {linkModal.show && (
+                    <div className="custom-modal-overlay-wrapper">
+                        <motion.div 
+                            className="custom-modal-overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setLinkModal({ ...linkModal, show: false })}
+                        />
+                        <motion.div 
+                            className="custom-modal-content glass"
+                            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                        >
+                            <div className="modal-header">
+                                <div className="modal-icon-title">
+                                    <div className="modal-icon-bg">{linkModal.icon}</div>
+                                    <h3>Connect {linkModal.label}</h3>
+                                </div>
+                                <button className="modal-close" onClick={() => setLinkModal({ ...linkModal, show: false })}>
+                                    <XIcon size={20} />
+                                </button>
+                            </div>
+                            
+                            <div className="modal-body">
+                                <p>Enter the URL for your {linkModal.label.toLowerCase()} below.</p>
+                                <div className="modal-input-wrapper">
+                                    <input 
+                                        type="text" 
+                                        placeholder={`https://${linkModal.type.replace('Url', '')}.com/yourname`}
+                                        value={linkModal.value}
+                                        onChange={(e) => setLinkModal({ ...linkModal, value: e.target.value })}
+                                        autoFocus
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSaveLinkModal()}
+                                    />
+                                    <div className="input-glow"></div>
+                                </div>
+                            </div>
+
+                            <div className="modal-footer">
+                                <button className="btn-cancel" onClick={() => setLinkModal({ ...linkModal, show: false })}>
+                                    Cancel
+                                </button>
+                                <button className="btn-save-modal" onClick={handleSaveLinkModal}>
+                                    Save Connection
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
