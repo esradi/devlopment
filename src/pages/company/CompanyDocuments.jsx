@@ -4,11 +4,12 @@ import {
     LayoutDashboard, Briefcase, Send, MessageSquare, Settings, Calendar,
     Folder, Sparkles, Filter, ChevronDown, Download, Edit3, CloudDownload,
     LogOut, User, FileText, TrendingUp, Search, Bell, HelpCircle, Menu, X,
-    Fingerprint, AlertCircle, CheckCircle2, ShieldCheck
+    Fingerprint, AlertCircle, CheckCircle2, ShieldCheck, RotateCcw, Loader2,
+    ChevronRight, Eye
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
-import { conventionService, referenceService, companyService } from '../../services/api';
+import { conventionService, referenceService, companyService, authService } from '../../services/api';
 import './CompanyDocuments.css';
 import '../company/CompanyDashboard.css';
 
@@ -37,10 +38,252 @@ const CompanyDocuments = () => {
     const [statusFilter, setStatusFilter] = useState('All');
     const [offerFilter, setOfferFilter] = useState('All');
     const [modernAlert, setModernAlert] = useState(null);
+    const [signingConventionId, setSigningConventionId] = useState(null);
+    const [showScanningModal, setShowScanningModal] = useState(false);
+    const [showSignatureModal, setShowSignatureModal] = useState(false);
+    const [signatureConventionId, setSignatureConventionId] = useState(null);
+    const canvasRef = React.useRef(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+
 
     const showModal = (type, title, message, onConfirm = null) => {
         setModernAlert({ type, title, message, onConfirm });
     };
+
+    const bufferToBase64 = (buffer) => {
+        return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=/g, "");
+    };
+
+    const base64urlToUint8Array = (base64url) => {
+        const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
+        const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    };
+
+    const handleSignConvention = async (conventionId) => {
+        try {
+            setSigningConventionId(conventionId);
+            
+            // 1. Check if biometric hardware is available
+            const isBiometricAvailable = window.PublicKeyCredential && 
+                await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+            
+            if (!isBiometricAvailable) {
+                console.warn("No biometric hardware detected, skipping directly to manual signature.");
+                setSignatureConventionId(conventionId);
+                setShowSignatureModal(true);
+                return;
+            }
+
+            setShowScanningModal(true);
+            console.log("Biometric hardware detected. Fetching options...");
+            const options = await authService.getWebauthnOptions();
+            
+            const authenticationOptions = {
+                publicKey: {
+                    ...options,
+                    challenge: base64urlToUint8Array(options.challenge),
+                    allowCredentials: options.allowCredentials.map(cred => ({
+                        ...cred,
+                        id: base64urlToUint8Array(cred.id)
+                    })),
+                    userVerification: "preferred",
+                    timeout: 60000
+                }
+            };
+
+            const credential = await navigator.credentials.get(authenticationOptions);
+
+            if (!credential) {
+                throw new Error("No fingerprint response received from device.");
+            }
+
+            const webauthnResponse = {
+                id: credential.id,
+                rawId: bufferToBase64(credential.rawId),
+                type: credential.type,
+                response: {
+                    authenticatorData: bufferToBase64(credential.response.authenticatorData),
+                    clientDataJSON: bufferToBase64(credential.response.clientDataJSON),
+                    signature: bufferToBase64(credential.response.signature),
+                    userHandle: credential.response.userHandle ? bufferToBase64(credential.response.userHandle) : null
+                }
+            };
+
+            await conventionService.signCompany(conventionId, webauthnResponse);
+            // Refresh data
+            const [convData, statsData] = await Promise.all([
+                conventionService.getConventions(),
+                companyService.getConventionStats()
+            ]);
+            setConventions(convData);
+            setStats(statsData);
+            showModal('success', 'Validated', 'Convention signed successfully with company fingerprint!');
+        } catch (err) {
+            console.error("Biometric Flow Error:", err);
+            const errorMsg = err.response?.data?.error || err.message || "";
+
+            if (errorMsg.includes("credential not found") || errorMsg.includes("registered")) {
+                setShowScanningModal(false);
+                showModal('confirm', 'Fingerprint Not Linked', "Your fingerprint is not linked to your account yet.\n\nWould you like to link it now?", () => {
+                    handleRegisterFingerprint(conventionId);
+                });
+            } else {
+                console.warn("Biometric failed or rejected, offering manual sign fallback...");
+                setSignatureConventionId(conventionId);
+                setShowSignatureModal(true);
+            }
+        } finally {
+            setSigningConventionId(null);
+            setShowScanningModal(false);
+        }
+    };
+
+    const handleRegisterFingerprint = async (passedConventionId = null) => {
+        const conventionId = (passedConventionId && typeof passedConventionId !== 'object') ? passedConventionId : null;
+        try {
+            setLoading(true);
+            setShowScanningModal(true);
+            const options = await authService.getWebauthnRegistrationOptions();
+            const creationOptions = {
+                publicKey: {
+                    ...options,
+                    challenge: base64urlToUint8Array(options.challenge),
+                    user: { ...options.user, id: base64urlToUint8Array(options.user.id) },
+                    authenticatorSelection: {
+                        authenticatorAttachment: "cross-platform",
+                        userVerification: "preferred",
+                        residentKey: "discouraged",
+                    },
+                    attestation: "none",
+                    timeout: 60000
+                }
+            };
+
+            const credential = await navigator.credentials.create(creationOptions);
+            if (!credential) throw new Error("Registration was cancelled.");
+
+            const webauthnResponse = {
+                id: credential.id,
+                rawId: bufferToBase64(credential.rawId),
+                type: credential.type,
+                response: {
+                    attestationObject: bufferToBase64(credential.response.attestationObject),
+                    clientDataJSON: bufferToBase64(credential.response.clientDataJSON),
+                }
+            };
+
+            await authService.verifyWebauthnRegistration(webauthnResponse);
+            showModal('success', 'Setup Complete', 'Your fingerprint is now linked and ready for signing.');
+            if (conventionId) {
+                handleSignConvention(conventionId);
+            }
+        } catch (err) {
+            if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+                if (conventionId) {
+                    showModal('confirm', 'Sensor Blocked', "Your browser is blocking the hardware sensor.\n\nWould you like to use the SECURE MANUAL SIGNATURE instead?", () => {
+                        setSignatureConventionId(conventionId);
+                        setShowSignatureModal(true);
+                    });
+                } else {
+                    showModal('error', 'Hardware Blocked', "Your browser is blocking the hardware sensor. Please use a supported device.");
+                }
+            } else {
+                showModal('error', 'Setup Failed', err.message);
+            }
+        } finally {
+            setLoading(false);
+            setShowScanningModal(false);
+        }
+    };
+
+    const handleDownloadPDF = (conventionId, verificationCode) => {
+        const url = conventionService.download(conventionId, verificationCode);
+        window.open(url, '_blank');
+    };
+
+    const submitManualSignature = async () => {
+        let signatureImage = null;
+        if (canvasRef.current) {
+            signatureImage = canvasRef.current.toDataURL('image/png');
+        }
+        setShowSignatureModal(false);
+        try {
+            setLoading(true);
+            await conventionService.signCompany(signatureConventionId, {
+                manual: true,
+                signature_image: signatureImage
+            });
+            showModal('success', 'Convention Signed', 'Convention signed successfully with digital fallback!');
+            const [convData, statsData] = await Promise.all([
+                conventionService.getConventions(),
+                companyService.getConventionStats()
+            ]);
+            setConventions(convData);
+            setStats(statsData);
+        } catch (err) {
+            showModal('error', 'Signature Failed', (err.response?.data?.error || err.message));
+        } finally {
+            setLoading(false);
+            setSignatureConventionId(null);
+        }
+    };
+
+    const startDrawing = (e) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        setIsDrawing(true);
+    };
+
+    const draw = (e) => {
+        if (!isDrawing) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+    };
+
+    const stopDrawing = () => {
+        if (!isDrawing) return;
+        const canvas = canvasRef.current;
+        if (canvas) canvas.getContext('2d').closePath();
+        setIsDrawing(false);
+    };
+
+    const clearSignature = () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    };
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -207,6 +450,105 @@ const CompanyDocuments = () => {
                 )}
             </AnimatePresence>
 
+            {/* Signature Draw Modal */}
+            <AnimatePresence>
+                {showSignatureModal && (
+                    <motion.div
+                        className="modern-alert-overlay"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ zIndex: 11000 }}
+                    >
+                        <motion.div
+                            className="modern-alert-box signature-modal-box"
+                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                        >
+                            <div className="modern-alert-header" style={{ '--icon-bg': 'rgba(168, 85, 247, 0.1)' }}>
+                                <div className="modern-alert-icon" style={{ color: '#a855f7' }}>
+                                    <FileText size={28} />
+                                </div>
+                                <h3>Company Digital Signature</h3>
+                            </div>
+                            <div className="signature-body" style={{ padding: '20px', textAlign: 'center' }}>
+                                <p style={{ color: '#8892b0', marginBottom: '20px' }}>Please draw your signature in the box below to legally validate this convention.</p>
+                                <div className="signature-canvas-container" style={{ position: 'relative', background: '#050505', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                                    <canvas
+                                        ref={canvasRef}
+                                        width={400}
+                                        height={200}
+                                        style={{ cursor: 'crosshair', display: 'block', width: '100%' }}
+                                        onMouseDown={startDrawing}
+                                        onMouseMove={draw}
+                                        onMouseUp={stopDrawing}
+                                        onMouseOut={stopDrawing}
+                                        onTouchStart={startDrawing}
+                                        onTouchMove={draw}
+                                        onTouchEnd={stopDrawing}
+                                    ></canvas>
+                                    <button 
+                                        className="clear-sig-btn" 
+                                        onClick={clearSignature}
+                                        style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                                    >
+                                        <RotateCcw size={14} /> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="modern-alert-actions">
+                                <button className="modern-btn-cancel" onClick={() => setShowSignatureModal(false)}>
+                                    Cancel
+                                </button>
+                                <button className="modern-btn-confirm" onClick={submitManualSignature}>
+                                    Validate & Sign
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Fingerprint Scanning Modal */}
+            <AnimatePresence>
+                {showScanningModal && (
+                    <motion.div
+                        className="biometric-modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(10, 10, 15, 0.85)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <motion.div
+                            className="biometric-modal-content"
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            style={{ background: 'rgba(30, 30, 45, 0.95)', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '40px', borderRadius: '24px', textAlign: 'center', maxWidth: '400px', width: '90%', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)' }}
+                        >
+                            <div className="scanning-container" style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 30px' }}>
+                                <div className="scanning-circle" style={{ position: 'relative', width: '100%', height: '100%', background: 'rgba(168, 85, 247, 0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(168, 85, 247, 0.2)', overflow: 'hidden' }}>
+                                    <Fingerprint size={80} style={{ color: '#a855f7', opacity: 0.3 }} />
+                                    <motion.div
+                                        className="scanning-line"
+                                        style={{ position: 'absolute', width: '100%', height: '2px', background: 'linear-gradient(90deg, transparent, #a855f7, transparent)', boxShadow: '0 0 15px #a855f7', zIndex: 2 }}
+                                        animate={{ top: ['0%', '100%', '0%'] }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                    />
+                                    <div className="glowing-orb" style={{ position: 'absolute', width: '60px', height: '60px', background: '#a855f7', filter: 'blur(40px)', opacity: 0.1, zIndex: 1 }} />
+                                </div>
+                            </div>
+                            <h2 style={{ color: '#fff', marginBottom: '12px', fontSize: '1.5rem' }}>Biometric Verification</h2>
+                            <p style={{ color: '#8892b0', marginBottom: '20px' }}>Touch your fingerprint sensor to securely sign this convention</p>
+                            <div className="scanning-status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#a855f7' }}>
+                                <Loader2 className="animate-spin" size={16} />
+                                <span>Awaiting sensor response...</span>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+
             <main className="documents-main">
                 <div className="doc-header-flex">
                     <div className="doc-header-left">
@@ -320,8 +662,8 @@ const CompanyDocuments = () => {
                                                         </button>
                                                     )}
                                                     {doc.student_signed && !doc.company_signed && (
-                                                        <button className="btn-sign-mini-company" onClick={() => navigate(`/dashboard/company/conventions/${doc.id}`)}>
-                                                            <Fingerprint size={12} /> Sign
+                                                        <button className="btn-sign-mini-company pulse-animation" onClick={() => handleSignConvention(doc.id)}>
+                                                            <Fingerprint size={12} /> Sign Now
                                                         </button>
                                                     )}
                                                 </div>
@@ -334,21 +676,58 @@ const CompanyDocuments = () => {
                                                 <h6>{new Date(doc.created_at || doc.issue_date).toLocaleDateString()}</h6>
                                                 <p>Updated {new Date(doc.updated_at || doc.issue_date).toLocaleDateString()}</p>
                                             </div>
-                                        </td>
-                                        <td>
+                                        </td>                                         <td>
                                             <div className="doc-actions">
-                                                {(doc.pdf_file || doc.pdf_url) ? (
-                                                    <a href={isConv ? conventionService.download(doc.id) : doc.pdf_url} className="doc-action-btn" download target="_blank" rel="noreferrer">
-                                                        <Download size={18} />
-                                                    </a>
+                                                {isConv ? (
+                                                    <>
+                                                        <button 
+                                                            className={`action-btn-main sign ${doc.company_signed ? 'is-signed' : ''} ${(!doc.company_signed && doc.student_signed) ? 'pulse-animation' : ''}`}
+                                                            onClick={() => {
+                                                                if (!doc.student_signed) {
+                                                                    showModal('error', 'Signature Pending', 'The student must sign the convention before you can proceed with the company signature.');
+                                                                } else {
+                                                                    handleSignConvention(doc.id);
+                                                                }
+                                                            }}
+                                                            disabled={doc.company_signed}
+                                                            title={!doc.student_signed ? "Waiting for Student Signature" : "Sign Convention"}
+                                                        >
+                                                            {doc.company_signed ? <Check size={16} /> : <Fingerprint size={16} />}
+                                                            <span>{doc.company_signed ? 'Signed' : 'Sign'}</span>
+                                                        </button>
+
+                                                        <button 
+                                                            className="action-btn-main download" 
+                                                            onClick={() => handleDownloadPDF(doc.id, doc.verification_code)}
+                                                            title="Download Convention PDF"
+                                                        >
+                                                            <Download size={16} />
+                                                        </button>
+                                                        
+                                                        <button 
+                                                            className="action-btn-main view" 
+                                                            onClick={() => navigate(`/dashboard/company/conventions/${doc.id}`)}
+                                                            title="View Details"
+                                                        >
+                                                            <Eye size={16} />
+                                                        </button>
+                                                    </>
                                                 ) : (
-                                                    <button className="doc-action-btn" disabled style={{ opacity: 0.3 }}><Download size={18} /></button>
+                                                    <>
+                                                        {doc.pdf_url && (
+                                                            <a href={doc.pdf_url} className="action-btn-main download" download target="_blank" rel="noreferrer">
+                                                                <Download size={16} />
+                                                            </a>
+                                                        )}
+                                                        <button className="action-btn-main view" onClick={() => navigate(`/dashboard/company/references/${doc.id}`)}>
+                                                            <Edit3 size={16} />
+                                                        </button>
+                                                    </>
                                                 )}
-                                                <button className="doc-action-btn" onClick={() => navigate(isConv ? `/dashboard/company/conventions/${doc.id}` : `/dashboard/company/references/${doc.id}`)}>
-                                                    <Edit3 size={18} />
-                                                </button>
                                             </div>
                                         </td>
+
+
                                     </tr>
                                 );
                             })}

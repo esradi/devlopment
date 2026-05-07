@@ -29,6 +29,8 @@ import CompanyAnalytics from './pages/company/CompanyAnalytics';
 import CompanyBilling from './pages/company/CompanyBilling';
 import CompanySettings from './pages/company/CompanySettings';
 import CompanyCompleteProfile from './pages/company/CompanyCompleteProfile';
+import CompanyConventionDetail from './pages/company/CompanyConventionDetail';
+
 import HelpCenter from './pages/help/HelpCenter';
 import EditOffer from './pages/company/EditOffer';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -185,6 +187,8 @@ function App() {
         <Route path="/dashboard/company/interviews/schedule" element={<ScheduleInterview />} />
         <Route path="/dashboard/company/interviews/:interviewId/reschedule" element={<ScheduleInterview />} />
         <Route path="/dashboard/company/documents" element={<CompanyDocuments />} />
+        <Route path="/dashboard/company/conventions/:id" element={<CompanyConventionDetail />} />
+
         <Route path="/dashboard/company/messages" element={<CompanyMessages />} />
         <Route path="/dashboard/company/profile" element={<CompanyProfile />} />
         <Route path="/dashboard/company/profile/edit" element={<EditCompanyProfile />} />

@@ -1084,3 +1084,235 @@
 .grid-cell.empty {
   background: rgba(0, 0, 0, 0.1);
 }
+
+/* ============================================================
+   RESPONSIVE — TABLET  (≤ 1200px)
+   Hide right panel, give main more room
+   ============================================================ */
+@media (max-width: 1200px) {
+  .i-right-panel {
+    display: none;
+  }
+
+  .interviews-main {
+    padding: 28px 28px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — SMALL TABLET  (≤ 900px)
+   ============================================================ */
+@media (max-width: 900px) {
+  .interviews-main {
+    padding: 24px 20px;
+  }
+
+  /* Header stacks */
+  .i-header-flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .i-header-left p {
+    max-width: 100%;
+  }
+
+  .i-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .i-tabs {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .i-btn-schedule {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Card: drop the offer column */
+  .i-card {
+    grid-template-columns: 140px 1fr auto;
+  }
+
+  .i-offer-info {
+    display: none;
+  }
+
+  /* Schedule form */
+  .form-grid-modern {
+    grid-template-columns: 1fr;
+  }
+
+  .form-section-modern.full-width {
+    grid-column: span 1;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — MOBILE  (≤ 640px)
+   ============================================================ */
+@media (max-width: 640px) {
+  .company-interviews-dashboard {
+    padding-top: 70px;
+  }
+
+  .interviews-main {
+    padding: 16px 14px 80px;
+  }
+
+  .i-header-left h1 {
+    font-size: 1.5rem;
+  }
+
+  .i-header-left p {
+    font-size: 0.85rem;
+  }
+
+  /* Tabs full width */
+  .i-tabs {
+    width: 100%;
+  }
+
+  .i-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 8px;
+  }
+
+  .i-btn-schedule {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Search row stacks */
+  .i-search-row {
+    flex-direction: column;
+  }
+
+  .i-dropdown {
+    width: 100%;
+    justify-content: space-between;
+    height: 44px;
+  }
+
+  /* Card goes 2-column: time | candidate+actions */
+  .i-card {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .i-candidate-info {
+    gap: 12px;
+  }
+
+  .i-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .i-actions {
+    justify-content: flex-end;
+  }
+
+  /* Load more */
+  .i-load-more span {
+    text-align: center;
+  }
+
+  .i-load-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Schedule form */
+  .schedule-header-modern h1 {
+    font-size: 1.8rem;
+  }
+
+  .schedule-header-modern p {
+    font-size: 0.95rem;
+  }
+
+  .input-row-modern {
+    flex-direction: column;
+  }
+
+  .type-selector-modern {
+    flex-direction: column;
+  }
+
+  .form-actions-modern {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .btn-cancel-modern,
+  .btn-submit-modern {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Calendar */
+  .cal-header-modern {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cal-title-section h1 {
+    font-size: 1.5rem;
+  }
+
+  .cal-controls-modern {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .month-selector h2 {
+    min-width: 90px;
+    font-size: 0.9rem;
+  }
+
+  .grid-cell {
+    min-height: 60px;
+    padding: 6px;
+  }
+
+  .day-name {
+    padding: 10px 4px;
+    font-size: 0.65rem;
+    letter-spacing: 0;
+  }
+
+  .cal-event-pill {
+    font-size: 0.6rem;
+    padding: 3px 4px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — SMALL PHONES  (≤ 400px)
+   ============================================================ */
+@media (max-width: 400px) {
+  .i-card {
+    padding: 14px;
+  }
+
+  .i-time-main {
+    font-size: 0.95rem;
+  }
+
+  .i-candidate-details h4 {
+    font-size: 0.9rem;
+  }
+
+  .btn-i-action {
+    padding: 7px 12px;
+    font-size: 0.8rem;
+  }
+}

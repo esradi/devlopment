@@ -5,8 +5,8 @@
     font-family: 'Outfit', 'Inter', sans-serif;
     padding-top: 80px;
     /* Navbar clearance */
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    overflow: visible;
 }
 
 .billing-main-content {
@@ -435,4 +435,186 @@
 
 .btn-view-invoice:hover {
     text-decoration: underline;
+}
+
+@media (max-width: 1024px) {
+    .billing-inner-container {
+        padding: 24px 24px;
+    }
+
+    .billing-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    /* Billing summary spans full width on the second row */
+    .billing-summary-card {
+        grid-column: 1 / -1;
+    }
+
+    .current-plan-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px 24px;
+    }
+
+    .banner-right {
+        width: 100%;
+    }
+
+    .btn-recommend {
+        width: 100%;
+        text-align: center;
+    }
+
+    .billing-header h1 {
+        font-size: 26px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — MOBILE  (≤ 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .company-billing-dashboard {
+        padding-top: 80px;
+    }
+
+    .billing-inner-container {
+        padding: 16px;
+    }
+
+    .billing-header {
+        margin-bottom: 20px;
+        /* leave room for the floating toggle button */
+        padding-left: 60px;
+    }
+
+    .billing-header h1 {
+        font-size: 22px;
+    }
+
+    .billing-header p {
+        font-size: 13px;
+    }
+
+    /* Stack all cards vertically */
+    .billing-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .billing-summary-card {
+        grid-column: auto;
+    }
+
+    /* Reduce card padding */
+    .pricing-card,
+    .billing-summary-card {
+        padding: 24px 20px;
+        min-height: unset;
+        border-radius: 18px;
+    }
+
+    /* Banner */
+    .current-plan-banner {
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        border-radius: 14px;
+    }
+
+    .banner-left h2 {
+        font-size: 13px;
+    }
+
+    .banner-left p {
+        font-size: 13px;
+    }
+
+    /* Price & toggle – allow wrapping */
+    .price-and-toggle {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .plan-name {
+        font-size: 24px;
+    }
+
+    .price-val {
+        font-size: 28px;
+    }
+
+    /* Summary card rows */
+    .summary-title {
+        font-size: 16px;
+    }
+
+    .summary-row {
+        font-size: 13px;
+    }
+
+    /* Payment method box wraps nicely */
+    .payment-method-box {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — SMALL PHONES  (≤ 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .billing-inner-container {
+        padding: 12px;
+    }
+
+    .billing-header {
+        padding-left: 52px;
+    }
+
+    .billing-header h1 {
+        font-size: 20px;
+    }
+
+    .pricing-card,
+    .billing-summary-card {
+        padding: 20px 16px;
+        border-radius: 14px;
+    }
+
+    .plan-name {
+        font-size: 22px;
+    }
+
+    .price-val {
+        font-size: 24px;
+    }
+
+    .btn-upgrade-premium {
+        font-size: 13px;
+        padding: 12px;
+    }
+
+    .billing-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .toggle-btn {
+        flex: 1;
+        text-align: center;
+    }
+
+    .current-plan-banner {
+        padding: 14px 16px;
+    }
+
+    .btn-recommend {
+        font-size: 12px;
+        padding: 8px 14px;
+    }
 }

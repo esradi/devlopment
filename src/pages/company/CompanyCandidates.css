@@ -11,7 +11,8 @@
     box-sizing: border-box;
 } */
 .company-candidates-dashboard {
-    display: block;
+    display: flex;
+    flex-direction: column;
     height: 100vh;
     overflow: hidden;
     background-color: #0A0C10;
@@ -133,6 +134,7 @@
 
 /* Main Content */
 .candidates-main {
+    flex: 1;
     padding: 24px 32px;
     height: calc(100vh - 80px);
     overflow-y: auto;
@@ -413,11 +415,13 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 16px;
     overflow: hidden;
+    overflow-x: auto;
 }
 
 .candidates-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 600px;
 }
 
 .candidates-table th {
@@ -428,6 +432,13 @@
     color: #8892b0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     letter-spacing: 0.5px;
+}
+
+@media (max-width: 480px) {
+    .candidates-table th, .candidates-table td {
+        padding: 12px 8px;
+        font-size: 0.65rem;
+    }
 }
 
 .candidates-table td {
@@ -573,29 +584,16 @@
     color: #d4b3ff;
 }
 
-.company-candidates-dashboard {
-    grid-template-columns: 260px 1fr;
-}
+/* Sidebar is now a fixed drawer, no grid columns needed */
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
-    .company-candidates-dashboard {
-        grid-template-columns: 240px 1fr;
-    }
-
     .pipeline-sidebar {
         display: none;
     }
 }
 
 @media (max-width: 900px) {
-    .company-candidates-dashboard {
-        grid-template-columns: 1fr;
-    }
-
-    .company-sidebar {
-        display: none;
-    }
 
     .stats-bar {
         flex-direction: column;
@@ -613,4 +611,46 @@
         gap: 15px;
         align-items: flex-start;
     }
+}
+
+/* Additional mobile responsive */
+@media (max-width: 600px) {
+  .candidates-main {
+    padding: 16px 12px;
+  }
+  .header-flex {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .stats-bar {
+    gap: 12px;
+    padding: 16px;
+  }
+  .stat-block {
+    padding: 0 8px;
+  }
+  .filter-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .filter-tab {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+  .candidates-table th,
+  .candidates-table td {
+    padding: 12px 8px;
+    font-size: 0.75rem;
+  }
+  .candidate-name-info .name {
+    font-size: 0.85rem;
+  }
+  .candidate-name-info .applied-time {
+    font-size: 0.65rem;
+  }
 }

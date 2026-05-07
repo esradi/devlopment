@@ -1,0 +1,359 @@
+/* CompanyConventionDetail.css */
+
+.company-documents-dashboard.detail-view {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.company-documents-dashboard.detail-view .doc-header-flex {
+    padding: 32px 48px;
+    background: rgba(13, 15, 17, 0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.company-documents-dashboard.detail-view .btn-back {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #8892b0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.company-documents-dashboard.detail-view .btn-back:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    transform: translateX(-4px);
+}
+
+.company-documents-dashboard.detail-view .doc-header-left h1 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #fff 0%, #8892b0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.company-documents-dashboard.detail-view .doc-header-right {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.company-documents-dashboard.detail-view .signed-badge,
+.company-documents-dashboard.detail-view .pending-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    height: 48px;
+    box-sizing: border-box;
+}
+
+.company-documents-dashboard.detail-view .signed-badge {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.company-documents-dashboard.detail-view .pending-badge {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.company-documents-dashboard.detail-view .btn-generate-main {
+    height: 48px;
+    padding: 0 24px;
+    white-space: nowrap;
+}
+
+.company-documents-dashboard.detail-view .btn-download-pdf {
+    height: 48px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.company-documents-dashboard.detail-view .documents-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 40px;
+    padding: 40px 48px;
+    overflow-y: auto;
+    background: radial-gradient(circle at top right, rgba(158, 89, 255, 0.05), transparent 400px),
+                radial-gradient(circle at bottom left, rgba(219, 39, 119, 0.05), transparent 400px);
+}
+
+.company-documents-dashboard.detail-view .detail-card {
+    background: #111417;
+    border-radius: 32px;
+    padding: 48px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    height: fit-content;
+}
+
+.company-documents-dashboard.detail-view .preview-container {
+    background: #080a0c;
+    border-radius: 24px;
+    padding: 60px;
+    min-height: 800px;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+.company-documents-dashboard.detail-view .preview-content {
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+    color: #8892b0;
+}
+
+.company-documents-dashboard.detail-view .preview-icon {
+    opacity: 0.1;
+    margin-bottom: 24px;
+}
+
+.company-documents-dashboard.detail-view .preview-content h2 {
+    color: #fff;
+    margin-bottom: 32px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.company-documents-dashboard.detail-view .preview-body {
+    background: rgba(255, 255, 255, 0.01);
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.8;
+}
+
+.company-documents-dashboard.detail-view .preview-body hr {
+    opacity: 0.05;
+    margin: 32px 0;
+    border: none;
+    border-top: 1px solid #fff;
+}
+
+.company-documents-dashboard.detail-view .preview-signatures {
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+}
+
+.company-documents-dashboard.detail-view .signature-block {
+    flex: 1;
+}
+
+.company-documents-dashboard.detail-view .signature-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #5d6785;
+    margin-bottom: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.company-documents-dashboard.detail-view .signature-status.signed {
+    padding: 12px;
+    color: #10b981;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.05);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.company-documents-dashboard.detail-view .signature-placeholder {
+    height: 48px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.company-documents-dashboard.detail-view .info-item {
+    margin-bottom: 16px;
+}
+
+.company-documents-dashboard.detail-view .info-item:last-child {
+    margin-bottom: 0;
+}
+
+.company-documents-dashboard.detail-view .step-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.company-documents-dashboard.detail-view .step-row:last-child {
+    margin-bottom: 0;
+}
+
+.company-documents-dashboard.detail-view .step-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444; /* Default to red/pending */
+    transition: all 0.3s ease;
+}
+
+.company-documents-dashboard.detail-view .step-row.done .step-dot {
+    background: #10b981;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.company-documents-dashboard.detail-view .detail-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.company-documents-dashboard.detail-view .widget-status-sum,
+.company-documents-dashboard.detail-view .widget-quick-gen {
+    background: #111417;
+    border-radius: 24px;
+    padding: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.signature-canvas-container {
+    position: relative;
+}
+
+.signature-modal-box {
+    max-width: 440px;
+}
+
+/* RESPONSIVE DESIGN */
+
+@media (max-width: 1200px) {
+    .company-documents-dashboard.detail-view .documents-main {
+        grid-template-columns: 1fr 320px;
+        gap: 24px;
+        padding: 32px 24px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .company-documents-dashboard.detail-view .documents-main {
+        grid-template-columns: 1fr;
+    }
+
+    .company-documents-dashboard.detail-view .detail-sidebar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .company-documents-dashboard.detail-view {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+
+    .company-documents-dashboard.detail-view .documents-main {
+        overflow: visible;
+        height: auto;
+        padding: 24px 16px 60px;
+        flex: none;
+    }
+
+    .company-documents-dashboard.detail-view .doc-header-flex {
+        padding: 32px 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 24px;
+        position: sticky;
+        top: 0;
+        background: #0d0f11;
+        backdrop-filter: blur(20px);
+    }
+
+    .company-documents-dashboard.detail-view .doc-header-right {
+        width: 100%;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .company-documents-dashboard.detail-view .doc-header-right button,
+    .company-documents-dashboard.detail-view .signed-badge,
+    .company-documents-dashboard.detail-view .pending-badge {
+        width: 100%;
+        justify-content: center;
+        height: 56px;
+    }
+
+    .company-documents-dashboard.detail-view .detail-card {
+        padding: 32px 20px;
+        border-radius: 24px;
+    }
+
+    .company-documents-dashboard.detail-view .preview-container {
+        padding: 40px 20px;
+        min-height: auto;
+    }
+
+    .company-documents-dashboard.detail-view .preview-body {
+        padding: 24px;
+    }
+
+    .company-documents-dashboard.detail-view .preview-signatures {
+        flex-direction: column;
+        gap: 40px;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .company-documents-dashboard.detail-view .detail-sidebar {
+        grid-template-columns: 1fr;
+    }
+
+    .company-documents-dashboard.detail-view .widget-status-sum,
+    .company-documents-dashboard.detail-view .widget-quick-gen {
+        padding: 24px;
+    }
+
+    .signature-canvas-container canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .company-documents-dashboard.detail-view .doc-header-left h1 {
+        font-size: 1.75rem;
+    }
+
+    .company-documents-dashboard.detail-view .preview-body {
+        padding: 20px;
+        font-size: 0.85rem;
+    }
+}

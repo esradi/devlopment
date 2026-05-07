@@ -35,7 +35,7 @@
     align-items: center;
 }
 
-.search-bar-modern {
+.search-box {
     display: flex;
     align-items: center;
     background: rgba(255, 255, 255, 0.03);
@@ -52,7 +52,15 @@
     width: 200px;
 }
 
-.search-bar-modern input::placeholder {
+.search-box input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.search-box input::placeholder {
     color: #64748b;
 }
 
@@ -349,3 +357,99 @@
     align-items: center;
     min-height: 60vh;
 }
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+    .offer-stats-grid {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .offers-header-modern {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .header-actions-modern {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-box {
+        width: 100% !important;
+        margin-right: 0 !important;
+    }
+
+    .search-box input {
+        width: 100% !important;
+    }
+
+    .btn-primary-pink {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .filters-row-modern {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .tabs-group {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scrollbar-width: none;
+    }
+
+    .tabs-group::-webkit-scrollbar {
+        display: none;
+    }
+
+    .filter-tab-pill {
+        white-space: nowrap;
+    }
+
+    .offer-card-horizontal {
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .offer-card-right {
+        align-items: stretch;
+        gap: 16px;
+    }
+
+    .btn-view-candidates {
+        width: 100%;
+        text-align: center;
+    }
+
+    .icon-actions {
+        justify-content: center;
+    }
+
+    .offer-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .title-section h1 {
+        font-size: 1.8rem;
+    }
+
+    .offer-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .pagination-footer {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+}

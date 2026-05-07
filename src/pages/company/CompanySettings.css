@@ -5,8 +5,8 @@
     font-family: 'Outfit', 'Inter', sans-serif;
     padding-top: 80px;
     /* Navbar clearance */
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    overflow: visible;
 }
 
 .settings-main-content {
@@ -14,6 +14,7 @@
     display: flex;
     flex-direction: column;
     padding: 32px 40px;
+    height: calc(100vh - 80px);
     overflow-y: auto;
 }
 
@@ -524,4 +525,217 @@ input:checked+.slider:before {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+}
+
+/* ============================================================
+   RESPONSIVE — TABLET  (≤ 1024px)
+   ============================================================ */
+@media (max-width: 1024px) {
+    .settings-main-content {
+        padding: 24px 24px;
+    }
+
+    .settings-section-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .notifications-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .profile-info-block {
+        gap: 24px;
+    }
+
+    .settings-header h1 {
+        font-size: 24px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — MOBILE  (≤ 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .settings-main-content {
+        padding: 16px 16px;
+    }
+
+    /* Push header text right to clear the floating toggle button */
+    .settings-header {
+        padding-left: 60px;
+        margin-bottom: 20px;
+    }
+
+    .settings-header h1 {
+        font-size: 22px;
+    }
+
+    .settings-header p {
+        font-size: 13px;
+    }
+
+    /* Tabs — wrap onto next line instead of horizontal scroll
+       (overflow-x:auto clips the active ::after underline) */
+    .settings-tabs {
+        flex-wrap: wrap;
+        gap: 10px 20px;
+        padding-bottom: 0;
+    }
+
+    .settings-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .settings-tab {
+        white-space: nowrap;
+        font-size: 14px;
+    }
+
+    /* Card */
+    .settings-card {
+        padding: 20px 16px;
+        border-radius: 16px;
+    }
+
+    .settings-card h3 {
+        font-size: 16px;
+        margin-bottom: 18px;
+    }
+
+    /* Profile block — stack avatar above the form */
+    .profile-info-block {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .profile-photo-selection {
+        flex-direction: row;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .avatar-wrapper {
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Form grid — single column */
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .full-width-field {
+        grid-column: span 1;
+    }
+
+    /* Security section — single column */
+    .settings-section-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* Notifications — single column */
+    .notifications-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .pref-column + .pref-column {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Save footer — full width button */
+    .save-changes-footer {
+        justify-content: stretch;
+    }
+
+    .btn-save-changes {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Email display box — stack on small screens */
+    .email-display-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    /* Activity table — horizontal scroll */
+    .activity-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .activity-table {
+        min-width: 520px;
+    }
+
+    .activity-table th,
+    .activity-table td {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    /* Success toast — full width */
+    .settings-success-toast {
+        width: 100%;
+        justify-content: center;
+        margin-top: 12px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — SMALL PHONES  (≤ 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .settings-main-content {
+        padding: 12px 12px;
+    }
+
+    .settings-header {
+        padding-left: 52px;
+    }
+
+    .settings-header h1 {
+        font-size: 20px;
+    }
+
+    .settings-card {
+        padding: 16px 14px;
+        border-radius: 14px;
+    }
+
+    .settings-tab {
+        font-size: 13px;
+    }
+
+    .avatar-wrapper {
+        width: 68px;
+        height: 68px;
+    }
+
+    .form-field input,
+    .form-field select {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .two-factor-status {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .notification-row {
+        padding: 12px 0;
+    }
+
+    .activity-table {
+        min-width: 480px;
+    }
 }

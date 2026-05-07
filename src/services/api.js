@@ -173,8 +173,8 @@ export const companyService = {
     getOfferDetails: (id) => api.get(`/offers/${id}/`),
     updateOffer: (id, data) => api.put(`/offers/${id}/`, data),
     deleteOffer: (id) => api.delete(`/offers/${id}/`),
-    getOfferApplicants: (offerId, params = {}) => api.get(`/applications/offer/${offerId}/`, params),
-    getApplications: (params = {}) => api.get('/applications/company/list/', params),
+    getOfferApplicants: (offerId, params = {}) => api.get(`/applications/offer/${offerId}/`, { params }),
+    getApplications: (params = {}) => api.get('/applications/company/list/', { params }),
     getApplicationDetails: (id) => api.get(`/applications/${id}/company/detail/`),
     updateApplicationStatus: (id, status) => {
         if (status === 'accepted') return api.post(`/applications/${id}/accept/`);
@@ -185,7 +185,7 @@ export const companyService = {
     updateProfile: (data) => api.put('/company/profile/', data),
     generateConvention: (id) => api.post(`/applications/${id}/generate-convention/`),
     getConventionStats: () => api.get('/company/conventions/stats/'),
-    getAcceptedInterns: () => api.get('/applications/company/list/', { status: 'accepted' }),
+    getAcceptedInterns: () => api.get('/applications/company/list/', { params: { status: 'accepted' } }),
     // uploadLogo: (formData) => api.patch('/company/profile/', formData),
     uploadLogo: (formData) => api.post('/company/profile/logo/', formData),
     getAnalytics: () => api.get('/company/analytics/'),
@@ -202,10 +202,10 @@ export const conventionService = {
     getConventions: () => api.get('/conventions/'),
     getDetails: (id) => api.get(`/conventions/${id}/`),
     signStudent: (id, payload) => api.post(`/conventions/${id}/sign-student/`,
-        payload.manual ? payload : { confirmed: true, webauthn_response: payload }
+        payload.manual ? { ...payload, confirmed: true } : { confirmed: true, webauthn_response: payload }
     ),
     signCompany: (id, payload) => api.post(`/conventions/${id}/sign-company/`,
-        payload.manual ? payload : { confirmed: true, webauthn_response: payload }
+        payload.manual ? { ...payload, confirmed: true } : { confirmed: true, webauthn_response: payload }
     ),
     validateAdmin: (id, payload) => api.post(`/conventions/${id}/validate_admin/`,
         payload.manual ? payload : { webauthn_response: payload }

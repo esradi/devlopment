@@ -14,13 +14,15 @@ const EditCompanyProfile = () => {
     const [logoPreview, setLogoPreview] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [logoFile, setLogoFile] = useState(null);
     const [formData, setFormData] = useState({
         company_name: '',
         industry: '',
-        location: '',
+        city: '',
+        country: '',
         website: '',
         contact_email: '',
-        size_range: '',
+        company_size: '',
         description: '',
         mission: '',
         values: ''
@@ -33,10 +35,11 @@ const EditCompanyProfile = () => {
                 setFormData({
                     company_name: data.company_name || '',
                     industry: data.industry || '',
-                    location: data.location || '',
+                    city: data.city || '',
+                    country: data.country || '',
                     website: data.website || '',
                     contact_email: data.contact_email || '',
-                    size_range: data.size_range || '',
+                    company_size: data.company_size || '',
                     description: data.description || '',
                     mission: data.mission || '',
                     values: data.values || ''
@@ -55,6 +58,14 @@ const EditCompanyProfile = () => {
         e.preventDefault();
         setSaving(true);
         try {
+            // 1. Upload logo if changed
+            if (logoFile) {
+                const logoFormData = new FormData();
+                logoFormData.append('logo', logoFile);
+                await companyService.uploadLogo(logoFormData);
+            }
+
+            // 2. Update profile data
             await companyService.updateProfile(formData);
             navigate('/dashboard/company/profile');
         } catch (err) {
@@ -72,6 +83,7 @@ const EditCompanyProfile = () => {
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            setLogoFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setLogoPreview(reader.result);
@@ -167,18 +179,26 @@ const EditCompanyProfile = () => {
                                         <MapPin size={16} /> LOCATION & SIZE
                                     </div>
                                     <div className="form-group-modern">
-                                        <label>Headquarters</label>
+                                        <label>City / Headquarters</label>
                                         <input
                                             type="text"
-                                            value={formData.location}
-                                            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                            value={formData.city}
+                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="form-group-modern">
+                                        <label>Country</label>
+                                        <input
+                                            type="text"
+                                            value={formData.country}
+                                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                                         />
                                     </div>
                                     <div className="form-group-modern">
                                         <label>Number of Employees</label>
                                         <select
-                                            value={formData.size_range}
-                                            onChange={(e) => setFormData({ ...formData, size_range: e.target.value })}
+                                            value={formData.company_size}
+                                            onChange={(e) => setFormData({ ...formData, company_size: e.target.value })}
                                         >
                                             <option value="">Select size</option>
                                             <option value="1-10">1-10 employees</option>

@@ -137,9 +137,30 @@ class ConventionViewSet(viewsets.ModelViewSet):
             request, message="You do not have permission to access this convention."
         )
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny])
     def download(self, request, pk=None):
-        convention = self.get_object()
+        # We don't use get_object() here to bypass IsAuthenticated/IsOwner checks
+        # because window.open() doesn't send Bearer tokens.
+        # Instead, we verify via the unique code in the URL.
+        convention = get_object_or_404(Convention, pk=pk)
+        
+        # Security: Check the verification code (support both 'code' and 'v' aliases)
+        code = request.query_params.get('code') or request.query_params.get('v')
+        
+        # If user is NOT authenticated, they MUST provide a valid code
+        if not request.user.is_authenticated:
+            if not code or code != convention.verification_code:
+                return Response(
+                    {"detail": "Authentication credentials were not provided, and no valid verification code was found."},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+        # If user IS authenticated, we still verify they are the owner/admin unless they have the code
+        elif code != convention.verification_code:
+            # Re-check standard permissions
+            if request.user.role == 'student' and convention.student.user != request.user:
+                return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+            if request.user.role == 'company' and convention.company.user != request.user:
+                return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
         
         if not convention.pdf_file:
             return Response(

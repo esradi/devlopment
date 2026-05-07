@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
     LayoutDashboard, Briefcase, User, MessageSquare, Settings, Calendar,
     Building2, Globe, Users, MapPin, Sparkles, CheckCircle2, Image as ImageIcon,
     Upload, Info, Eye, CheckCircle, ChevronRight, Lightbulb
@@ -36,7 +36,7 @@ const CompanyCompleteProfile = () => {
                     mission: data.mission || '',
                     values: data.values || ''
                 });
-                
+
                 // Simple strength calculation
                 let count = 0;
                 if (data.company_name) count += 15;
@@ -80,7 +80,7 @@ const CompanyCompleteProfile = () => {
         <div className="company-complete-profile">
             {/* 2. MAIN CONTAINER */}
             <div className="cp-main-container">
-                
+
                 {/* 2A. CONTENT COLUMN */}
                 <div className="cp-content-column">
                     <header className="cp-header">
@@ -108,7 +108,7 @@ const CompanyCompleteProfile = () => {
                             <Building2 size={24} />
                             <span>Company details</span>
                         </div>
-                        
+
                         <div className="form-grid">
                             <div className="form-group">
                                 <label>Company Name</label>
@@ -135,7 +135,7 @@ const CompanyCompleteProfile = () => {
                             <Sparkles size={24} />
                             <span>About & culture</span>
                         </div>
-                        
+
                         <div className="form-group full-width" style={{ marginBottom: '24px' }}>
                             <label>Description</label>
                             <textarea name="description" value={profile.description} onChange={handleChange} placeholder="Tell students about your company..."></textarea>
@@ -185,7 +185,7 @@ const CompanyCompleteProfile = () => {
 
                 {/* 2B. SIDE PANEL */}
                 <div className="cp-side-panel">
-                    
+
                     <div className="side-card">
                         <h3>Profile Steps</h3>
                         <div className="steps-list">

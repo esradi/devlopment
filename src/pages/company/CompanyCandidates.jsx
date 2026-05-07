@@ -78,7 +78,7 @@ const CompanyCandidates = () => {
                     let page = 1;
                     let hasMore = true;
                     const MAX_PAGES = 20;
-                    while (hasMore) {
+                    while (hasMore && page <= MAX_PAGES) {
                         const data = await fetchFn(page);
                         const results = data?.results || data || [];
                         allApps = [...allApps, ...results];
