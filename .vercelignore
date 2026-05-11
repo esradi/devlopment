@@ -1,0 +1,20 @@
+# Tell Vercel to ignore the entire Django backend — it lives on Railway.
+# Without this, Vercel auto-detects requirements.txt and tries to set up a
+# second Python "Web Service" in the same project, which is wasted effort
+# (and on Hobby plans, blocked outright).
+backend/
+
+# Python artefacts that occasionally leak above /backend
+*.py
+*.pyc
+__pycache__/
+.venv/
+venv/
+
+# Dev databases / local-only artefacts
+db.sqlite3
+*.db
+
+# Other things Vercel doesn't need
+media/
+staticfiles/
