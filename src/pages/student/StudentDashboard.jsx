@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { studentService, applicationService, offerService, authService } from '../../services/api';
+// mediaUrl: build absolute URLs for /media paths returned by Django, without hardcoding localhost
+import { mediaUrl } from '../../config';
 import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-removebg-preview.png';
 import StudentOffers from './StudentOffers';
 import StudentApplications from './StudentApplications';
@@ -267,7 +269,7 @@ const StudentDashboard = ({ setUserRole }) => {
                         onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                         onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                     >
-                        <img src={userData?.profile?.profile_picture ? `http://localhost:8000${userData.profile.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
+                        <img src={userData?.profile?.profile_picture ? mediaUrl(userData.profile.profile_picture) : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="Profile" className="user-avatar-mini" />
                         <div>
                             <h4>{userData?.first_name || userData?.email?.split('@')[0] || 'Student'}</h4>
                             <p>Student Portal / {userData?.completeness > 80 ? 'Active Applicant' : 'New Member'}</p>
@@ -374,7 +376,7 @@ const StudentDashboard = ({ setUserRole }) => {
                             <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                                 <NotificationBell />
                                 <div className="user-profile-toggle" onClick={() => navigate('/dashboard/student/settings')} style={{ cursor: 'pointer' }}>
-                                    <img src={userData?.profile?.profile_picture ? `http://localhost:8000${userData.profile.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="User" style={{ width: '35px', height: '35px', borderRadius: '50%', border: '2px solid rgba(158, 89, 255, 0.3)', objectFit: 'cover' }} />
+                                    <img src={userData?.profile?.profile_picture ? mediaUrl(userData.profile.profile_picture) : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`} alt="User" style={{ width: '35px', height: '35px', borderRadius: '50%', border: '2px solid rgba(158, 89, 255, 0.3)', objectFit: 'cover' }} />
                                 </div>
                             </div>
                         </header>

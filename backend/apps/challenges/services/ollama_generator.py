@@ -1,9 +1,15 @@
 import requests
 import json
 import re
+import os
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "llama3"  # change to your model: mistral, codellama, etc.
+# Ollama endpoint + model are env-driven so production can point at a remote
+# host. In local dev Ollama runs on :11434. In production set OLLAMA_URL to a
+# publicly reachable URL (Cloudflare Tunnel / ngrok / a VPS running Ollama).
+# Without that, every call here will fail with a connection error because
+# Railway containers can't reach your laptop.
+OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434/api/generate')
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3')
 
 
 # ─────────────────────────────────────────────

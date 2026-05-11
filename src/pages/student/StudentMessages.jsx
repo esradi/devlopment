@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, Bell, User, Plus } from 'lucide-react';
 import { messageService, notificationService } from '../../services/api';
 import { useWebSocket } from '../../hooks/useWebSocket';
+// mediaUrl handles attachment URLs without hardcoding localhost
+import { mediaUrl } from '../../config';
 import './StudentMessages.css';
 
 const StudentMessages = ({ userData }) => {
@@ -310,9 +312,9 @@ const StudentMessages = ({ userData }) => {
                                             {msg.message_type === 'image' && msg.attachment && (
                                                 <div className="message-attachment image">
                                                     <img
-                                                        src={msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`}
+                                                        src={mediaUrl(msg.attachment)}
                                                         alt="Attachment"
-                                                        onClick={() => window.open(msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`)}
+                                                        onClick={() => window.open(mediaUrl(msg.attachment))}
                                                     />
                                                 </div>
                                             )}
@@ -320,7 +322,7 @@ const StudentMessages = ({ userData }) => {
                                                 <div
                                                     className="message-attachment file"
                                                     onClick={() => {
-                                                        const url = msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`;
+                                                        const url = mediaUrl(msg.attachment);
                                                         window.open(url, '_blank');
                                                     }}
                                                 >

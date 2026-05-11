@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { companyService, authService } from '../../services/api';
+// API_URL imported so the "Connecting to..." loader doesn't lie about the host in production
+import { API_URL } from '../../config';
 import CompanyOffers from './CompanyOffers';
 import CompanyCandidates from './CompanyCandidates';
 import CreateOffer from './CreateOffer';
@@ -193,7 +195,7 @@ const CompanyDashboard = ({ setUserRole }) => {
                     animation: 'spin 1s linear infinite'
                 }}></div>
                 <h3 style={{ marginTop: '24px', color: '#fff', fontSize: '18px', fontWeight: '600' }}>Loading Dashboard...</h3>
-                <p style={{ marginTop: '8px', color: '#8b92a5', fontSize: '14px' }}>Connecting to secure server at localhost:8000</p>
+                <p style={{ marginTop: '8px', color: '#8b92a5', fontSize: '14px' }}>Connecting to secure server at {new URL(API_URL).host}</p>
             </div>
         );
     }

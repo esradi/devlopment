@@ -8,6 +8,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import CompanySidebar from '../../components/CompanySidebar';
 import './CompanyProfile.css';
 import { companyService } from '../../services/api';
+// mediaUrl: build absolute URLs for /media paths returned by Django, without hardcoding localhost
+import { mediaUrl } from '../../config';
 import '../company/CompanyDashboard.css';
 
 const CompanyProfile = () => {
@@ -103,7 +105,7 @@ const CompanyProfile = () => {
                     <div className="profile-card company-hero-card">
                         <div className="company-logo-large">
                             {profile.logo ? (
-                                <img src={profile.logo.startsWith('http') ? profile.logo : `http://localhost:8000${profile.logo}`} alt="Company Logo" style={{ width: '100%', height: '100%', borderRadius: '20px', objectFit: 'cover' }} />
+                                <img src={mediaUrl(profile.logo)} alt="Company Logo" style={{ width: '100%', height: '100%', borderRadius: '20px', objectFit: 'cover' }} />
                             ) : (
                                 <div className="logo-placeholder">
                                     {profile.company_name?.[0] || 'C'}

@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv  # NEW: reads .env file into os.environ so secrets stay out of code
 import pymysql
 pymysql.version_info = (2, 2, 1, "final", 0)  
 pymysql.install_as_MySQLdb()
@@ -20,13 +23,20 @@ DatabaseSchemaEditor._rename_field_sql = patched_rename_field_sql
 from django.db.backends.base.base import BaseDatabaseWrapper
 BaseDatabaseWrapper.check_database_version_supported = lambda self: None
 
-from pathlib import Path
+# REMOVED: duplicate "from pathlib import Path" — already imported at the top
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = 'django-insecure-0)kt(+k0nl7_amyx^+l+r3#fv9f@k+(-)y8xyzwxv3td#t0nr#'
-DEBUG = True
+load_dotenv(BASE_DIR / '.env')  # NEW: load the .env file at project root so all os.environ calls below work
 
-ALLOWED_HOSTS = []
+# CHANGED: secret key was hardcoded — now read from env; falls back to a dev key if .env is missing
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-fallback')
+
+# CHANGED: DEBUG was always True — now controlled by env var so production can set it to False
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
+
+# CHANGED: was empty [] — now read from env as comma-separated list (e.g. "example.com,api.example.com")
+# We filter out empty strings so an unset env var doesn't produce [''] which Django warns about.
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
 
 INSTALLED_APPS = [
     'daphne',
@@ -61,7 +71,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # added
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # NEW: serves static files in production without needing nginx/apache
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -90,32 +101,47 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-import os
+# Media files (user uploads)
+# WARNING: Railway's container filesystem is EPHEMERAL — every redeploy wipes
+# anything written to /media. Before this project handles real user uploads in
+# production, swap this to django-storages with S3 or Cloudflare R2.
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
+# CHANGED: was always InMemoryChannelLayer (only works inside one process).
+# In production we need Redis so WebSocket events can fan out across multiple
+# Daphne workers — Channels uses Redis pub/sub for group sends.
+# Locally, REDIS_URL is left blank in .env so we keep the simple in-memory
+# layer and don't have to run a Redis server for `manage.py runserver`.
+REDIS_URL = os.environ.get('REDIS_URL', '').strip()
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {'hosts': [REDIS_URL]},
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'},
+    }
 
 
 # Database
+# CHANGED: all DB credentials were hardcoded — now read from env vars
+# This prevents leaking passwords in version control
 DATABASES = {
     'default': {
-        
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'stagio_db',
-        'USER': 'root',
-        'PASSWORD': '',  
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME', 'stagio_db'),           # NEW: from env, fallback to old value
+        'USER': os.environ.get('DB_USER', 'root'),                # NEW: from env
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),             # NEW: from env
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),           # NEW: from env
+        'PORT': os.environ.get('DB_PORT', '3306'),                # NEW: from env
         'OPTIONS': {
             'charset': 'utf8mb4',
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
-        
     }
 }
 
@@ -148,9 +174,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # NEW: where collectstatic gathers files for production
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'  # NEW: gzip + cache-busting for static files
 
 from datetime import timedelta
-import os
+# REMOVED: duplicate "import os"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -163,36 +191,30 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://localhost:8080",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:5175",
-    "http://127.0.0.1:8080",
-]
+# CHANGED: was a hardcoded list — now read from env so you can add production domains without editing code
+# Set CORS_ALLOWED_ORIGINS in .env as comma-separated, e.g.:
+#   CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+CORS_ALLOWED_ORIGINS = os.environ.get(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,http://127.0.0.1:8080'
+).split(',')
 
 CORS_ALLOW_CREDENTIALS = True
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# REMOVED: duplicate MEDIA_URL / MEDIA_ROOT (already defined above around line 97)
 
 AUTH_USER_MODEL = 'accounts.User'
 
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_HOST = "pro.turbo-smtp.com"
-EMAIL_PORT = 587
+# CHANGED: email credentials were hardcoded — now read from env to avoid leaking secrets
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'pro.turbo-smtp.com')              # NEW: from env
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))                          # NEW: from env
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 
-EMAIL_HOST_USER = "7ddc9f92403201d6450f"
-EMAIL_HOST_PASSWORD = "TjhKut5OGAP3bJd0xgRy"
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')                      # NEW: from env — no more plaintext creds
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')              # NEW: from env — no more plaintext creds
 
-DEFAULT_FROM_EMAIL = "stage.io.contact@gmail.com"
-
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'stage.io.contact@gmail.com')  # NEW: from env

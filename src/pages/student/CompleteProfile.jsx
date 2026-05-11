@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { dashboardService, studentService } from '../../services/api';
+// Centralised media-URL helper — strips the localhost hardcoding so this
+// component works against any backend host (local, Railway, etc.).
+import { mediaUrl } from '../../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User,
@@ -87,7 +90,7 @@ const CompleteProfile = ({ userData, onSave }) => {
                     }
                     setDomains(data.domain ? [data.domain] : ['Engineering', 'UI/UX Design', 'Backend Dev']);
                     if (data.profile_picture) {
-                        setProfileImage(`http://localhost:8000${data.profile_picture}`);
+                        setProfileImage(mediaUrl(data.profile_picture));
                     }
                     setGithubProfile({ added: !!data.github_url, url: data.github_url || '' });
                     setLinkedinProfile({ added: !!data.linkedin_url, url: data.linkedin_url || '' });
@@ -324,7 +327,7 @@ const CompleteProfile = ({ userData, onSave }) => {
                             <div className="avatar-side">
                                 <div className="avatar-edit-container">
                                     <img
-                                        src={profileImage || (userData?.profile?.profile_picture ? `http://localhost:8000${userData.profile.profile_picture}` : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`)}
+                                        src={profileImage || (userData?.profile?.profile_picture ? mediaUrl(userData.profile.profile_picture) : `https://ui-avatars.com/api/?name=${userData?.first_name}+${userData?.last_name}&background=9e59ff&color=fff`)}
                                         alt="Profile"
                                         className="large-avatar"
                                     />

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, MessageSquare, Search, MoreVertical, Paperclip, Smile, Plus, UserPlus, X } from 'lucide-react';
 import { messageService } from '../../services/api';
 import { useWebSocket } from '../../hooks/useWebSocket';
+// mediaUrl handles attachment URLs without hardcoding localhost — falls back to
+// returning the path unchanged if it's already absolute.
+import { mediaUrl } from '../../config';
 import './AdminMessages.css';
 
 const AdminMessages = ({ userData }) => {
@@ -417,10 +420,10 @@ const AdminMessages = ({ userData }) => {
                                             <div className={`message-bubble ${isMe ? 'sent' : 'received'}`}>
                                                 {msg.message_type === 'image' && msg.attachment && (
                                                     <div className="message-attachment image">
-                                                        <img 
-                                                            src={msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`} 
-                                                            alt="Attachment" 
-                                                            onClick={() => window.open(msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`)} 
+                                                        <img
+                                                            src={mediaUrl(msg.attachment)}
+                                                            alt="Attachment"
+                                                            onClick={() => window.open(mediaUrl(msg.attachment))}
                                                         />
                                                     </div>
                                                 )}
@@ -428,7 +431,7 @@ const AdminMessages = ({ userData }) => {
                                                     <div 
                                                         className="message-attachment file"
                                                         onClick={() => {
-                                                            const url = msg.attachment.startsWith('http') ? msg.attachment : `http://localhost:8000${msg.attachment}`;
+                                                            const url = mediaUrl(msg.attachment);
                                                             window.open(url, '_blank');
                                                         }}
                                                     >

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { WS_URL } from '../config';
 
 /**
  * Custom hook for WebSocket connections with JWT authentication
@@ -20,9 +21,7 @@ export const useWebSocket = (endpoint) => {
             socketRef.current.close();
         }
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = '127.0.0.1:8000'; // Hardcoded for local dev, can be dynamic
-        const wsUrl = `${protocol}//${host}/ws${endpoint}?token=${token}`;
+        const wsUrl = `${WS_URL}/ws${endpoint}?token=${token}`;
 
         const socket = new WebSocket(wsUrl);
 

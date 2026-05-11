@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWebSocket } from './useWebSocket';
+import { API_URL } from '../config';
 
 export const useNotifications = () => {
     const [notifications, setNotifications] = useState([]);
@@ -11,7 +12,7 @@ export const useNotifications = () => {
         const fetchNotifications = async () => {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('http://127.0.0.1:8000/api/notifications/', {
+                const response = await fetch(`${API_URL}/api/notifications/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
@@ -52,7 +53,7 @@ export const useNotifications = () => {
     const markAsRead = async (id) => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://127.0.0.1:8000/api/notifications/${id}/mark-read/`, {
+            const response = await fetch(`${API_URL}/api/notifications/${id}/mark-read/`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -69,7 +70,7 @@ export const useNotifications = () => {
     const markAllAsRead = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://127.0.0.1:8000/api/notifications/mark-all-read/`, {
+            const response = await fetch(`${API_URL}/api/notifications/mark-all-read/`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { studentService, authService } from '../../services/api';
+// mediaUrl: build absolute URLs for /media paths returned by Django, without hardcoding localhost
+import { mediaUrl } from '../../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     CheckCircle2,
@@ -72,7 +74,7 @@ const StudentSettings = ({ userData }) => {
 
                     // Load profile picture from backend
                     if (data.profile_picture) {
-                        setProfilePic(`http://localhost:8000${data.profile_picture}`);
+                        setProfilePic(mediaUrl(data.profile_picture));
                     }
 
                     // Handle complex skills objects from backend
@@ -577,7 +579,7 @@ const StudentSettings = ({ userData }) => {
                         <div className="settings-card text-center profile-avatar-card">
                             <div className="avatar-preview-wrap" onClick={handlePhotoClick} style={{ cursor: 'pointer' }}>
                                 <img
-                                    src={profilePic || (userData?.profile?.profile_picture ? `http://localhost:8000${userData.profile.profile_picture}` : `https://ui-avatars.com/api/?name=${formData.firstName || userData?.first_name}+${formData.lastName || userData?.last_name}&background=0ea5e9&color=fff&size=120`)}
+                                    src={profilePic || (userData?.profile?.profile_picture ? mediaUrl(userData.profile.profile_picture) : `https://ui-avatars.com/api/?name=${formData.firstName || userData?.first_name}+${formData.lastName || userData?.last_name}&background=0ea5e9&color=fff&size=120`)}
                                     alt="Avatar"
                                     className="avatar-preview-img"
                                 />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../../config';
 import './auth.css';
 
 const ForgotPassword = () => {
@@ -18,7 +19,7 @@ const ForgotPassword = () => {
 
         try {
             console.log('Attempting password reset for:', email);
-            const response = await fetch('http://127.0.0.1:8000/api/password-reset/', {
+            const response = await fetch(`${API_URL}/api/password-reset/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),

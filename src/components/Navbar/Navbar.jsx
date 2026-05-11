@@ -7,6 +7,7 @@ import logo from '../../assets/Gold_Green_Round_Minimalist_Real_Estate_Logo__2_-
 import NotificationCenter from '../NotificationCenter/NotificationCenter';
 import { messageService } from '../../services/api';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { API_URL } from '../../config';
 
 const Navbar = ({ role, setUserRole }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -148,7 +149,7 @@ const Navbar = ({ role, setUserRole }) => {
         if (currentUser?.profile?.profile_picture) {
             const picUrl = currentUser.profile.profile_picture.startsWith('http') 
                 ? currentUser.profile.profile_picture 
-                : `http://localhost:8000${currentUser.profile.profile_picture}`;
+                : `${API_URL}${currentUser.profile.profile_picture}`;
             return <img src={picUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />;
         }
         return getProfileName();
