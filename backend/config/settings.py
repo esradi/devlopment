@@ -20,6 +20,15 @@ def patched_rename_field_sql(self, table, old_field, new_field, new_type):
     )
 DatabaseSchemaEditor._rename_field_sql = patched_rename_field_sql
 
+# Django 6 emits "ALTER TABLE ... ADD COLUMN IF NOT EXISTS ..." / "DROP COLUMN
+# IF EXISTS ..." when it detects MySQL >= 8.0.29. Railway's MySQL plugin is
+# older than that (and PyMySQL's version reporting confuses the detection
+# either way), so the server rejects the SQL with ER_PARSE_ERROR during
+# migrate. Forcing the schema editor back to the plain forms keeps the
+# migrations portable across MySQL 5.7 / 8.0.x / MariaDB.
+DatabaseSchemaEditor.sql_create_column = "ALTER TABLE %(table)s ADD COLUMN %(column)s %(definition)s"
+DatabaseSchemaEditor.sql_delete_column = "ALTER TABLE %(table)s DROP COLUMN %(column)s"
+
 from django.db.backends.base.base import BaseDatabaseWrapper
 BaseDatabaseWrapper.check_database_version_supported = lambda self: None
 
