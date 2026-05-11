@@ -19,6 +19,7 @@ def broadcast_new_message(sender, instance, created, **kwargs):
             print(f"Failed to create notification: {e}")
 
         # 2. Notify the receiver via real-time chat WebSocket
+        # pyrefly: ignore [missing-attribute]
         async_to_sync(channel_layer.group_send)(
             f"chat_{instance.receiver.id}",
             {
@@ -28,6 +29,7 @@ def broadcast_new_message(sender, instance, created, **kwargs):
         )
         
         # 3. Also notify the sender (for multi-device sync)
+        # pyrefly: ignore [missing-attribute]
         async_to_sync(channel_layer.group_send)(
             f"chat_{instance.sender.id}",
             {

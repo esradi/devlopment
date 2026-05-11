@@ -431,8 +431,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return Application.objects.none()
 
     def create(self, request, *args, **kwargs):
-        # Student applies to an offer.
-        # Validates: user is a student, offer exists and is active, not already applied.
+
         if request.user.role != 'student' or not hasattr(request.user, 'student_profile'):
             return Response({'error': 'Only students can apply.'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -447,6 +446,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         if offer.status != 'active':
             return Response({'error': 'Cannot apply to an inactive offer.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # pyrefly: ignore [missing-attribute]
         if Application.objects.filter(student=student_profile, offer=offer).exists():
             return Response({'error': 'You have already applied to this offer.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -459,6 +459,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         # Log Events
         log_offer_event(offer, 'first_app', f'First application received from {request.user.get_full_name()}.')
         
+        # pyrefly: ignore [missing-attribute]
         count = Application.objects.filter(offer=offer).count()
         if count in [10, 50, 100]:
             log_offer_event(offer, 'milestone', f'Congratulations! You have reached {count} applications.', {'count': count})

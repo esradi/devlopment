@@ -63,6 +63,7 @@ class OfferSerializer(serializers.ModelSerializer):
         queryset=Location.objects.all(), many=True, write_only=True, source='locations'
     )
     offer_type_ids = serializers.PrimaryKeyRelatedField(
+        # pyrefly: ignore [missing-attribute]
         queryset=OfferType.objects.all(), many=True, write_only=True, source='offer_types'
     )
     duration_ids = serializers.PrimaryKeyRelatedField(
@@ -94,6 +95,7 @@ class OfferSerializer(serializers.ModelSerializer):
     def get_is_favorite(self, obj):
         user = self.context.get('request').user if self.context.get('request') else None
         if user and user.is_authenticated and user.role == 'student':
+            # pyrefly: ignore [missing-attribute]
             return FavoriteOffer.objects.filter(user=user, offer=obj).exists()
         return False
 
@@ -117,6 +119,7 @@ class OfferSerializer(serializers.ModelSerializer):
         from apps.matching.models import MatchScore
         from django.db.models import Avg
         # Calculate average match score for students who applied to this offer
+        # pyrefly: ignore [missing-attribute]
         scores = MatchScore.objects.filter(
             offer=obj, 
             student__applications__offer=obj
