@@ -223,8 +223,15 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # CHANGED: email credentials were hardcoded — now read from env to avoid leaking secrets
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'pro.turbo-smtp.com')              # NEW: from env
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))                          # NEW: from env
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
+
+# Dynamically determine SSL/TLS based on port to prevent hanging connections
+if EMAIL_PORT == 465:
+    EMAIL_USE_SSL = True
+    EMAIL_USE_TLS = False
+else:
+    EMAIL_USE_SSL = False
+    EMAIL_USE_TLS = True
+
 EMAIL_TIMEOUT = 5  # NEW: fail quickly if SMTP server hangs, preventing 502 Bad Gateway
 
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')                      # NEW: from env — no more plaintext creds
