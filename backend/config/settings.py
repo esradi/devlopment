@@ -225,6 +225,7 @@ EMAIL_HOST = os.environ.get('EMAIL_HOST', 'pro.turbo-smtp.com')              # N
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))                          # NEW: from env
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
+EMAIL_TIMEOUT = 5  # NEW: fail quickly if SMTP server hangs, preventing 502 Bad Gateway
 
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')                      # NEW: from env — no more plaintext creds
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')              # NEW: from env — no more plaintext creds
