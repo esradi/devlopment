@@ -173,9 +173,11 @@ class RegisterSerializer(serializers.Serializer):
             verification_code=generate_verification_code()
         )
         
-        if not send_verification_email(user.email, user.verification_code):
+        try:
+            send_verification_email(user.email, user.verification_code)
+        except Exception as e:
             user.delete()
-            raise serializers.ValidationError({"email": "Failed to send verification email. Please check server SMTP settings or use a valid App Password."})
+            raise serializers.ValidationError({"email": f"SMTP Error: {str(e)}"})
         
         if role == 'student':
             # Dynamically fetch domain based on speciality (interest)

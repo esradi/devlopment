@@ -19,7 +19,7 @@ def send_verification_email(email, code):
         return True
     except Exception as e:
         print(f"Error sending verification email: {e}")
-        return False
+        raise e  # NEW: Raise the exception so the serializer can catch it and show it on the frontend
 
 def send_password_reset_email(email, token):
     """Send password reset link/code."""
