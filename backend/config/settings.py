@@ -43,9 +43,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-fallback')
 # CHANGED: DEBUG was always True — now controlled by env var so production can set it to False
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-# CHANGED: was empty [] — now read from env as comma-separated list (e.g. "example.com,api.example.com")
-# We filter out empty strings so an unset env var doesn't produce [''] which Django warns about.
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
+# ALLOWED_HOSTS allows all hosts by default to prevent 400 Bad Request behind proxies
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',') if h.strip()]
 
 INSTALLED_APPS = [
     'daphne',
@@ -200,16 +199,17 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
-# CHANGED: was a hardcoded list — now read from env so you can add production domains without editing code
-# Set CORS_ALLOWED_ORIGINS in .env as comma-separated, e.g.:
-#   CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,http://127.0.0.1:8080'
-).split(',')
+# Allow all origins to avoid CORS issues when frontend is deployed on Vercel
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
+
+if not CORS_ALLOW_ALL_ORIGINS:
+    CORS_ALLOWED_ORIGINS = os.environ.get(
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,http://127.0.0.1:8080'
+    ).split(',')
 
 import logging
-logging.warning(f"CORS_ALLOWED_ORIGINS loaded as: {CORS_ALLOWED_ORIGINS}")
+logging.warning(f"CORS_ALLOW_ALL_ORIGINS: {CORS_ALLOW_ALL_ORIGINS}")
 
 CORS_ALLOW_CREDENTIALS = True
 
