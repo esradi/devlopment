@@ -218,9 +218,8 @@ CORS_ALLOW_CREDENTIALS = True
 AUTH_USER_MODEL = 'accounts.User'
 
 
-# Use console backend to bypass Railway/Turbo-SMTP firewall blocks during development.
-# The verification code will be printed in the Railway logs instead of sent via email.
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Use SMTP backend to send real emails.
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 
 # CHANGED: email credentials were hardcoded — now read from env to avoid leaking secrets
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'pro.turbo-smtp.com')              # NEW: from env
